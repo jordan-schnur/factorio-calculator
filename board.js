@@ -1,14 +1,12 @@
 // "Add to board" button and panel (C4: #board-button toggles #board-panel).
-// Ported from factorio_mcp/web/calchook.js -- reads the current calc
-// fragment directly (via boardcore.js's parseCalcTargets), independent of
-// `spec`/solver state, exactly like the file it replaces.
+// Reads the current calc fragment directly (boardcore.js's
+// parseCalcTargets), independent of `spec`/solver state, so it works
+// regardless of what the rest of the page is doing.
 //
-// fetchCatalog() below is a private, memoised copy of the same idea rather
-// than an import from ./search.js: that module is under concurrent
-// construction by another unit, and importing from it here would couple two
-// units mid-build.
-
-import { parseCalcTargets, cardTitle, COLUMNS } from "/board/boardcore.js"
+// boardcore.js is loaded lazily (dynamic import, inside the open-click
+// handler) rather than imported at module scope: this module is in
+// init.js's boot graph with no surrounding try/catch, so a static import
+// failing here would abort the whole calculator.
 
 // Fragments longer than this are rejected client-side rather than posted
 // (matches board.MAX_PLAN_LEN on the server, which would reject them anyway
@@ -80,7 +78,7 @@ function renderNote(panel, text) {
   panel.appendChild(deep)
 }
 
-function renderForm(panel, allTargets, rateTargets, labelFor) {
+function renderForm(panel, allTargets, rateTargets, labelFor, cardTitle, COLUMNS) {
   clearPanel(panel)
 
   const deep = document.createElement("div")
@@ -210,7 +208,7 @@ function onAddClick(checksBox, titleInput, columnSelect, result) {
       clearPanel(result)
       result.appendChild(document.createTextNode("Added to " + capitalize(column) + " — "))
       const link = document.createElement("a")
-      link.href = "/board/"
+      link.href = "/board/board.html"
       link.target = "_blank"
       link.rel = "noopener"
       link.textContent = "open board"
@@ -222,6 +220,16 @@ function onAddClick(checksBox, titleInput, columnSelect, result) {
 }
 
 async function onOpenClick(panel) {
+  let boardcore
+  try {
+    boardcore = await import("/board/boardcore.js")
+  } catch (err) {
+    renderNote(panel, "Could not load the board module.")
+    console.error("board button failed", err)
+    return
+  }
+  const { parseCalcTargets, cardTitle, COLUMNS } = boardcore
+
   const decoded = decodeZipHash(location.hash)
   const targets = parseCalcTargets(decoded)
   const rateTargets = targets.filter((t) => t.mode === "r")
@@ -234,17 +242,21 @@ async function onOpenClick(panel) {
   renderNote(panel, "Loading…")
   const catalog = await fetchCatalog()
   const labelFor = labelMap(catalog)
-  renderForm(panel, targets, rateTargets, labelFor)
+  renderForm(panel, targets, rateTargets, labelFor, cardTitle, COLUMNS)
 }
 
 export function initBoard() {
-  const button = document.getElementById("board-button")
-  const panel = document.getElementById("board-panel")
-  if (!button || !panel) return
+  try {
+    const button = document.getElementById("board-button")
+    const panel = document.getElementById("board-panel")
+    if (!button || !panel) return
 
-  button.addEventListener("click", () => {
-    panel.hidden = !panel.hidden
-    if (panel.hidden) return
-    onOpenClick(panel).catch((err) => console.warn("board: open failed", err))
-  })
+    button.addEventListener("click", () => {
+      panel.hidden = !panel.hidden
+      if (panel.hidden) return
+      onOpenClick(panel).catch((err) => console.error("board button failed", err))
+    })
+  } catch (err) {
+    console.error("board button failed", err)
+  }
 }
