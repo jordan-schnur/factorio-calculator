@@ -120,7 +120,7 @@ input { background: #1c1c1c; box-shadow: inset 0 2px 3px rgba(0,0,0,0.8), inset 
     z-index: 30;
     width: 360px;
 }
-.pane[hidden] { display: none; }
+.pane[hidden] { display: none !important; }
 #tab-factory {
     display: grid;
     grid-template-columns: 330px minmax(0, 1fr) 360px;

@@ -161,16 +161,17 @@ function renderFlow(_spec, totals) {
                     .text(`${d.itemName} · ${spec.format.rate(Rational.from_float(d.rate))}/${spec.format.rateName} · ${d.belts.toFixed(2)} belts · ${laneNote(d.belts)}`)
             })
 
-    viewport.append("g").classed("labels", true)
-        .selectAll("text")
-        .data(laidOut.edges)
-        .join("text")
-            .classed("lbl", true)
-            .attr("x", d => (d.x1 + d.x2) / 2)
-            .attr("y", d => (d.y1 + d.y2) / 2)
-            .attr("fill", "#ffe6c0")
-            .style("font", "600 12px sans-serif")
-            .text(d => `${spec.format.rate(Rational.from_float(d.rate))}/${spec.format.rateName}`)
+    // Rate labels are HTML too (.lbl centres itself with a CSS translate,
+    // which on an SVG <text> would resolve against the whole canvas).
+    for (let edge of laidOut.edges) {
+        let label = document.createElement("div")
+        label.className = "lbl"
+        label.style.left = (edge.x1 + edge.x2) / 2 + "px"
+        label.style.top = (edge.y1 + edge.y2) / 2 + "px"
+        label.textContent = `${spec.format.rate(Rational.from_float(edge.rate))}/${spec.format.rateName}`
+        label.title = `${edge.itemName} · ${edge.belts.toFixed(2)} belts · ${laneNote(edge.belts)}`
+        nodesLayer.appendChild(label)
+    }
 
     // Nodes are plain HTML in a layer over the svg rather than
     // <foreignObject>: Chromium clips foreignObject content to a sliver
