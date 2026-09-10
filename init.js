@@ -17,7 +17,7 @@ import { getBuildings } from "./building.js"
 import { setTab } from "./events.js"
 import { spec, resetSpec } from "./factory.js"
 import { initFlow } from "./flow.js"
-import { formatSettings, loadSettings } from "./fragment.js"
+import { formatSettings, loadSettings, writeHash, isOwnHash } from "./fragment.js"
 import { getFuel } from "./fuel.js"
 import { getItemGroups } from "./group.js"
 import { getSprites } from "./icon.js"
@@ -41,7 +41,7 @@ export function changeMod() {
     let currentSettings = loadSettings("#" + formatSettings())
     currentSettings.delete("data")
     let modName = currentMod()
-    window.location.hash = ""
+    writeHash("")
     resetSpec()
     applyPageState(currentSettings)
     loadData(modName, currentSettings)
@@ -50,7 +50,17 @@ export function changeMod() {
 // Re-parses the fragment into a fresh spec and re-solves. The UI modules are
 // not re-initialized: their renderers are already registered, and renderAll()
 // calls them again at the end of the solve.
+// Every programmatic fragment write goes through here (or spec.setHash), so
+// the hashchange listener below can tell our writes from back/forward.
+export function navigateToHash(hash) {
+    writeHash(hash)
+    reloadFromHash()
+}
+
 export function reloadFromHash() {
+    // Counted so the page tests can prove our own setHash() writes never
+    // bounce back through the hashchange listener as a reload.
+    window.__calcReloads = (window.__calcReloads || 0) + 1
     let settings = loadSettings(window.location.hash)
     resetSpec()
     applyPageState(settings)
@@ -170,7 +180,14 @@ function loadData(modName, settings) {
     })
 }
 
+// setHash() writes a new history entry on every state change, so the
+// browser's back/forward moves the fragment; nothing re-read it.
 export function init() {
+    window.addEventListener("hashchange", () => {
+        if (!isOwnHash(window.location.hash)) {
+            reloadFromHash()
+        }
+    })
     let settings = loadSettings(window.location.hash)
     renderDataSetOptions(settings)
     applyPageState(settings)

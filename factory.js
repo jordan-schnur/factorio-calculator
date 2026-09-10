@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 import { Formatter } from "./align.js"
-import { formatSettings } from "./fragment.js"
+import { formatSettings, writeHash } from "./fragment.js"
 import { ModuleSpec } from "./module.js"
 import { PriorityList } from "./priority.js"
 import { Rational, zero, half, one } from "./rational.js"
@@ -146,6 +146,7 @@ class FactorySpecification {
         this.miningProd = null
 
         this.ignore = new Set()
+        this.targetNotes = []
         this.disable = new Set()
         this.selectedPlanets = new Set()
         this.planetaryBaseline = null
@@ -690,7 +691,37 @@ class FactorySpecification {
             }
         }
     }
+    // A build target is an explicit ask, so it must never be "supplied from
+    // elsewhere" (nothing to compute) or locked by a followed save's research
+    // state (blank page). Undo either before solving and record a note the
+    // Targets frame shows, so the correction is visible rather than silent.
+    ensureTargetsProducible() {
+        this.targetNotes = []
+        for (let target of this.buildTargets) {
+            let item = target.item
+            if (this.ignore.has(item)) {
+                this.toggleIgnore(item)
+                this.targetNotes.push(`${item.name} is a target, so it is built here rather than supplied from elsewhere.`)
+            }
+            if (this.isItemDisabled(item)) {
+                let enabled = []
+                for (let recipe of item.recipes) {
+                    if (this.disable.has(recipe) && recipe.isNetProducer(item)) {
+                        this.setEnable(recipe)
+                        enabled.push(recipe)
+                    }
+                }
+                if (enabled.length > 0) {
+                    let fetched = this.saveState.fetched
+                    let saveName = (fetched && fetched.save && fetched.save.name) || this.saveState.save
+                    let why = saveName ? `${saveName} has not researched it` : "its recipe was disabled"
+                    this.targetNotes.push(`${item.name} is a target, so its recipe is enabled even though ${why}.`)
+                }
+            }
+        }
+    }
     solve() {
+        this.ensureTargetsProducible()
         let outputs = []
         for (let target of this.buildTargets) {
             let item = target.item
@@ -725,7 +756,7 @@ class FactorySpecification {
         return totals
     }
     setHash() {
-        window.location.hash = "#" + formatSettings()
+        writeHash("#" + formatSettings())
     }
     // The top-level calculation function. Called whenever the solution
     // requires recalculation.

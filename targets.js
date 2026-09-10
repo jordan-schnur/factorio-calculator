@@ -29,15 +29,22 @@ function wireRestoreLast() {
         if (!hash) {
             return
         }
-        location.hash = hash
-        let { reloadFromHash } = await import("./init.js")
-        reloadFromHash()
+        let { navigateToHash } = await import("./init.js")
+        navigateToHash(hash)
     })
 }
 
 function renderTargets(spec) {
     let empty = document.getElementById("factory-empty")
     let hasTargets = spec.buildTargets.length > 0
+    let notes = document.getElementById("target-notes")
+    notes.replaceChildren()
+    for (let note of spec.targetNotes) {
+        let line = document.createElement("div")
+        line.textContent = note
+        notes.appendChild(line)
+    }
+    notes.hidden = spec.targetNotes.length === 0
     empty.hidden = hasTargets
     // calc.html gives #factory-empty an inline `display: flex`, which beats
     // the UA [hidden] rule; toggle it explicitly too.

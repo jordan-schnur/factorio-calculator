@@ -236,3 +236,24 @@ export function loadSettings(fragment) {
     }
     return settings
 }
+
+// The last fragment this page wrote itself (spec.setHash or
+// init.js's navigateToHash). init.js's hashchange listener compares against
+// it to tell our own writes from the user's back/forward. Module state, not
+// spec state: reloadFromHash() replaces the spec, and a queued hashchange
+// event must still see the write that preceded the swap.
+let lastWrittenHash = null
+
+export function writeHash(hash) {
+    lastWrittenHash = hash
+    window.location.hash = hash
+}
+
+export function isOwnHash(hash) {
+    if (hash === lastWrittenHash) return true
+    try {
+        return decodeURIComponent(hash || "") === decodeURIComponent(lastWrittenHash || "")
+    } catch (err) {
+        return false
+    }
+}

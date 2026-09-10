@@ -138,7 +138,9 @@ function renderFlow(_spec, totals) {
     lastLayout = null
 
     if (model.nodes.length === 0) {
-        document.querySelector("#flow-note").textContent = "Add a target to see its flow graph."
+        document.querySelector("#flow-note").textContent = spec.buildTargets.length === 0
+            ? "Add a target to see its flow graph."
+            : "Nothing to draw: no recipe produces these targets with the current settings."
         return
     }
 

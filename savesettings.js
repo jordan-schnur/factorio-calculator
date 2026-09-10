@@ -1,7 +1,7 @@
 // calc/savesettings.js — fetches C5 (`GET /api/calc/spec?save=`), merges the
 // non-overridden fields into the fragment, and keeps the picker/status/note
 // UI in sync. The pure merge/format logic lives in ./savesettings-core.js.
-import { reloadFromHash } from "./init.js"
+import { navigateToHash } from "./init.js"
 import { loadSettings } from "./fragment.js"
 import { spec } from "./factory.js"
 import { mergeFragment, serialize, saveLabel, signatureOf } from "./savesettings-core.js"
@@ -121,9 +121,8 @@ async function applyFromServer() {
         } else {
             merged.delete("ov")
         }
-        location.hash = "#" + serialize(merged)
         // Rebuilds `spec`, so anything read off it below must come after.
-        reloadFromHash()
+        navigateToHash("#" + serialize(merged))
 
         appliedSignature = sig
         appliedOverrides = ovKey
