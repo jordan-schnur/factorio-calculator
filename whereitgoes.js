@@ -55,10 +55,13 @@ function text(content, style) {
     return span
 }
 
-function numSpan(rational, displayText, extraClass) {
+// data-value must be the number the user sees (the display-unit decimal
+// text, e.g. "270" for 270/min) -- the scratch pad inserts it verbatim, and
+// a per-second float there would silently be 60x-off for a /min display.
+function numSpan(displayText, extraClass) {
     let span = document.createElement("span")
     span.className = extraClass ? `num ${extraClass}` : "num"
-    span.dataset.value = String(rational.toFloat())
+    span.dataset.value = displayText
     span.textContent = displayText
     return span
 }
@@ -123,7 +126,7 @@ function renderWhereList(spec, totals) {
         let r = row(
             slot(item.icon, 20, "slot-sm"),
             text(item.name, "flex: 1;"),
-            numSpan(rate, spec.format.rate(rate)),
+            numSpan(spec.format.rate(rate)),
         )
         if (item.key === spec.whereItem) {
             r.classList.add("hot")
@@ -168,7 +171,7 @@ function headerFrame(spec, totals, item, supplied) {
     mid.appendChild(muted(statusText))
     f.appendChild(mid)
 
-    let big = numSpan(rate, spec.format.rate(rate))
+    let big = numSpan(spec.format.rate(rate))
     big.style.cssText = "font-size: 30px; margin-left: auto;"
     f.appendChild(big)
     f.appendChild(text(RATE_SUFFIX[spec.format.rateName] || "")).className = "muted"
@@ -216,7 +219,7 @@ function goesToRow(spec, totals, item, recipe, rate) {
     return row(
         slot(product.icon, 28),
         nameCell,
-        numSpan(rate, spec.format.rate(rate), "c-out"),
+        numSpan(spec.format.rate(rate), "c-out"),
         muted(RATE_SUFFIX[spec.format.rateName] || "", "width: 40px;"),
         bartrack,
         shareText,
@@ -238,7 +241,7 @@ function comesFromRow(spec, recipe, rate) {
     return row(
         slot(product.icon, 28),
         nameCell,
-        numSpan(rate, spec.format.rate(rate), "c-out"),
+        numSpan(spec.format.rate(rate), "c-out"),
     )
 }
 
@@ -257,7 +260,7 @@ function whatIfRow(spec, recipe, deltaRate) {
     return row(
         slot(product.icon, 28),
         nameCell,
-        numSpan(deltaRate, spec.format.rate(deltaRate), "c-out"),
+        numSpan(spec.format.rate(deltaRate), "c-out"),
         muted(`${count} ${buildingName}`),
     )
 }
