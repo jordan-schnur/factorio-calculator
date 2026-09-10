@@ -369,9 +369,6 @@ function renderMiningProd(settings) {
 
 // buildings
 
-// A slot row (mock's Settings.body.html Overrides frame) per building
-// category that has more than one candidate; picking one calls
-// spec.setMinimumBuilding and marks the "buildings" field overridden.
 function categoryLabel(group) {
     let cats = []
     for (let [cat, g] of spec.buildings) {
@@ -393,6 +390,11 @@ function categoryLabel(group) {
 function buildingHandler(building) {
     spec.setMinimumBuilding(building)
     markOverride("buildings")
+    // updateSolution()'s renderAll pass refreshes everything else, but the
+    // slot highlight itself must update here: it's this function's own DOM,
+    // not something any registered renderer touches.
+    d3.selectAll("#building_selector button.slot")
+        .classed("sel", b => spec.getBuildingGroup(b).building === b)
     spec.updateSolution()
 }
 
@@ -444,9 +446,17 @@ function renderBuildings(settings) {
 
 // belt
 
+function beltSummaryText() {
+    return `${spec.belt.name} · ${spec.format.rate(spec.belt.rate)}/${spec.format.longRate} · ${spec.format.rate(spec.belt.rate.div(Rational.from_float(2)))} per lane`
+}
+
 function beltHandler(belt) {
     spec.belt = belt
     markOverride("belt")
+    // As with buildingHandler: the slot highlight and the summary text are
+    // this function's own DOM, not refreshed by any registered renderer.
+    d3.selectAll("#belt_selector button.slot").classed("sel", d => d === belt)
+    d3.select("#belt_selector span.belt-summary").text(beltSummaryText)
     spec.display()
 }
 
@@ -477,16 +487,17 @@ function renderBelts(settings) {
             .on("click", (event, d) => beltHandler(d))
             .append(d => d.icon.make(28, false))
     form.append("span")
-        .classed("muted", true)
+        .classed("muted belt-summary", true)
         .style("margin-left", "10px")
         .style("font-size", "13px")
-        .text(() => `${spec.belt.name} · ${spec.format.rate(spec.belt.rate)}/${spec.format.longRate} · ${spec.format.rate(spec.belt.rate.div(Rational.from_float(2)))} per lane`)
+        .text(beltSummaryText)
 }
 
 // fuel
 
 function fuelHandler(fuel) {
     spec.fuel = fuel
+    d3.selectAll("#fuel_selector button.slot").classed("sel", d => d === fuel)
     spec.updateSolution()
 }
 
@@ -925,6 +936,13 @@ function renderFromSave() {
 // Display: "Machines: rounded up / exact", bound to spec.roundMachines
 // (read by table.js). calc.html has no id for this row (it predates
 // roundMachines), so it's built once, on demand, into #settings-display.
+//
+// The choice itself lives here, not only on spec: reloadFromHash() calls
+// resetSpec(), which throws the old spec (and any field hung off it) away,
+// so a value kept solely on spec.roundMachines would silently revert to the
+// default on the next save-driven reload.
+let roundMachinesChoice = true
+
 function renderMachinesToggle() {
     let display = document.getElementById("settings-display")
     if (!display) {
@@ -950,7 +968,8 @@ function renderMachinesToggle() {
             option.appendChild(dot)
             option.appendChild(document.createTextNode(text))
             option.addEventListener("click", () => {
-                spec.roundMachines = value === "up"
+                roundMachinesChoice = value === "up"
+                spec.roundMachines = roundMachinesChoice
                 spec.display()
             })
             row.appendChild(option)
@@ -963,23 +982,24 @@ function renderMachinesToggle() {
 }
 
 // Overrides: "Reset all" and the per-field "override"/"from save" tags.
-// FIELDS in savesettings-core.js; each anchor is an element this file
-// already fully owns the *contents* of (belt/building/planet/recipe
-// selectors) or, for #mprod, its parent .kv row (calc.html's own markup).
+// FIELDS in savesettings-core.js; each anchor resolves to an element this
+// file already fully owns the *contents* of (belt/building/planet
+// selectors), or, for #mprod, its parent .kv row (calc.html's own markup),
+// or, for recipes, the collapsed <details>' own summary row (#recipe_toggles
+// itself is hidden until the details is opened).
 const OVERRIDE_ANCHORS = [
-    ["belt_selector", false, "belt"],
-    ["building_selector", false, "buildings"],
-    ["mprod", true, "mprod"],
-    ["planet_setting_row", false, "planet"],
-    ["recipe_toggles", false, "recipes"],
+    [() => document.getElementById("belt_selector"), "belt"],
+    [() => document.getElementById("building_selector"), "buildings"],
+    [() => document.getElementById("mprod")?.parentElement, "mprod"],
+    [() => document.getElementById("planet_setting_row"), "planet"],
+    [() => document.getElementById("recipe_toggles")?.closest("details")?.querySelector(":scope > summary"), "recipes"],
 ]
 
-function ensureOverrideTag(elementId, useParent) {
-    let el = document.getElementById(elementId)
-    if (!el) {
+function ensureOverrideTag(resolveHost) {
+    let host = resolveHost()
+    if (!host) {
         return null
     }
-    let host = useParent ? el.parentElement : el
     let tag = host.querySelector(":scope > span.override-tag")
     if (!tag) {
         tag = document.createElement("span")
@@ -992,8 +1012,8 @@ function ensureOverrideTag(elementId, useParent) {
 }
 
 function refreshOverrideTags() {
-    for (let [id, useParent, field] of OVERRIDE_ANCHORS) {
-        let tag = ensureOverrideTag(id, useParent)
+    for (let [resolveHost, field] of OVERRIDE_ANCHORS) {
+        let tag = ensureOverrideTag(resolveHost)
         if (!tag) {
             continue
         }
@@ -1003,6 +1023,8 @@ function refreshOverrideTags() {
     }
 }
 
+// calc.html's Overrides titlebar already carries "anything you set here
+// sticks until you reset it"; this row is just the button.
 function ensureResetAllButton() {
     let container = document.getElementById("settings-overrides")
     if (!container || document.getElementById("overrides-reset-all")) {
@@ -1017,15 +1039,11 @@ function ensureResetAllButton() {
     btn.textContent = "Reset all"
     btn.addEventListener("click", () => clearOverrides())
     row.appendChild(btn)
-    let note = document.createElement("span")
-    note.className = "muted"
-    note.style.fontSize = "13px"
-    note.textContent = "anything you set here sticks until you reset it"
-    row.appendChild(note)
     container.insertBefore(row, container.firstChild)
 }
 
 function renderSettingsTab(spec) {
+    spec.roundMachines = roundMachinesChoice
     renderFromSave()
     renderMachinesToggle()
     ensureResetAllButton()
@@ -1034,7 +1052,7 @@ function renderSettingsTab(spec) {
 
 // init.js calls this once at boot, after the dataset loads.
 export function initSettingsTab() {
-    spec.roundMachines ??= true
+    spec.roundMachines = roundMachinesChoice
     registerRenderer(renderSettingsTab)
 }
 
