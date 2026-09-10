@@ -63,6 +63,12 @@ export function buildFlowModel({recipes, links}) {
 // corners plus edge endpoints running from the source node's right-middle
 // to the target node's left-middle.
 export function layout(model, dagreLib, {rankdir = "LR", ranksep = 140, nodesep = 24, nodeWidth = 210, nodeHeight = 44} = {}) {
+    // dagre's g.graph().width/height is -Infinity for a graph with no
+    // nodes (it maxes over an empty set); short-circuit rather than hand
+    // a caller a negative-infinite SVG viewBox.
+    if (model.nodes.length === 0) {
+        return {nodes: [], edges: [], width: 0, height: 0}
+    }
     const g = new dagreLib.graphlib.Graph()
     g.setGraph({rankdir, ranksep, nodesep})
     g.setDefaultEdgeLabel(() => ({}))
@@ -91,7 +97,10 @@ export function layout(model, dagreLib, {rankdir = "LR", ranksep = 140, nodesep 
         }
     })
     const {width, height} = g.graph()
-    return {nodes, edges, width, height}
+    // Clamp to a finite, non-negative value so a caller building an SVG
+    // viewBox never sees NaN/-Infinity from a degenerate graph.
+    const clamp = v => (Number.isFinite(v) && v > 0 ? v : 0)
+    return {nodes, edges, width: clamp(width), height: clamp(height)}
 }
 
 export function edgePath(e) {

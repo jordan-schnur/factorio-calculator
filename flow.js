@@ -11,6 +11,14 @@ const NODE_WIDTH = 210
 const NODE_HEIGHT = 44
 
 let lastTotals = null
+let lastRenderKey = null
+
+// Display-only changes (rate unit, precision, belt) call spec.display()
+// without a new solve, so `totals` stays the same object; re-render on a
+// change to any of these even when the identity check alone would skip.
+function renderKey() {
+    return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}`
+}
 
 function laneNote(belts) {
     if (belts <= 0.5) return "one lane is enough"
@@ -59,13 +67,15 @@ function buildModel(totals) {
     })
 
     // Drop links into/out of those same sentinels: they have no `.key`, so
-    // they can't be represented as a flow-core node or link endpoint.
+    // they can't be represented as a flow-core node or link endpoint. `from`
+    // may legitimately be `null` (flow-core's own "no producer" case), so
+    // check that before touching `.key`.
     let links = totals.proportionate
-        .filter(({from, to}) => from.key !== undefined && to.key !== undefined)
+        .filter(({from, to}) => (from === null || from.key !== undefined) && to.key !== undefined)
         .map(({item, from, to, rate}) => ({
             item: item.key,
             itemName: item.name,
-            from: from.key,
+            from: from === null ? null : from.key,
             to: to.key,
             rate: rate.toFloat(),
             belts: item.phase === "solid" ? spec.getBeltCount(rate).toFloat() : 0,
@@ -109,14 +119,22 @@ function nodeMarkup(node) {
 // registry calls every renderer as fn(spec, totals) so the parameter is
 // kept (unused) to match that shape.
 function renderFlow(_spec, totals) {
-    if (totals === lastTotals) return
+    let key = renderKey()
+    if (totals === lastTotals && key === lastRenderKey) return
     lastTotals = totals
+    lastRenderKey = key
 
     let model = buildModel(totals)
-    let laidOut = layout(model, dagre, {rankdir: "LR", ranksep: 140, nodesep: 24, nodeWidth: NODE_WIDTH, nodeHeight: NODE_HEIGHT})
 
     let svg = d3.select("svg#flow")
     svg.selectAll("*").remove()
+
+    if (model.nodes.length === 0) {
+        document.querySelector("#flow-note").textContent = "Add a target to see its flow graph."
+        return
+    }
+
+    let laidOut = layout(model, dagre, {rankdir: "LR", ranksep: 140, nodesep: 24, nodeWidth: NODE_WIDTH, nodeHeight: NODE_HEIGHT})
 
     let container = document.querySelector("#flow-container")
     // A hidden pane reports clientWidth 0; fall back to a plausible width
