@@ -4,7 +4,7 @@
 import { reloadFromHash } from "./init.js"
 import { loadSettings } from "./fragment.js"
 import { spec } from "./factory.js"
-import { mergeFragment, serialize, saveLabel } from "./savesettings-core.js"
+import { mergeFragment, normalizeDefaults, serialize, saveLabel } from "./savesettings-core.js"
 
 const FOLLOW_INTERVAL_MS = 5 * 60 * 1000
 
@@ -37,6 +37,12 @@ export function clearOverrides() {
 
 async function applyFromServer() {
     if (fetching) {
+        return
+    }
+    // null means "no save opted in" -- never fetched, even on demand
+    // (markOverride/clearOverrides/the picker never set it to null, but a
+    // fresh call from the follow timer must not treat it as "newest").
+    if (spec.saveState.save === null) {
         return
     }
     fetching = true
@@ -72,7 +78,7 @@ async function applyFromServer() {
 
         let current = loadSettings(location.hash)
         let merged = mergeFragment(current, fetched, spec.saveState.overrides)
-        if (serialize(merged) !== serialize(current)) {
+        if (serialize(normalizeDefaults(merged)) !== serialize(normalizeDefaults(current))) {
             location.hash = "#" + serialize(merged)
             // Rebuilds `spec`, so anything read off it below must come after.
             reloadFromHash()
@@ -94,7 +100,7 @@ export async function applySaveSettings(settings) {
         await applyFromServer()
     }
     setInterval(() => {
-        if (!spec.saveState.follow) {
+        if (!spec.saveState.follow || spec.saveState.save === null) {
             return
         }
         let active = document.activeElement
