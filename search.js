@@ -2,7 +2,6 @@
 // add) and the "Browse" item grid. DOM-facing counterpart of search-core.js.
 import { spec } from "./factory.js"
 import { Rational } from "./rational.js"
-import { registerRenderer } from "./render.js"
 import { parseQuery, datasetEntries, mergeEntries } from "./search-core.js"
 import { rankMatches } from "/board/boardcore.js"
 
@@ -40,8 +39,6 @@ async function loadEntries() {
     entries = mergeEntries(catalog, datasetEntries(datasetItemEntries()))
 }
 
-// 60 items/min is exactly 1 item/s -- the fixed rate every browse-grid click
-// and every example chip uses, independent of the display-rate setting.
 function perMinuteToPerSecond(perMinute) {
     return Rational.from_float(perMinute).div(Rational.from_float(60))
 }
@@ -212,5 +209,8 @@ export function initSearch() {
     input.addEventListener("keydown", onSearchKeydown)
     input.addEventListener("blur", () => setTimeout(closeResults, 150))
 
-    registerRenderer(() => renderBrowse())
+    // Browse only depends on spec.itemGroups (already loaded by the time
+    // initSearch() runs), not on the catalog fetch above, and its own tab
+    // clicks already re-render it -- it does not need to run on every solve.
+    renderBrowse()
 }

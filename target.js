@@ -31,14 +31,37 @@ function removeHandler(target) {
     }
 }
 
-// The unit select and the number input share one handler: which of
-// rateChanged()/buildingsChanged() applies depends on which unit is picked.
+// numInput's own change applies the typed value, in whichever unit is
+// currently selected.
 function inputChangedHandler(target) {
     return function() {
         if (target.unitSelect.value === "machines") {
             target.buildingsChanged()
         } else {
             target.rateChanged()
+        }
+        spec.updateSolution()
+    }
+}
+
+// unitSelect's change must never reinterpret numInput's digits under the
+// new unit (switching a "120" from /min to belts is not "120 belts"): it
+// only converts the underlying value across the machines/rate boundary
+// (deriving a building count from the current rate, or vice versa) and
+// otherwise just asks for a re-render, which redisplays the same rate in
+// the newly picked unit.
+function unitChangedHandler(target) {
+    return function() {
+        if (target.unitSelect.value === "machines") {
+            let recipe = target.recipe
+            let baseRate = recipe ? spec.getRecipeRate(recipe) : null
+            if (baseRate !== null) {
+                baseRate = baseRate.mul(recipe.gives(target.item))
+            }
+            let count = (baseRate === null || baseRate.isZero()) ? one : target.rate.div(baseRate)
+            target.setBuildings(count, recipe)
+        } else if (target.changedBuilding) {
+            target.setRate(target.rate)
         }
         spec.updateSolution()
     }
@@ -96,7 +119,7 @@ export class BuildTarget {
             this.unitSelect.appendChild(option)
         }
         this.unitSelect.value = "/min"
-        this.unitSelect.addEventListener("change", inputChangedHandler(this))
+        this.unitSelect.addEventListener("change", unitChangedHandler(this))
         element.appendChild(this.unitSelect)
 
         let removeButton = document.createElement("span")
@@ -161,8 +184,18 @@ export class BuildTarget {
         labels.append(d => d.icon.make(20, false, dropdown.node()))
         recipeSelectorCount++
     }
-    // Reads the number input + unit select in rate mode and applies it.
     rateChanged() {
+        if (this.unitSelect.value === "machines") {
+            // factory.js's toggleIgnore() calls this directly (after
+            // displayRecipes() may have already cleared this.recipe) to force
+            // a machines-mode target out of that mode when its recipe stops
+            // being usable; numInput still holds a machine count then, not a
+            // rate, so preserve the rate getRate() last computed (kept in
+            // sync on this.rate) instead of misreading the count as one.
+            this.unitSelect.value = "/min"
+            this.setRate(this.rate)
+            return
+        }
         let n = Number(this.numInput.value) || 0
         let unit = this.unitSelect.value
         if (unit === "belts") {
@@ -172,7 +205,6 @@ export class BuildTarget {
             this.setRate(Rational.from_float(n / seconds))
         }
     }
-    // Reads the number input in machines mode and applies it.
     buildingsChanged() {
         this.setBuildings(Rational.from_float(Number(this.numInput.value) || 0), this.recipe)
     }
@@ -230,6 +262,9 @@ export class BuildTarget {
                 this.numInput.value = rate.mul(Rational.from_float(seconds)).toDecimal(spec.format.ratePrecision)
             }
         }
+        // Kept current in both modes: rateChanged() reads this back when
+        // toggleIgnore() forces a machines-mode target out of that mode.
+        this.rate = rate
         return rate
     }
 }

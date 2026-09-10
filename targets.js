@@ -37,8 +37,12 @@ function wireRestoreLast() {
 
 function renderTargets(spec) {
     let empty = document.getElementById("factory-empty")
-    empty.hidden = spec.buildTargets.length > 0
-    if (spec.buildTargets.length > 0) {
+    let hasTargets = spec.buildTargets.length > 0
+    empty.hidden = hasTargets
+    // calc.html gives #factory-empty an inline `display: flex`, which beats
+    // the UA [hidden] rule; toggle it explicitly too.
+    empty.style.display = hasTargets ? "none" : "flex"
+    if (hasTargets) {
         try {
             localStorage.setItem("calc.lastHash", location.hash)
         } catch (err) {
