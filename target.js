@@ -13,20 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 import { makeDropdown, addInputs } from "./dropdown.js"
 import { spec } from "./factory.js"
+import { beltsToRate } from "./search-core.js"
 import { Rational, zero, one } from "./rational.js"
 
-const SELECTED_INPUT = "selected"
-
-// events
-
-function itemHandler(target) {
-    return function(item) {
-        target.itemKey = item.key
-        target.item = item
-        target.displayRecipes()
-        spec.updateSolution()
-    }
-}
+// Seconds per display-unit menu entry, used to convert a typed number in
+// "/s"/"/min"/"/h" mode into the per-second Rational the solver wants.
+const UNIT_SECONDS = new Map([
+    ["/s", 1],
+    ["/min", 60],
+    ["/h", 3600],
+])
 
 function removeHandler(target) {
     return function() {
@@ -35,83 +31,42 @@ function removeHandler(target) {
     }
 }
 
-function changeBuildingCountHandler(target) {
+// numInput's own change applies the typed value, in whichever unit is
+// currently selected.
+function inputChangedHandler(target) {
     return function() {
-        target.buildingsChanged()
-        spec.updateSolution()
-    }
-}
-
-function changeRateHandler(target) {
-    return function() {
-        target.rateChanged()
-        spec.updateSolution()
-    }
-}
-
-function resetSearch(dropdown) {
-    dropdown.getElementsByClassName("search")[0].value = ""
-
-    // unhide all child nodes
-    let elems = dropdown.querySelectorAll("label, hr")
-    for (let elem of elems) {
-        elem.style.display = ""
-    }
-}
-
-function searchTargets(event) {
-    let search = this
-    let search_text = search.value.toLowerCase().replace(/[^a-z0-9]+/g, "")
-    let dropdown = d3.select(search.parentNode)
-
-    if (!search_text) {
-        resetSearch(search.parentNode)
-        return
-    }
-
-    // handle enter key press (select target if only one is visible)
-    if (event.keyCode === 13) {
-        let labels = dropdown.selectAll("label")
-            .filter(function() {
-                return this.style.display !== "none"
-            })
-        // don't do anything if more than one icon is visible
-        if (labels.size() === 1) {
-            let input = document.getElementById(labels.attr("for"))
-            input.checked = true
-            input.dispatchEvent(new Event("change"))
-        }
-        return
-    }
-
-    // hide non-matching labels & icons
-    let currentHrHasContent = false
-    let lastHrWithContent = null
-    dropdown.selectAll("hr, label").each(function(item) {
-        if (this.tagName === "HR") {
-            if (currentHrHasContent) {
-                this.style.display = ""
-                lastHrWithContent = this
-            } else {
-                this.style.display = "none"
-            }
-            currentHrHasContent = false
+        if (target.unitSelect.value === "machines") {
+            target.buildingsChanged()
         } else {
-            let title = item.name.toLowerCase().replace(/-/g, "")
-            if (title.indexOf(search_text) === -1) {
-                this.style.display = "none"
-            } else {
-                this.style.display = ""
-                currentHrHasContent = true
-            }
+            target.rateChanged()
         }
-    })
-    if (!currentHrHasContent && lastHrWithContent !== null) {
-        lastHrWithContent.style.display = "none"
+        spec.updateSolution()
     }
 }
 
-let targetCount = 0
+// unitSelect's change must never reinterpret numInput's digits under the
+// new unit (switching a "120" from /min to belts is not "120 belts"): it
+// only converts the underlying value across the machines/rate boundary
+// (deriving a building count from the current rate, or vice versa) and
+// otherwise just asks for a re-render, which redisplays the same rate in
+// the newly picked unit.
+function unitChangedHandler(target) {
+    return function() {
+        if (target.unitSelect.value === "machines") {
+            let recipe = target.recipe
+            let baseRate = recipe ? spec.getRecipeRate(recipe) : null
+            if (baseRate !== null) {
+                baseRate = baseRate.mul(recipe.gives(target.item))
+            }
+            let count = (baseRate === null || baseRate.isZero()) ? one : target.rate.div(baseRate)
+            target.setBuildings(count, recipe)
+        } else if (target.changedBuilding) {
+            target.setRate(target.rate)
+        }
+        spec.updateSolution()
+    }
+}
+
 let recipeSelectorCount = 0
 
 export class BuildTarget {
@@ -126,80 +81,63 @@ export class BuildTarget {
         this.buildings = one
         this.rate = zero
 
-        let element = d3.create("li")
-            .classed("target", true)
-        element.append("button")
-            .classed("targetButton ui", true)
-            .text("x")
-            .attr("title", "Remove this item.")
-            .on("click", removeHandler(this))
-        this.element = element.node()
+        let element = document.createElement("li")
+        element.className = "target row"
+        this.element = element
 
-        let dropdown = makeDropdown(
-            element,
-            d => d.select(".search").node().focus(),
-            d => resetSearch(d.node()),
-        )
-        dropdown.classed("itemDropdown", true)
-        dropdown.append("input")
-            .classed("search", true)
-            .attr("placeholder", "Search")
-            .on("keyup", searchTargets)
-        let group = dropdown.selectAll("div")
-            .data(itemGroups)
-            .join("div")
-        group.filter((d, i) => i > 0)
-            .append("hr")
-        let items = group.selectAll("div")
-            .data(d => d)
-            .join("div")
-                .selectAll("span")
-                .data(d => d)
-                .join("span")
-        let itemLabel = addInputs(
-            items,
-            `target-${targetCount}`,
-            d => d === item,
-            itemHandler(this),
-        )
+        let slot = document.createElement("span")
+        slot.className = "slot"
+        slot.appendChild(item.icon.make(32, true))
+        element.appendChild(slot)
 
-        itemLabel.append(d => d.icon.make(32, false, dropdown.node()))
+        // A small icon dropdown for picking among an item's several
+        // recipes; hidden (left empty) when there is only one, via
+        // displayRecipes() below. The search box replaces Kirk's old
+        // per-row item picker entirely.
+        this.recipeSelector = document.createElement("span")
+        element.appendChild(this.recipeSelector)
 
-        targetCount++
+        let name = document.createElement("span")
+        name.className = "h"
+        name.style.flex = "1"
+        name.textContent = item.name
+        element.appendChild(name)
 
-        this.buildingLabel = element.append("label")
-            .classed(SELECTED_INPUT, true)
-            .text(" Buildings: ")
-            .node()
+        this.numInput = document.createElement("input")
+        this.numInput.className = "num"
+        this.numInput.style.width = "56px"
+        this.numInput.style.textAlign = "right"
+        this.numInput.addEventListener("change", inputChangedHandler(this))
+        element.appendChild(this.numInput)
 
-        this.recipeSelector = element.append("span")
+        this.unitSelect = document.createElement("select")
+        this.unitSelect.className = "muted"
+        for (let unit of ["/s", "/min", "/h", "belts", "machines"]) {
+            let option = document.createElement("option")
+            option.value = unit
+            option.textContent = unit
+            this.unitSelect.appendChild(option)
+        }
+        this.unitSelect.value = "/min"
+        this.unitSelect.addEventListener("change", unitChangedHandler(this))
+        element.appendChild(this.unitSelect)
 
-        this.buildingInput = element.append("input")
-            .on("change", changeBuildingCountHandler(this))
-            .attr("type", "text")
-            .attr("value", 1)
-            .attr("size", 3)
-            .attr("title", "Enter a value to specify the number of buildings. The rate will be determined based on the number of items a single building can make.")
-            .node()
+        let removeButton = document.createElement("span")
+        removeButton.className = "btn btn-red btn-sm"
+        removeButton.textContent = "×"
+        removeButton.title = "Remove this item."
+        removeButton.addEventListener("click", removeHandler(this))
+        element.appendChild(removeButton)
 
-        this.rateLabel = element.append("label")
-            .node()
-        this.setRateLabel()
+        // Kept only so fragment.js's `${target.buildingInput.value}` (the
+        // "f:" items= format) still has something to read; it is not a
+        // real input any more.
+        this.buildingInput = { value: "1" }
 
-        this.rateInput = element.append("input")
-            .on("change", changeRateHandler(this))
-            .attr("type", "text")
-            .attr("value", "")
-            .attr("size", 5)
-            .attr("title", "Enter a value to specify the rate. The number of buildings will be determined based on the rate.")
-            .node()
         this.displayRecipes()
     }
-    setRateLabel() {
-        this.rateLabel.textContent = " Items/" + spec.format.longRate + ": "
-    }
     displayRecipes() {
-        this.recipeSelector.selectAll("*").remove()
+        this.recipeSelector.replaceChildren()
         let recipes = []
         let found = false
         if (!spec.ignore.has(this.item)) {
@@ -226,12 +164,13 @@ export class BuildTarget {
             this.recipe = recipes[0]
             return
         }
-        // If there are multiple valid recipes, render the recipe dropdown.
+        // If there are multiple valid recipes, render the small dropdown.
         if (this.recipe === null) {
             this.recipe = recipes[0]
         }
         let self = this
-        let dropdown = makeDropdown(this.recipeSelector)
+        let dropdown = makeDropdown(d3.select(this.recipeSelector))
+        dropdown.classed("recipePicker", true)
         let inputs = dropdown.selectAll("div").data(recipes).join("div")
         let labels = addInputs(
             inputs,
@@ -242,63 +181,90 @@ export class BuildTarget {
                 spec.updateSolution()
             },
         )
-        labels.append(d => d.icon.make(32, false, dropdown.node()))
+        labels.append(d => d.icon.make(20, false, dropdown.node()))
         recipeSelectorCount++
-        this.recipeSelector.append("span")
-            .text(" \u00d7 ")
     }
+    rateChanged() {
+        if (this.unitSelect.value === "machines") {
+            // factory.js's toggleIgnore() calls this directly (after
+            // displayRecipes() may have already cleared this.recipe) to force
+            // a machines-mode target out of that mode when its recipe stops
+            // being usable; numInput still holds a machine count then, not a
+            // rate, so preserve the rate getRate() last computed (kept in
+            // sync on this.rate) instead of misreading the count as one.
+            this.unitSelect.value = "/min"
+            this.setRate(this.rate)
+            return
+        }
+        let n = Number(this.numInput.value) || 0
+        let unit = this.unitSelect.value
+        if (unit === "belts") {
+            this.setRate(Rational.from_float(beltsToRate(n, spec.belt.rate.toFloat())))
+        } else {
+            let seconds = UNIT_SECONDS.get(unit) || UNIT_SECONDS.get("/min")
+            this.setRate(Rational.from_float(n / seconds))
+        }
+    }
+    buildingsChanged() {
+        this.setBuildings(Rational.from_float(Number(this.numInput.value) || 0), this.recipe)
+    }
+    // `rate` is a per-second Rational when called from the unit-select
+    // handlers above or from search.js; settings.js's renderTargets (the
+    // items= "r:" fragment format) still calls this with a plain decimal
+    // string in the *current display rate* unit, exactly like Kirk's
+    // original setRate(rate) did -- both forms are accepted.
+    setRate(rate) {
+        this.rate = (rate instanceof Rational) ? rate : Rational.from_string(rate).div(spec.format.rateFactor)
+        this.changedBuilding = false
+        this.buildingInput.value = ""
+        if (this.unitSelect.value === "machines") {
+            this.unitSelect.value = "/min"
+        }
+    }
+    // `count` is a Rational from the "machines" unit handler; settings.js's
+    // renderTargets (the items= "f:" fragment format) still calls this with
+    // a plain decimal string, like Kirk's original setBuildings did.
+    setBuildings(count, recipe) {
+        this.buildings = (count instanceof Rational) ? count : Rational.from_string(count)
+        this.recipe = recipe
+        this.changedBuilding = true
+        this.buildingInput.value = this.buildings.toString()
+    }
+    // Called by every render (calc/init.js's renderHousekeeping): computes
+    // the per-second rate the solver should use for this target, and syncs
+    // the row's number input/unit select to match the current mode.
     getRate() {
-        this.setRateLabel()
-        let rate = zero
         let recipe = this.recipe
-        if ((recipe === null || recipe.category === null) && this.changedBuilding) {
-            this.rateChanged()
+        if ((recipe === null || recipe === undefined || recipe.category === null) && this.changedBuilding) {
+            // No usable recipe to size building counts against (e.g. a raw
+            // resource with no crafting recipe) -- fall back to rate mode.
+            this.changedBuilding = false
         }
         let baseRate = null
-        if (recipe !== null) {
+        if (recipe !== null && recipe !== undefined) {
             baseRate = spec.getRecipeRate(recipe)
             if (baseRate !== null) {
                 baseRate = baseRate.mul(recipe.gives(this.item))
             }
         }
+        let rate
         if (this.changedBuilding) {
-            rate = baseRate.mul(this.buildings)
-            this.rateInput.value = spec.format.rate(rate)
+            rate = baseRate === null ? zero : baseRate.mul(this.buildings)
+            this.unitSelect.value = "machines"
+            this.numInput.value = spec.format.count(this.buildings)
         } else {
             rate = this.rate
-            if (baseRate !== null) {
-                let count = rate.div(baseRate)
-                this.buildingInput.value = spec.format.count(count)
+            let unit = this.unitSelect.value
+            if (unit === "belts") {
+                this.numInput.value = spec.getBeltCount(rate).toDecimal(2)
             } else {
-                this.buildingInput.value = "N/A"
+                let seconds = UNIT_SECONDS.get(unit) || UNIT_SECONDS.get("/min")
+                this.numInput.value = rate.mul(Rational.from_float(seconds)).toDecimal(spec.format.ratePrecision)
             }
-            this.rateInput.value = spec.format.rate(rate)
         }
+        // Kept current in both modes: rateChanged() reads this back when
+        // toggleIgnore() forces a machines-mode target out of that mode.
+        this.rate = rate
         return rate
-    }
-    buildingsChanged() {
-        this.changedBuilding = true
-        this.buildingLabel.classList.add(SELECTED_INPUT)
-        this.rateLabel.classList.remove(SELECTED_INPUT)
-        this.buildings = Rational.from_string(this.buildingInput.value)
-        this.rate = zero
-        this.rateInput.value = ""
-    }
-    setBuildings(count, recipe) {
-        this.buildingInput.value = count
-        this.recipe = recipe
-        this.buildingsChanged()
-    }
-    rateChanged() {
-        this.changedBuilding = false
-        this.buildingLabel.classList.remove(SELECTED_INPUT)
-        this.rateLabel.classList.add(SELECTED_INPUT)
-        this.buildings = zero
-        this.rate = Rational.from_string(this.rateInput.value).div(spec.format.rateFactor)
-        this.buildingInput.value = ""
-    }
-    setRate(rate) {
-        this.rateInput.value = rate
-        this.rateChanged()
     }
 }
