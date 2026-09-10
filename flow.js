@@ -6,6 +6,7 @@ import { registerRenderer } from "./render.js"
 import { spec } from "./factory.js"
 import { Rational } from "./rational.js"
 import { buildFlowModel, layout, edgePath } from "./flow-core.js"
+import { laneNote } from "./table-core.js"
 
 const NODE_WIDTH = 210
 const NODE_HEIGHT = 44
@@ -18,12 +19,6 @@ let lastRenderKey = null
 // change to any of these even when the identity check alone would skip.
 function renderKey() {
     return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}`
-}
-
-function laneNote(belts) {
-    if (belts <= 0.5) return "one lane is enough"
-    if (belts <= 1) return "one belt"
-    return `${Math.ceil(belts)} belts`
 }
 
 function itemKeyFor(node) {

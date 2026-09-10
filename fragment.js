@@ -208,10 +208,6 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
         settings += "&priority=" + priority.join(";")
     }
 
-    if (spec.debug) {
-        settings += "&debug=1"
-    }
-
     let zip = "zip=" + window.btoa(String.fromCharCode.apply(null, pako.deflateRaw(settings)))
     if (zip.length < settings.length) {
         return zip

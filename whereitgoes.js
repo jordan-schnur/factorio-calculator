@@ -2,41 +2,16 @@
 // producers, and a what-if for building a supplied item locally instead.
 import { clickTab } from "./events.js"
 import { spec } from "./factory.js"
+import { powerRepr } from "./power.js"
 import { registerRenderer } from "./render.js"
 import { Rational, one, zero } from "./rational.js"
+import { laneNote } from "./table-core.js"
 
 const NOTHING_BUILDS_IT = 'Nothing here builds it: it is on the "supplied from elsewhere" list.'
 const OPEN_FROM_ANY_ITEM = "Open this tab from any item: click its name in the Factory table, a node in Flow, or pick from the list on the left."
 
 const HUNDRED = Rational.from_float(100)
-const THOUSAND = Rational.from_float(1000)
 const RATE_SUFFIX = {s: "/s", m: "/min", h: "/h"}
-// Mirrors calc/display.js's powerRepr, which this module cannot import
-// (display.js is slated for deletion): step the watt value up through
-// kW/MW/GW/TW until it is under 1000 of the current unit.
-const POWER_SUFFIXES = [" W", "kW", "MW", "GW", "TW", "PW"]
-
-function powerRepr(watts) {
-    let i = 0
-    while (THOUSAND.less(watts) && i < POWER_SUFFIXES.length - 1) {
-        watts = watts.div(THOUSAND)
-        i++
-    }
-    return {power: watts, suffix: POWER_SUFFIXES[i]}
-}
-
-// belts is a Rational belt count, not an integer: a quarter of a belt still
-// needs its own lane.
-function laneNote(belts) {
-    let f = belts.toFloat()
-    if (f <= 0.5) {
-        return "one lane is enough"
-    }
-    if (f <= 1) {
-        return "one belt"
-    }
-    return `${Math.ceil(f)} belts`
-}
 
 function percentText(share) {
     let percent = share.mul(HUNDRED)
@@ -165,7 +140,7 @@ function headerFrame(spec, totals, item, supplied) {
         let belts = spec.getBeltCount(rate)
         statusText += ` · ${belts.toDecimal(2)} belts`
         if (supplied) {
-            statusText += ` · ${laneNote(belts)}`
+            statusText += ` · ${laneNote(belts.toFloat())}`
         }
     }
     mid.appendChild(muted(statusText))

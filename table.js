@@ -2,6 +2,7 @@
 // grouped and ordered by calc/table-core.js, with a per-row expansion for
 // machine/module/beacon choices.
 import { spec } from "./factory.js"
+import { formatPower } from "./power.js"
 import { Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { groupRows, RATE_LABEL } from "./table-core.js"
@@ -9,19 +10,6 @@ import { groupRows, RATE_LABEL } from "./table-core.js"
 // Recipe keys with their row expanded, kept module-level so a re-render
 // (every solve) doesn't collapse what the user opened.
 const expandedRows = new Set()
-
-// Ported from the old calc/display.js's powerRepr: picks the largest SI
-// power unit that keeps the mantissa above 1.
-const POWER_SUFFIXES = ["W", "kW", "MW", "GW", "TW", "PW"]
-function powerRepr(x) {
-    let thousand = Rational.from_float(1000)
-    let i = 0
-    while (thousand.less(x) && i < POWER_SUFFIXES.length - 1) {
-        x = x.div(thousand)
-        i++
-    }
-    return `${spec.format.count(x)} ${POWER_SUFFIXES[i]}`
-}
 
 // data-value is what the scratch pad inserts verbatim on click, so it must
 // be exactly the decimal string on screen -- never a differently-rounded or
@@ -366,7 +354,7 @@ function renderTable(spec, totals) {
 
     const totalsSpan = document.getElementById("factory-totals")
     if (totalsSpan) {
-        totalsSpan.textContent = `${totalBuildings} buildings · ${powerRepr(totalPower)}`
+        totalsSpan.textContent = `${totalBuildings} buildings · ${formatPower(totalPower)}`
     }
 }
 
@@ -377,5 +365,6 @@ export function initTable() {
 // Shared with inputs.js: the same row shape (so the Inputs frame doesn't
 // re-derive it), the power formatter for its Totals section, and
 // buildingCount (needs spec.getBuilding/getCount) so both frames' totals
-// always agree.
-export { buildRows, powerRepr }
+// always agree. inputs.js still imports this as `powerRepr`, so it is
+// re-exported under that name rather than touching inputs.js.
+export { buildRows, formatPower as powerRepr }
