@@ -15,12 +15,6 @@ import { parseCalcTargets, cardTitle, COLUMNS } from "/board/boardcore.js"
 // -- this just avoids a round trip and gives an inline reason).
 const MAX_PLAN_LEN = 4000
 
-// Rate ("r") target values in the fragment are per-second (Global
-// Constraints: "Internal rates are per-second Rationals"); board goals and
-// this panel's labels are per minute, matching boardcore.cardTitle's "/min"
-// wording, so every rate value is scaled here before it is shown or posted.
-const PER_MINUTE = 60
-
 function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s
 }
@@ -229,9 +223,7 @@ function onAddClick(checksBox, titleInput, columnSelect, result) {
 
 async function onOpenClick(panel) {
   const decoded = decodeZipHash(location.hash)
-  const targets = parseCalcTargets(decoded).map((t) =>
-    t.mode === "r" ? { ...t, value: t.value * PER_MINUTE } : t
-  )
+  const targets = parseCalcTargets(decoded)
   const rateTargets = targets.filter((t) => t.mode === "r")
 
   if (rateTargets.length === 0) {
