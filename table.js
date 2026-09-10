@@ -354,7 +354,7 @@ function renderTable(spec, totals) {
 
     const totalsSpan = document.getElementById("factory-totals")
     if (totalsSpan) {
-        totalsSpan.textContent = `${totalBuildings} buildings · ${formatPower(totalPower)}`
+        totalsSpan.textContent = `${totalBuildings} buildings · ${formatPower(totalPower, spec.format)}`
     }
 }
 
@@ -365,6 +365,10 @@ export function initTable() {
 // Shared with inputs.js: the same row shape (so the Inputs frame doesn't
 // re-derive it), the power formatter for its Totals section, and
 // buildingCount (needs spec.getBuilding/getCount) so both frames' totals
-// always agree. inputs.js still imports this as `powerRepr`, so it is
-// re-exported under that name rather than touching inputs.js.
-export { buildRows, formatPower as powerRepr }
+// always agree. inputs.js still imports this as `powerRepr` with one
+// argument, so it is wrapped with spec.format rather than touching inputs.js.
+function powerRepr(x) {
+    return formatPower(x, spec.format)
+}
+
+export { buildRows, powerRepr }
