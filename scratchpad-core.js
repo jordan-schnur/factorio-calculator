@@ -32,9 +32,18 @@ function tokenize(text) {
       i++
       continue
     }
-    if (/[0-9]/.test(c)) {
+    if (/[0-9]/.test(c) || (c === "." && /[0-9]/.test(s[i + 1] || ""))) {
+      // \d+(\.\d+)? (also allow a leading ".5"): a second "." (as in
+      // "1.2.3") is not part of this number, so it falls through to the
+      // unknown-token error path instead of poisoning the parse as NaN.
       let j = i
-      while (j < s.length && /[0-9.]/.test(s[j])) j++
+      if (s[j] === ".") {
+        j++
+      } else {
+        while (j < s.length && /[0-9]/.test(s[j])) j++
+        if (s[j] === "." && /[0-9]/.test(s[j + 1] || "")) j++
+      }
+      while (j < s.length && /[0-9]/.test(s[j])) j++
       const raw = s.slice(i, j)
       i = j
       let k = i
@@ -165,6 +174,9 @@ export function evaluate(text, ans) {
     const value = parseExpr()
     const trailing = peek()
     if (trailing) throw new CalcError(`unexpected "${trailing.value ?? trailing.type}"`)
+    // Infinity/NaN (e.g. "2 ^ 10000") would otherwise round-trip through
+    // JSON.stringify in localStorage as null and crash formatResult later.
+    if (!Number.isFinite(value)) throw new CalcError("not a finite number")
     const unit = unitsSeen.size === 1 ? [...unitsSeen][0] : null
     return { ok: true, value, unit }
   } catch (err) {
@@ -175,6 +187,10 @@ export function evaluate(text, ans) {
 }
 
 function trimNumber(value, maxDecimals) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "?"
+  // toFixed(4) rounds 0.00001 to "0.0000": switch to significant digits
+  // below 1 so a nonzero value never prints as 0.
+  if (value !== 0 && Math.abs(value) < 1) return String(Number(value.toPrecision(4)))
   return String(Number(value.toFixed(maxDecimals)))
 }
 
@@ -191,6 +207,9 @@ function formatValue(value, unit) {
 
 export function formatResult(r) {
   if (!r || r.ok === false) return r && r.incomplete ? "= …" : "= ?"
+  // Defends against a value already corrupted in storage by a pre-fix
+  // build (Infinity/NaN round-tripped through JSON.stringify as null).
+  if (typeof r.value !== "number" || !Number.isFinite(r.value)) return "= ?"
   return `= ${formatValue(r.value, r.unit)}`
 }
 

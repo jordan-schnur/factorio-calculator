@@ -73,36 +73,43 @@ function insert(value) {
 }
 
 export function initScratchpad() {
-    history = loadHistory()
-    renderHistory()
-
-    const input = document.getElementById("scratch-input")
-    const clear = document.getElementById("scratch-clear")
-
-    input.addEventListener("input", liveEvaluate)
-    input.addEventListener("keydown", e => {
-        if (e.key === "Enter") {
-            e.preventDefault()
-            commitLine()
-        } else if (e.key === "ArrowUp" && history.length) {
-            e.preventDefault()
-            input.value = history[history.length - 1].expr
-            input.setSelectionRange(input.value.length, input.value.length)
-            liveEvaluate()
-        }
-    })
-
-    clear.addEventListener("click", () => {
-        history = []
-        ans = null
-        saveHistory()
+    // init.js calls every initX() unguarded; a throw here must not stop the
+    // modules registered after this one, so failure is logged and swallowed
+    // rather than propagated (mirrors render.js's renderAll).
+    try {
+        history = loadHistory()
         renderHistory()
-    })
 
-    document.addEventListener("click", e => {
-        const el = e.target.closest(".num[data-value]")
-        if (el) insert(el.dataset.value)
-    })
+        const input = document.getElementById("scratch-input")
+        const clear = document.getElementById("scratch-clear")
 
-    liveEvaluate()
+        input.addEventListener("input", liveEvaluate)
+        input.addEventListener("keydown", e => {
+            if (e.key === "Enter") {
+                e.preventDefault()
+                commitLine()
+            } else if (e.key === "ArrowUp" && history.length) {
+                e.preventDefault()
+                input.value = history[history.length - 1].expr
+                input.setSelectionRange(input.value.length, input.value.length)
+                liveEvaluate()
+            }
+        })
+
+        clear.addEventListener("click", () => {
+            history = []
+            ans = null
+            saveHistory()
+            renderHistory()
+        })
+
+        document.addEventListener("click", e => {
+            const el = e.target.closest(".num[data-value]")
+            if (el) insert(el.dataset.value)
+        })
+
+        liveEvaluate()
+    } catch (err) {
+        console.error("scratchpad init failed", err)
+    }
 }
