@@ -1,15 +1,19 @@
 // The "Supplied from elsewhere" chip strip and the Factory settings
 // mini-list (both live in the left column, both driven off the same
-// solve). init.js calls initSupplied() once, after the dataset loads.
+// solve).
 import { spec } from "./factory.js"
 import { registerRenderer } from "./render.js"
-import { clickTab } from "./events.js"
+
+// spec.format.rateName is the fragment key (s|m|h), not the display suffix.
+const RATE_SUFFIX = new Map([["s", "s"], ["m", "min"], ["h", "h"]])
 
 export function initSupplied() {
     document.addEventListener("calc:toggle-supplied", event => {
         let item = spec.items.get(event.detail.item)
         if (item) {
+            // toggleIgnore alone doesn't re-solve; it only flips membership.
             spec.toggleIgnore(item)
+            spec.updateSolution()
         }
     })
     registerRenderer(renderSupplied)
@@ -52,7 +56,10 @@ function makeChip(item) {
     let remove = document.createElement("span")
     remove.className = "muted"
     remove.textContent = "×"
-    remove.addEventListener("click", () => spec.toggleIgnore(item))
+    remove.addEventListener("click", () => {
+        spec.toggleIgnore(item)
+        spec.updateSolution()
+    })
     chip.appendChild(remove)
 
     return chip
@@ -89,13 +96,6 @@ function renderSettingsSummary(spec) {
         row.appendChild(note)
         container.appendChild(row)
     }
-
-    let edit = document.createElement("a")
-    edit.style.fontWeight = "600"
-    edit.style.cursor = "pointer"
-    edit.textContent = "Edit"
-    edit.addEventListener("click", () => clickTab("settings"))
-    container.appendChild(edit)
 }
 
 // Any of these can be missing before the dataset finishes loading or if a
@@ -156,7 +156,7 @@ function beltRow(spec) {
         let rate = document.createElement("span")
         rate.className = "muted num"
         rate.style.marginLeft = "auto"
-        rate.textContent = spec.format.rate(spec.belt.rate) + "/" + spec.format.rateName
+        rate.textContent = spec.format.rate(spec.belt.rate) + "/" + (RATE_SUFFIX.get(spec.format.rateName) || spec.format.rateName)
         row.appendChild(rate)
     } else {
         let dash = document.createElement("span")

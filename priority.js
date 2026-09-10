@@ -287,6 +287,12 @@ export class PriorityList {
     }
     removeRecipe(recipe) {
         let resource = this.getResource(recipe)
+        // No Resource exists for an item ignored via the fragment (or any
+        // other path that adds straight to spec.ignore without going
+        // through addRecipe); un-ignoring it then is a no-op here.
+        if (resource === null) {
+            return
+        }
         resource.remove()
     }
     renderEmpty() {
