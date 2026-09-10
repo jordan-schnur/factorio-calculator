@@ -67,6 +67,34 @@ export function normalizeDefaults(settings) {
     return out
 }
 
+function sortedBuildings(buildings) {
+    let out = {}
+    for (let key of Object.keys(buildings || {}).sort()) {
+        out[key] = buildings[key]
+    }
+    return out
+}
+
+// A cheap "did the save actually change" fingerprint over the C5 payload,
+// used instead of comparing fragment text (formatSettings() canonicalises
+// per building GROUP and drops already-default-disabled recipes, so a
+// fetched payload that round-trips to an unchanged fragment can still
+// differ -- e.g. a building at its group default, or a disabled recipe
+// that was already locked -- which made a text compare reload forever).
+// Order-insensitive over `buildings`' keys and `disabled_recipes`' entries,
+// since neither ordering is meaningful.
+export function signatureOf(fetched) {
+    return JSON.stringify({
+        save: fetched.save && fetched.save.name,
+        mtime: fetched.save && fetched.save.mtime,
+        belt: fetched.belt,
+        buildings: sortedBuildings(fetched.buildings),
+        mprod: fetched.mining_productivity,
+        planet: fetched.planet,
+        disabled: [...(fetched.disabled_recipes || [])].sort(),
+    })
+}
+
 // No `zip=` here: the page re-zips (or not) when it next calls
 // spec.setHash(); this is only used to compare "did the merge change
 // anything" and to build the plain fragment savesettings.js writes.

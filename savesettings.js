@@ -4,7 +4,7 @@
 import { reloadFromHash } from "./init.js"
 import { loadSettings } from "./fragment.js"
 import { spec } from "./factory.js"
-import { mergeFragment, normalizeDefaults, serialize, saveLabel } from "./savesettings-core.js"
+import { mergeFragment, serialize, saveLabel, signatureOf } from "./savesettings-core.js"
 
 const FOLLOW_INTERVAL_MS = 5 * 60 * 1000
 
@@ -12,14 +12,23 @@ const FOLLOW_INTERVAL_MS = 5 * 60 * 1000
 // can't overlap and race each other's reload.
 let fetching = false
 
+// The signature (see savesettings-core.js) and override set of the fetched
+// payload last actually applied to the fragment. Module-level, not on
+// `spec`: reloadFromHash() rebuilds `spec`, so these two must survive that.
+// A poll whose payload/overrides match neither reloads nor reapplies.
+let appliedSignature = null
+let appliedOverrides = ""
+
 export function initSaveSettings() {
     document.getElementById("save-picker").addEventListener("change", event => {
         spec.saveState.save = event.target.value
         spec.saveState.follow = true
         // Persists save=/follow=1 even when the merge below leaves the
-        // fragment's other fields unchanged (applyFromServer only rewrites
-        // the hash when belt/buildings/mprod/planet/recipes differ).
+        // fragment's other fields unchanged.
         spec.setHash()
+        // Force one apply even if this save's payload matches the one
+        // already applied (e.g. switching back to a previously-picked save).
+        appliedSignature = null
         applyFromServer()
     })
 }
@@ -27,11 +36,16 @@ export function initSaveSettings() {
 export function markOverride(field) {
     spec.saveState.overrides.add(field)
     spec.setHash()
+    // An override never needs a re-apply: it stops a field from being
+    // fetched at all, so it can't itself be the reason a payload differs.
 }
 
 export function clearOverrides() {
     spec.saveState.overrides.clear()
     spec.setHash()
+    // The now-unoverridden fields need re-applying even if the payload
+    // itself hasn't changed since the last apply.
+    appliedSignature = null
     applyFromServer()
 }
 
@@ -76,13 +90,25 @@ async function applyFromServer() {
         document.getElementById("save-status").textContent = saveLabel(fetched.save)
         document.getElementById("page-note").textContent = ""
 
-        let current = loadSettings(location.hash)
-        let merged = mergeFragment(current, fetched, spec.saveState.overrides)
-        if (serialize(normalizeDefaults(merged)) !== serialize(normalizeDefaults(current))) {
-            location.hash = "#" + serialize(merged)
-            // Rebuilds `spec`, so anything read off it below must come after.
-            reloadFromHash()
+        // Decide on a fingerprint of the payload, not fragment text: the
+        // fragment canonicalises (per building group, dropping recipes
+        // already default-disabled), so a payload that IS unchanged can
+        // still round-trip to a fragment that looks different, and a text
+        // compare would reload on every poll -- see savesettings-core.js.
+        let sig = signatureOf(fetched)
+        let ovKey = [...spec.saveState.overrides].sort().join(",")
+        if (sig === appliedSignature && ovKey === appliedOverrides) {
+            spec.saveState.fetched = fetched
+            return
         }
+
+        let merged = mergeFragment(loadSettings(location.hash), fetched, spec.saveState.overrides)
+        location.hash = "#" + serialize(merged)
+        // Rebuilds `spec`, so anything read off it below must come after.
+        reloadFromHash()
+
+        appliedSignature = sig
+        appliedOverrides = ovKey
         // The Settings tab's "what it set" panel reads this.
         spec.saveState.fetched = fetched
     } finally {
