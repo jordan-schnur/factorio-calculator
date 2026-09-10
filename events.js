@@ -46,6 +46,9 @@ export function setTab(rawName) {
     for (let button of document.querySelectorAll("#tabs .tab")) {
         button.classList.toggle("on", button.dataset.tab === name)
     }
+    // Panes that size themselves to the viewport (the flow graph) can only
+    // measure once they are visible; let them know which pane just showed.
+    document.dispatchEvent(new CustomEvent("calc:tab", {detail: {tab: name}}))
 }
 
 export function clickTab(rawName) {

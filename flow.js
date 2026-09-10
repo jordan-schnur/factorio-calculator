@@ -13,6 +13,13 @@ const NODE_HEIGHT = 44
 
 let lastTotals = null
 let lastRenderKey = null
+let lastLayout = null
+let zoomBehavior = null
+let viewport = null
+// True until the graph has been fitted inside a container that had a real
+// size. The pane is usually hidden when the solve renders (clientWidth 0),
+// so the fit is deferred to the moment the Flow tab is shown.
+let needsFit = true
 
 // Display-only changes (rate unit, precision, belt) call spec.display()
 // without a new solve, so `totals` stays the same object; re-render on a
@@ -123,6 +130,7 @@ function renderFlow(_spec, totals) {
 
     let svg = d3.select("svg#flow")
     svg.selectAll("*").remove()
+    lastLayout = null
 
     if (model.nodes.length === 0) {
         document.querySelector("#flow-note").textContent = "Add a target to see its flow graph."
@@ -130,18 +138,12 @@ function renderFlow(_spec, totals) {
     }
 
     let laidOut = layout(model, dagre, {rankdir: "LR", ranksep: 140, nodesep: 24, nodeWidth: NODE_WIDTH, nodeHeight: NODE_HEIGHT})
+    lastLayout = laidOut
 
-    let container = document.querySelector("#flow-container")
-    // A hidden pane reports clientWidth 0; fall back to a plausible width
-    // so the graph still renders (just not at the container's real size)
-    // rather than collapsing to zero height.
-    let containerWidth = container.clientWidth || 1400
-    let displayHeight = Math.max(200, containerWidth * (laidOut.height / laidOut.width))
-    svg.attr("viewBox", `0 0 ${laidOut.width} ${laidOut.height}`)
-        .attr("width", "100%")
-        .attr("height", displayHeight)
+    ensureZoom(svg)
+    viewport = svg.append("g").classed("viewport", true)
 
-    svg.append("g").classed("edges", true)
+    viewport.append("g").classed("edges", true)
         .selectAll("path")
         .data(laidOut.edges)
         .join("path")
@@ -154,7 +156,7 @@ function renderFlow(_spec, totals) {
                     .text(`${d.itemName} · ${spec.format.rate(Rational.from_float(d.rate))}/${spec.format.rateName} · ${d.belts.toFixed(2)} belts · ${laneNote(d.belts)}`)
             })
 
-    svg.append("g").classed("labels", true)
+    viewport.append("g").classed("labels", true)
         .selectAll("text")
         .data(laidOut.edges)
         .join("text")
@@ -165,7 +167,7 @@ function renderFlow(_spec, totals) {
             .style("font", "600 12px sans-serif")
             .text(d => `${spec.format.rate(Rational.from_float(d.rate))}/${spec.format.rateName}`)
 
-    svg.append("g").classed("nodes", true)
+    viewport.append("g").classed("nodes", true)
         .selectAll("foreignObject")
         .data(laidOut.nodes)
         .join("foreignObject")
@@ -178,13 +180,64 @@ function renderFlow(_spec, totals) {
             })
 
     let note = document.querySelector("#flow-note")
-    let sentence = "Hover an edge for its rate and belt load. Click a node to open it in “Where it goes”. Supplied items and mined resources both start on the left; nothing is drawn upstream of them."
+    let sentence = "Scroll to zoom, drag to pan, double-click to zoom in. Hover an edge for its rate and belt load. Click a node to open it in “Where it goes”. Supplied items and mined resources both start on the left; nothing is drawn upstream of them."
     if (laidOut.nodes.length > 60) {
         sentence += ` This graph has ${laidOut.nodes.length} nodes; supply intermediates from elsewhere to simplify it.`
     }
     note.textContent = sentence
+
+    needsFit = true
+    fitToView()
+}
+
+// Zoom and pan live on the <svg>; the drawn graph lives in g.viewport, which
+// the zoom transform moves. The behaviour is attached once and survives the
+// per-render wipe of the svg's children.
+function ensureZoom(svg) {
+    if (zoomBehavior !== null) return
+    zoomBehavior = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on("zoom", event => {
+            if (viewport !== null) viewport.attr("transform", event.transform)
+        })
+    svg.call(zoomBehavior)
+}
+
+function containerSize() {
+    let container = document.querySelector("#flow-container")
+    return {width: container.clientWidth, height: container.clientHeight}
+}
+
+// Fits the whole graph inside the container, centred, never scaling nodes
+// above their natural size. A hidden pane (size 0) can't be fitted; leave
+// needsFit set so the tab-shown hook tries again.
+export function fitToView() {
+    if (lastLayout === null || zoomBehavior === null) return
+    let {width, height} = containerSize()
+    if (width === 0 || height === 0) return
+    const PAD = 24
+    let k = Math.min(1, (width - 2 * PAD) / lastLayout.width, (height - 2 * PAD) / lastLayout.height)
+    if (!isFinite(k) || k <= 0) return
+    let tx = (width - lastLayout.width * k) / 2
+    let ty = (height - lastLayout.height * k) / 2
+    d3.select("svg#flow").call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
+    needsFit = false
+}
+
+function zoomBy(factor) {
+    if (zoomBehavior === null) return
+    d3.select("svg#flow").transition().duration(150).call(zoomBehavior.scaleBy, factor)
 }
 
 export function initFlow() {
     registerRenderer(renderFlow)
+    document.addEventListener("calc:tab", event => {
+        if (event.detail.tab === "flow" && needsFit) fitToView()
+    })
+    window.addEventListener("resize", () => {
+        if (needsFit) fitToView()
+    })
+    document.querySelector("#flow-fit").addEventListener("click", () => fitToView())
+    document.querySelector("#flow-zoom-in").addEventListener("click", () => zoomBy(1.4))
+    document.querySelector("#flow-zoom-out").addEventListener("click", () => zoomBy(1 / 1.4))
 }
