@@ -16,6 +16,10 @@ export function initSaveSettings() {
     document.getElementById("save-picker").addEventListener("change", event => {
         spec.saveState.save = event.target.value
         spec.saveState.follow = true
+        // Persists save=/follow=1 even when the merge below leaves the
+        // fragment's other fields unchanged (applyFromServer only rewrites
+        // the hash when belt/buildings/mprod/planet/recipes differ).
+        spec.setHash()
         applyFromServer()
     })
 }
@@ -27,6 +31,7 @@ export function markOverride(field) {
 
 export function clearOverrides() {
     spec.saveState.overrides.clear()
+    spec.setHash()
     applyFromServer()
 }
 
@@ -93,7 +98,7 @@ export async function applySaveSettings(settings) {
             return
         }
         let active = document.activeElement
-        if (active && active.closest && active.closest("#targets-frame")) {
+        if (active && active.closest && (active.closest("#targets-frame") || active.closest("#target-search-results"))) {
             return
         }
         applyFromServer()
