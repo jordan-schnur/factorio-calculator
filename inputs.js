@@ -1,18 +1,13 @@
 // The Inputs frame (#inputs): what must be fed in (supplied-from-elsewhere
 // items), what is mined here, and the whole-factory power/building totals.
-// Reuses table.js's row shape so this frame and the Factory table never
-// disagree about what counts as "supplied" or "mined".
+// Reuses table.js's row shape and totals helpers so this frame and the
+// Factory table never disagree about what counts as "supplied"/"mined" or
+// how many buildings a row needs.
 import { spec } from "./factory.js"
 import { zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
-import { buildRows, powerRepr } from "./table.js"
-import { laneNote, machineSummary } from "./table-core.js"
-
-const RATE_LABEL = { s: "/s", m: "/min", h: "/h" }
-
-function displayedRate(rate) {
-    return rate.mul(spec.format.rateFactor).toFloat()
-}
+import { buildingCount, buildRows, powerRepr } from "./table.js"
+import { laneNote, machineSummary, RATE_LABEL } from "./table-core.js"
 
 function laneLine(row) {
     if (row.item.phase === "fluid") {
@@ -47,8 +42,9 @@ function inputRow(row, note) {
     const num = document.createElement("span")
     num.className = "num"
     num.style.fontSize = "20px"
-    num.dataset.value = displayedRate(row.itemRate)
-    num.textContent = spec.format.rate(row.itemRate)
+    const rateText = spec.format.rate(row.itemRate)
+    num.dataset.value = rateText
+    num.textContent = rateText
     div.appendChild(num)
 
     const unit = document.createElement("span")
@@ -59,15 +55,21 @@ function inputRow(row, note) {
     return div
 }
 
-function kv(label, value) {
+// label: value, where value is either a bare number (numeric, gets class
+// "num" and a data-value so the scratch pad can reuse it) or prose (power's
+// "5.8 MW" -- not a bare number, so no "num" class and no data-value).
+function kv(label, value, numeric) {
     const div = document.createElement("div")
     div.className = "kv"
     const l = document.createElement("span")
     l.textContent = label
     div.appendChild(l)
     const v = document.createElement("span")
-    v.className = "num"
     v.style.marginLeft = "auto"
+    if (numeric !== undefined) {
+        v.className = "num"
+        v.dataset.value = String(numeric)
+    }
     v.textContent = value
     div.appendChild(v)
     return div
@@ -108,8 +110,7 @@ function renderInputs(spec, totals) {
         container.appendChild(sec("Mined here"))
         for (const row of mined) {
             const building = spec.getBuilding(row.recipe)
-            const count = Math.ceil(spec.getCount(row.recipe, row.recipeRate).toFloat())
-            const note = building ? `${count} ${building.name.toLowerCase()}` : null
+            const note = building ? `${buildingCount(row)} ${building.name.toLowerCase()}` : null
             container.appendChild(inputRow(row, note))
         }
     }
@@ -126,13 +127,13 @@ function renderInputs(spec, totals) {
         if (building === null) {
             continue
         }
-        const count = Math.ceil(spec.getCount(row.recipe, row.recipeRate).toFloat())
+        const count = buildingCount(row)
         totalBuildings += count
         totalPower = totalPower.add(spec.getPowerUsage(row.recipe, row.recipeRate).power)
         counts.push({ building: building.key, count })
     }
     container.appendChild(kv("Power", powerRepr(totalPower)))
-    container.appendChild(kv("Buildings", String(totalBuildings)))
+    container.appendChild(kv("Buildings", String(totalBuildings), totalBuildings))
 
     const summary = document.createElement("div")
     summary.className = "kv"

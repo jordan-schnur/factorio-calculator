@@ -4,17 +4,15 @@
 import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
-import { groupRows } from "./table-core.js"
+import { groupRows, RATE_LABEL } from "./table-core.js"
 
 // Recipe keys with their row expanded, kept module-level so a re-render
 // (every solve) doesn't collapse what the user opened.
 const expandedRows = new Set()
 
-const RATE_LABEL = { s: "/s", m: "/min", h: "/h" }
-
 // Ported from the old calc/display.js's powerRepr: picks the largest SI
 // power unit that keeps the mantissa above 1.
-const POWER_SUFFIXES = [" W", "kW", "MW", "GW", "TW", "PW"]
+const POWER_SUFFIXES = ["W", "kW", "MW", "GW", "TW", "PW"]
 function powerRepr(x) {
     let thousand = Rational.from_float(1000)
     let i = 0
@@ -22,21 +20,18 @@ function powerRepr(x) {
         x = x.div(thousand)
         i++
     }
-    return spec.format.count(x) + POWER_SUFFIXES[i]
+    return `${spec.format.count(x)} ${POWER_SUFFIXES[i]}`
 }
 
-function numSpan(value, text, extraClass) {
+// data-value is what the scratch pad inserts verbatim on click, so it must
+// be exactly the decimal string on screen -- never a differently-rounded or
+// differently-scaled number (e.g. the raw per-second Rational).
+function numSpan(text, extraClass) {
     const span = document.createElement("span")
     span.className = extraClass ? `num ${extraClass}` : "num"
-    span.dataset.value = String(value)
+    span.dataset.value = text
     span.textContent = text
     return span
-}
-
-// The rate actually shown to the user, in the current display unit -- what
-// a click on this cell should hand the scratch pad.
-function displayedRate(rate) {
-    return rate.mul(spec.format.rateFactor).toFloat()
 }
 
 // A recipe row's raw material: totals.rates carries the real crafting
@@ -80,6 +75,20 @@ function headerRow() {
     return row
 }
 
+// The building total in #factory-totals/#inputs must always agree, and
+// neither can be a fraction of a building: roundMachines only controls what
+// a single row's own cell displays, not what the two totals add up.
+export function buildingCount(row) {
+    if (!row.isReal) {
+        return 0
+    }
+    const building = spec.getBuilding(row.recipe)
+    if (building === null) {
+        return 0
+    }
+    return Math.ceil(spec.getCount(row.recipe, row.recipeRate).toFloat())
+}
+
 function machinesCell(row) {
     const cell = document.createElement("span")
     const building = row.isReal ? spec.getBuilding(row.recipe) : null
@@ -87,7 +96,7 @@ function machinesCell(row) {
         cell.className = "machines muted"
         cell.style.fontSize = "13px"
         cell.textContent = "input"
-        return { cell, building: null, buildings: 0, power: zero }
+        return { cell, building: null, power: zero }
     }
     cell.className = "machines"
     const icon = document.createElement("span")
@@ -97,12 +106,11 @@ function machinesCell(row) {
 
     const roundedUp = spec.roundMachines !== false
     const countRat = spec.getCount(row.recipe, row.recipeRate)
-    const countValue = roundedUp ? Math.ceil(countRat.toFloat()) : countRat.toFloat()
-    const countText = roundedUp ? String(countValue) : spec.format.count(countRat)
-    cell.appendChild(numSpan(countValue, countText))
+    const countText = roundedUp ? String(Math.ceil(countRat.toFloat())) : spec.format.count(countRat)
+    cell.appendChild(numSpan(countText))
 
     const power = spec.getPowerUsage(row.recipe, row.recipeRate).power
-    return { cell, building, buildings: countValue, power }
+    return { cell, building, power }
 }
 
 function modulesCell(row, building) {
@@ -129,14 +137,19 @@ function moduleChoices(recipe) {
     return [null, ...spec.modules.values()].filter(m => !m || m.canUse(recipe))
 }
 
+// Beacons only accept modules with no productivity effect (canBeacon()),
+// on top of the recipe-applicability check every module slot uses.
+function beaconChoices(recipe) {
+    return [null, ...spec.modules.values()].filter(m => !m || (m.canBeacon() && m.canUse(recipe)))
+}
+
 function slotPicker(current, choices, onPick, dim) {
     const slot = document.createElement("span")
     slot.className = current ? "slot slot-sm" : `slot slot-sm ${dim ? "dim" : ""}`.trim()
     if (current) {
         slot.appendChild(current.icon.make(20, true))
     }
-    slot.addEventListener("click", event => {
-        event.stopPropagation()
+    slot.addEventListener("click", () => {
         const next = choices[(choices.indexOf(current) + 1) % choices.length]
         onPick(next)
     })
@@ -207,7 +220,7 @@ function renderExpansion(row) {
     beaconRow.style.gap = "4px"
     beaconRow.style.alignItems = "center"
     if (moduleSpec !== null) {
-        const choices = moduleChoices(row.recipe)
+        const choices = beaconChoices(row.recipe)
         for (let i = 0; i < moduleSpec.beaconModules.length; i++) {
             beaconRow.appendChild(slotPicker(moduleSpec.beaconModules[i], choices, next => {
                 moduleSpec.setBeaconModule(next, i)
@@ -219,7 +232,6 @@ function renderExpansion(row) {
         countInput.style.width = "36px"
         countInput.style.textAlign = "right"
         countInput.value = spec.format.count(moduleSpec.beaconCount)
-        countInput.addEventListener("click", event => event.stopPropagation())
         countInput.addEventListener("change", () => {
             moduleSpec.setBeaconCount(Rational.from_string(countInput.value))
             spec.updateSolution()
@@ -250,19 +262,24 @@ function renderExpansion(row) {
         const img = ing.item.icon.make(16, true)
         img.style.verticalAlign = "-3px"
         span.appendChild(img)
-        span.appendChild(document.createTextNode(` ${amount.toDecimal(2)} ${ing.item.name}`))
+        span.appendChild(document.createTextNode(` ${spec.format.rate(amount)} ${RATE_LABEL[spec.format.rateName] || "/min"} ${ing.item.name}`))
         ingLine.appendChild(span)
     }
     const whereLink = document.createElement("a")
     whereLink.style.marginLeft = "auto"
     whereLink.style.cursor = "pointer"
     whereLink.textContent = "Where it goes →"
-    whereLink.addEventListener("click", event => {
-        event.stopPropagation()
+    whereLink.addEventListener("click", () => {
         document.dispatchEvent(new CustomEvent("calc:where", { detail: { item: row.item.key } }))
     })
     ingLine.appendChild(whereLink)
     wrap.appendChild(ingLine)
+
+    // Every widget above wants its own click (slot pickers, the beacon-count
+    // input, the link) rather than toggling the row's expansion; stopping
+    // it once here, on the wrapper, covers the wrapper's own whitespace too
+    // instead of guarding each interactive child individually.
+    wrap.addEventListener("click", event => event.stopPropagation())
 
     return wrap
 }
@@ -292,17 +309,17 @@ function renderRow(row) {
     })
     div.appendChild(name)
 
-    const { cell: machines, building, buildings, power } = machinesCell(row)
+    const { cell: machines, building, power } = machinesCell(row)
     div.appendChild(machines)
 
-    div.appendChild(numSpan(displayedRate(row.itemRate), spec.format.rate(row.itemRate), "c-out"))
+    div.appendChild(numSpan(spec.format.rate(row.itemRate), "c-out"))
 
     const belt = document.createElement("span")
     belt.className = "num muted c-belt"
     if (row.item.phase !== "fluid") {
-        const beltCount = spec.getBeltCount(row.itemRate)
-        belt.dataset.value = beltCount.toFloat()
-        belt.textContent = beltCount.toDecimal(2)
+        const beltText = spec.getBeltCount(row.itemRate).toDecimal(2)
+        belt.dataset.value = beltText
+        belt.textContent = beltText
     }
     div.appendChild(belt)
 
@@ -321,7 +338,7 @@ function renderRow(row) {
         div.appendChild(renderExpansion(row))
     }
 
-    return { el: div, buildings: row.isReal ? buildings : 0, power: row.isReal ? power : zero }
+    return { el: div, power: row.isReal ? power : zero }
 }
 
 function renderTable(spec, totals) {
@@ -340,9 +357,9 @@ function renderTable(spec, totals) {
         sec.textContent = group.name
         container.appendChild(sec)
         for (const row of group.rows) {
-            const { el, buildings, power } = renderRow(row)
+            const { el, power } = renderRow(row)
             container.appendChild(el)
-            totalBuildings += buildings
+            totalBuildings += buildingCount(row)
             totalPower = totalPower.add(power)
         }
     }
@@ -358,5 +375,7 @@ export function initTable() {
 }
 
 // Shared with inputs.js: the same row shape (so the Inputs frame doesn't
-// re-derive it) and the power formatter for its Totals section.
+// re-derive it), the power formatter for its Totals section, and
+// buildingCount (needs spec.getBuilding/getCount) so both frames' totals
+// always agree.
 export { buildRows, powerRepr }
