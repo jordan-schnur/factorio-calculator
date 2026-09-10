@@ -1057,6 +1057,11 @@ export function initSettingsTab() {
 }
 
 export function renderSettings(settings) {
+    // Must land before spec.updateSolution() (the caller runs it right after
+    // this): table.js's renderer is registered ahead of ours, so if
+    // spec.roundMachines were only set from renderSettingsTab, the first
+    // render after a reloadFromHash() rebuild would see it undefined.
+    spec.roundMachines = roundMachinesChoice
     renderTitle(settings)
     renderIgnore(settings)
     renderRateOptions(settings)
