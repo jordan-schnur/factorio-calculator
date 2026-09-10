@@ -89,6 +89,9 @@ function buildModel(totals) {
 function nodeMarkup(node) {
     let div = document.createElement("div")
     div.className = "node " + (node.kind === "target" ? "tgt" : node.kind === "recipe" ? "" : "inp")
+    div.style.left = node.x + "px"
+    div.style.top = node.y + "px"
+    div.style.height = NODE_HEIGHT + "px"
     let slot = document.createElement("span")
     slot.className = "slot slot-sm"
     let item = spec.items.get(itemKeyFor(node))
@@ -130,6 +133,8 @@ function renderFlow(_spec, totals) {
 
     let svg = d3.select("svg#flow")
     svg.selectAll("*").remove()
+    let nodesLayer = document.querySelector("#flow-nodes")
+    nodesLayer.replaceChildren()
     lastLayout = null
 
     if (model.nodes.length === 0) {
@@ -140,7 +145,7 @@ function renderFlow(_spec, totals) {
     let laidOut = layout(model, dagre, {rankdir: "LR", ranksep: 140, nodesep: 24, nodeWidth: NODE_WIDTH, nodeHeight: NODE_HEIGHT})
     lastLayout = laidOut
 
-    ensureZoom(svg)
+    ensureZoom()
     viewport = svg.append("g").classed("viewport", true)
 
     viewport.append("g").classed("edges", true)
@@ -167,20 +172,15 @@ function renderFlow(_spec, totals) {
             .style("font", "600 12px sans-serif")
             .text(d => `${spec.format.rate(Rational.from_float(d.rate))}/${spec.format.rateName}`)
 
-    viewport.append("g").classed("nodes", true)
-        .selectAll("foreignObject")
-        .data(laidOut.nodes)
-        .join("foreignObject")
-            .attr("x", d => d.x)
-            .attr("y", d => d.y)
-            .attr("width", NODE_WIDTH)
-            .attr("height", NODE_HEIGHT)
-            .each(function(d) {
-                this.appendChild(nodeMarkup(d))
-            })
+    // Nodes are plain HTML in a layer over the svg rather than
+    // <foreignObject>: Chromium clips foreignObject content to a sliver
+    // once an ancestor <g> carries a scale transform.
+    for (let node of laidOut.nodes) {
+        nodesLayer.appendChild(nodeMarkup(node))
+    }
 
     let note = document.querySelector("#flow-note")
-    let sentence = "Scroll to zoom, drag to pan, double-click to zoom in. Hover an edge for its rate and belt load. Click a node to open it in “Where it goes”. Supplied items and mined resources both start on the left; nothing is drawn upstream of them."
+    let sentence = "Scroll to zoom, drag to pan. Hover an edge for its rate and belt load. Click a node to open it in “Where it goes”. Supplied items and mined resources both start on the left; nothing is drawn upstream of them."
     if (laidOut.nodes.length > 60) {
         sentence += ` This graph has ${laidOut.nodes.length} nodes; supply intermediates from elsewhere to simplify it.`
     }
@@ -190,17 +190,20 @@ function renderFlow(_spec, totals) {
     fitToView()
 }
 
-// Zoom and pan live on the <svg>; the drawn graph lives in g.viewport, which
-// the zoom transform moves. The behaviour is attached once and survives the
-// per-render wipe of the svg's children.
-function ensureZoom(svg) {
+// Zoom and pan live on the container; the edges live in svg g.viewport and
+// the nodes in div#flow-nodes, and both get the same transform. The
+// behaviour is attached once and survives the per-render wipe of the
+// svg's children.
+function ensureZoom() {
     if (zoomBehavior !== null) return
     zoomBehavior = d3.zoom()
         .scaleExtent([0.1, 4])
         .on("zoom", event => {
-            if (viewport !== null) viewport.attr("transform", event.transform)
+            let t = event.transform
+            if (viewport !== null) viewport.attr("transform", t)
+            document.querySelector("#flow-nodes").style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.k})`
         })
-    svg.call(zoomBehavior)
+    d3.select("#flow-container").call(zoomBehavior).on("dblclick.zoom", null)
 }
 
 function containerSize() {
@@ -220,13 +223,13 @@ export function fitToView() {
     if (!isFinite(k) || k <= 0) return
     let tx = (width - lastLayout.width * k) / 2
     let ty = (height - lastLayout.height * k) / 2
-    d3.select("svg#flow").call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
+    d3.select("#flow-container").call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
     needsFit = false
 }
 
 function zoomBy(factor) {
     if (zoomBehavior === null) return
-    d3.select("svg#flow").transition().duration(150).call(zoomBehavior.scaleBy, factor)
+    d3.select("#flow-container").transition().duration(150).call(zoomBehavior.scaleBy, factor)
 }
 
 export function initFlow() {
