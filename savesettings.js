@@ -107,7 +107,10 @@ async function applyFromServer() {
         // from a prior spec.setHash() (the picker change handler and
         // applySaveSettings's fresh-open branch both call it), but write
         // them from spec.saveState here too so a merge can never drop them.
-        merged.set("save", spec.saveState.save)
+        // Encoded like fragment.js's formatSettings() writes it (and
+        // init.js's applyPageState decodes it): a save name containing "&"
+        // or "=" would otherwise corrupt the hash's own key=value&... syntax.
+        merged.set("save", encodeURIComponent(spec.saveState.save))
         if (spec.saveState.follow) {
             merged.set("follow", "1")
         } else {
