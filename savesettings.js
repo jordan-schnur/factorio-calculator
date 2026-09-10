@@ -103,6 +103,21 @@ async function applyFromServer() {
         }
 
         let merged = mergeFragment(loadSettings(location.hash), fetched, spec.saveState.overrides)
+        // Belt and braces: the hash should already carry save=/follow=/ov=
+        // from a prior spec.setHash() (the picker change handler and
+        // applySaveSettings's fresh-open branch both call it), but write
+        // them from spec.saveState here too so a merge can never drop them.
+        merged.set("save", spec.saveState.save)
+        if (spec.saveState.follow) {
+            merged.set("follow", "1")
+        } else {
+            merged.delete("follow")
+        }
+        if (spec.saveState.overrides.size > 0) {
+            merged.set("ov", [...spec.saveState.overrides].join(","))
+        } else {
+            merged.delete("ov")
+        }
         location.hash = "#" + serialize(merged)
         // Rebuilds `spec`, so anything read off it below must come after.
         reloadFromHash()
@@ -121,6 +136,12 @@ async function applyFromServer() {
 export async function applySaveSettings(settings) {
     if (!settings.has("save") && !settings.has("follow") && !settings.has("items")) {
         spec.saveState = { save: "", follow: true, overrides: new Set() }
+        // Persists save=/follow=1 into the fragment immediately: without
+        // this, the first applyFromServer() below merges from a hash that
+        // still has neither key, and reloadFromHash() would reset saveState
+        // right back to {save: null, follow: false} -- silently dropping
+        // the fresh-open follow before the timer ever gets to use it.
+        spec.setHash()
     }
     if (spec.saveState.save !== null) {
         await applyFromServer()

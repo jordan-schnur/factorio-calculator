@@ -53,20 +53,6 @@ export function mergeFragment(settings, fetched, overrides) {
     return out
 }
 
-// Drops belt/buildings/mprod/planet keys that hold their engine-default
-// value, so a fragment that (unusually) spells out a default explicitly
-// compares equal to one that omits it -- used to compare a merged fragment
-// against the fragment already on the page before deciding to reload.
-export function normalizeDefaults(settings) {
-    let out = new Map(settings)
-    for (let key of Object.keys(DEFAULTS)) {
-        if (out.get(key) === DEFAULTS[key]) {
-            out.delete(key)
-        }
-    }
-    return out
-}
-
 function sortedBuildings(buildings) {
     let out = {}
     for (let key of Object.keys(buildings || {}).sort()) {
@@ -96,8 +82,8 @@ export function signatureOf(fetched) {
 }
 
 // No `zip=` here: the page re-zips (or not) when it next calls
-// spec.setHash(); this is only used to compare "did the merge change
-// anything" and to build the plain fragment savesettings.js writes.
+// spec.setHash(); this only builds the plain fragment savesettings.js
+// writes into location.hash.
 export function serialize(settings) {
     return [...settings].map(([k, v]) => `${k}=${v}`).join("&")
 }
