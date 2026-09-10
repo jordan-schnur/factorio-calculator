@@ -9,8 +9,21 @@ const NOTHING_BUILDS_IT = 'Nothing here builds it: it is on the "supplied from e
 const OPEN_FROM_ANY_ITEM = "Open this tab from any item: click its name in the Factory table, a node in Flow, or pick from the list on the left."
 
 const HUNDRED = Rational.from_float(100)
-const MILLION = Rational.from_float(1e6)
+const THOUSAND = Rational.from_float(1000)
 const RATE_SUFFIX = {s: "/s", m: "/min", h: "/h"}
+// Mirrors calc/display.js's powerRepr, which this module cannot import
+// (display.js is slated for deletion): step the watt value up through
+// kW/MW/GW/TW until it is under 1000 of the current unit.
+const POWER_SUFFIXES = [" W", "kW", "MW", "GW", "TW", "PW"]
+
+function powerRepr(watts) {
+    let i = 0
+    while (THOUSAND.less(watts) && i < POWER_SUFFIXES.length - 1) {
+        watts = watts.div(THOUSAND)
+        i++
+    }
+    return {power: watts, suffix: POWER_SUFFIXES[i]}
+}
 
 // belts is a Rational belt count, not an integer: a quarter of a belt still
 // needs its own lane.
@@ -116,8 +129,7 @@ function renderWhereList(spec, totals) {
             r.classList.add("hot")
         }
         r.addEventListener("click", () => {
-            spec.whereItem = item.key
-            renderWhere(spec, spec.lastTotals)
+            document.dispatchEvent(new CustomEvent("calc:where", {detail: {item: item.key}}))
         })
         list.appendChild(r)
     }
@@ -162,8 +174,10 @@ function headerFrame(spec, totals, item, supplied) {
     f.appendChild(text(RATE_SUFFIX[spec.format.rateName] || "")).className = "muted"
 
     if (supplied) {
-        let button = text("Build it here instead")
+        let button = document.createElement("button")
+        button.type = "button"
         button.className = "btn"
+        button.textContent = "Build it here instead"
         button.addEventListener("click", () => {
             document.dispatchEvent(new CustomEvent("calc:toggle-supplied", {detail: {item: item.key}}))
         })
@@ -264,7 +278,10 @@ function whatIfSection(spec, totals, item) {
             spec.ignore.add(item)
         }
         for (let [recipe, rate] of t2.rates) {
-            if (!recipe.isReal()) {
+            // Skip the solver's sink pseudo-recipes and the D- disabled
+            // recipe: the latter still stands in for a second item that
+            // remains supplied even with this one built locally.
+            if (!recipe.isReal() || recipe.isDisable()) {
                 continue
             }
             let before = totals.rates.get(recipe) || zero
@@ -284,15 +301,13 @@ function whatIfSection(spec, totals, item) {
     } else if (rows.length === 0) {
         body = [muted("Building it here would not add any recipes.")]
     } else {
-        let power = muted(`+${powerDelta.div(MILLION).toDecimal(1)} MW`)
-        body = [...rows, power]
+        let {power, suffix} = powerRepr(powerDelta)
+        body = [...rows, muted(`+${power.toDecimal(1)} ${suffix}`)]
     }
     return frame("If you built it here", "what it would add to this factory", body)
 }
 
-export function renderWhere(spec, totals) {
-    renderWhereList(spec, totals)
-
+function renderWhereMain(spec, totals) {
     let main = document.getElementById("where-main")
     main.textContent = ""
     let item = spec.whereItem ? spec.items.get(spec.whereItem) : null
@@ -333,12 +348,19 @@ export function renderWhere(spec, totals) {
     main.appendChild(muted(OPEN_FROM_ANY_ITEM, "font-size: 13px; padding: 0 4px;"))
 }
 
+export function renderWhere(spec, totals) {
+    renderWhereList(spec, totals)
+    renderWhereMain(spec, totals)
+}
+
 export function initWhere() {
     document.addEventListener("calc:where", e => {
         spec.whereItem = e.detail.item
         clickTab("where")
         renderWhere(spec, spec.lastTotals)
     })
-    document.getElementById("where-filter").addEventListener("input", () => renderWhere(spec, spec.lastTotals))
+    // The filter only narrows the left-hand list; re-rendering the main
+    // column too would re-run the what-if solve() on every keystroke.
+    document.getElementById("where-filter").addEventListener("input", () => renderWhereList(spec, spec.lastTotals))
     registerRenderer(renderWhere)
 }
