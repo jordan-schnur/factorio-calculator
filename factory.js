@@ -12,18 +12,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 import { Formatter } from "./align.js"
-import { renderDebug } from "./debug.js"
-import { displayItems } from "./display.js"
-import { currentTab } from "./events.js"
 import { formatSettings } from "./fragment.js"
 import { ModuleSpec } from "./module.js"
 import { PriorityList } from "./priority.js"
 import { Rational, zero, half, one } from "./rational.js"
 import { DISABLED_RECIPE_PREFIX } from "./recipe.js"
+import { renderAll } from "./render.js"
 import { solve } from "./solve.js"
 import { BuildTarget } from "./target.js"
-import { reapTooltips } from "./tooltip.js"
-import { renderTotals } from "./visualize.js"
 
 const DEFAULT_ITEM_KEY = "advanced-circuit"
 
@@ -156,6 +152,12 @@ class FactorySpecification {
 
         this.priority = null
         this.defaultPriority = null
+
+        // Which save the settings came from, and which of them the user has
+        // since overridden by hand. Fragment keys save=, follow=, ov=.
+        this.saveState = {save: null, follow: false, overrides: new Set()}
+        // The item the "Where it goes" tab is open on. Fragment key item=.
+        this.whereItem = null
 
         this.format = new Formatter()
 
@@ -740,20 +742,7 @@ class FactorySpecification {
     // from changing the speed of a building), then we need merely re-display
     // the existing solution.
     display() {
-        // Update build target text boxes, if needed.
-        for (let target of this.buildTargets) {
-            target.getRate()
-        }
-        displayItems(this, this.lastTotals)
-        if (currentTab === "graph") {
-            renderTotals(this.lastTotals, this.ignore)
-        }
-        reapTooltips()
-        this.setHash()
-
-        if (this.debug) {
-            renderDebug()
-        }
+        renderAll(this, this.lastTotals)
     }
 }
 

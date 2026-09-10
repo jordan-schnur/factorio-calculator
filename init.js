@@ -12,32 +12,49 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 import { getBelts } from "./belt.js"
+import { initBoard } from "./board.js"
 import { getBuildings } from "./building.js"
-import { resetDisplay } from "./display.js"
+import { setTab } from "./events.js"
 import { spec, resetSpec } from "./factory.js"
+import { initFlow } from "./flow.js"
 import { formatSettings, loadSettings } from "./fragment.js"
 import { getFuel } from "./fuel.js"
 import { getItemGroups } from "./group.js"
 import { getSprites } from "./icon.js"
+import { initInputs } from "./inputs.js"
 import { getItems } from "./item.js"
 import { getModules } from "./module.js"
 import { getPlanets } from "./planet.js"
 import { getRecipes } from "./recipe.js"
-import { currentMod, MODIFICATIONS, renderDataSetOptions, renderSettings } from "./settings.js"
-
-function reset() {
-    window.location.hash = ""
-    resetDisplay()
-    resetSpec()
-}
+import { registerRenderer } from "./render.js"
+import { initSaveSettings, applySaveSettings } from "./savesettings.js"
+import { initScratchpad } from "./scratchpad.js"
+import { initSearch } from "./search.js"
+import { currentMod, MODIFICATIONS, initSettingsTab, renderDataSetOptions, renderSettings } from "./settings.js"
+import { initSupplied } from "./supplied.js"
+import { initTable } from "./table.js"
+import { initTargets } from "./targets.js"
+import { reapTooltips } from "./tooltip.js"
+import { initWhere } from "./whereitgoes.js"
 
 export function changeMod() {
     let currentSettings = loadSettings("#" + formatSettings())
     currentSettings.delete("data")
     let modName = currentMod()
-    reset()
-    console.log("settings on reset:", currentSettings)
+    window.location.hash = ""
+    resetSpec()
+    applyPageState(currentSettings)
     loadData(modName, currentSettings)
+}
+
+// Re-parses the fragment into a fresh spec and re-solves. The UI modules are
+// not re-initialized: their renderers are already registered, and renderAll()
+// calls them again at the end of the solve.
+export function reloadFromHash() {
+    let settings = loadSettings(window.location.hash)
+    resetSpec()
+    applyPageState(settings)
+    loadData(currentMod(), settings)
 }
 
 let OIL_EXCLUSION = new Map([
@@ -82,13 +99,57 @@ function fixLegacySettings(settings) {
     }
 }
 
+// The page state that lives on the spec rather than in Kirk's render*
+// functions. Runs before the dataset is loaded, so it must not call anything
+// that reads the spec's game data -- notably spec.setHash().
+function applyPageState(settings) {
+    spec.saveState.save = settings.has("save") ? decodeURIComponent(settings.get("save")) : null
+    spec.saveState.follow = settings.get("follow") === "1"
+    let ov = settings.get("ov")
+    spec.saveState.overrides = new Set(ov ? ov.split(",") : [])
+    spec.whereItem = settings.has("item") ? settings.get("item") : null
+    setTab(settings.get("tab"))
+}
+
+// display() is now nothing but renderAll(), so the bookkeeping it used to do
+// runs as the first renderer: before any module renders, the fragment and the
+// build-target inputs match the solution that is about to be drawn.
+function renderHousekeeping(spec) {
+    for (let target of spec.buildTargets) {
+        target.getRate()
+    }
+    reapTooltips()
+    spec.setHash()
+}
+
+let modulesInitialized = false
+
+function initModules() {
+    if (modulesInitialized) {
+        return
+    }
+    modulesInitialized = true
+    registerRenderer(renderHousekeeping)
+    initSearch()
+    initTargets()
+    initTable()
+    initInputs()
+    initSupplied()
+    initScratchpad()
+    initFlow()
+    initWhere()
+    initSettingsTab()
+    initBoard()
+    initSaveSettings()
+}
+
 export let useLegacyCalculation
 
 function loadData(modName, settings) {
     let mod = MODIFICATIONS.get(modName)
     useLegacyCalculation = mod.legacy
     let filename = "data/" + mod.filename
-    d3.json(filename, {cache: "reload"}).then(function(data) {
+    return d3.json(filename, {cache: "reload"}).then(function(data) {
         let items = getItems(data)
         let recipes = getRecipes(data, items)
         let planets = getPlanets(data, recipes)
@@ -103,6 +164,8 @@ function loadData(modName, settings) {
         fixLegacySettings(settings)
         renderSettings(settings)
 
+        initModules()
+
         spec.updateSolution()
     })
 }
@@ -110,5 +173,8 @@ function loadData(modName, settings) {
 export function init() {
     let settings = loadSettings(window.location.hash)
     renderDataSetOptions(settings)
-    loadData(currentMod(), settings)
+    applyPageState(settings)
+    // applySaveSettings starts the follow timer, so it runs once per page
+    // life -- not on the reloads it may itself trigger.
+    loadData(currentMod(), settings).then(() => applySaveSettings(settings))
 }

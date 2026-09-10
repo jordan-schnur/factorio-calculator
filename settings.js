@@ -12,8 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, longRateNames } from "./align.js"
-import { colorSchemes } from "./color.js"
-import { DEFAULT_TAB, clickTab, DEFAULT_VISUALIZER, visualizerType, setVisualizerType, DEFAULT_RENDER, visualizerRender, setVisualizerRender, visualizerDirection, getDefaultVisDirection, setVisualizerDirection } from "./events.js"
+import { DEFAULT_TAB, clickTab } from "./events.js"
 import { spec, DEFAULT_PLANET, DEFAULT_BELT, DEFAULT_FUEL, buildingSort } from "./factory.js"
 import { getRecipeGroups } from "./groups.js"
 import { changeMod } from "./init.js"
@@ -347,40 +346,6 @@ function renderMiningProd(settings) {
     spec.miningProd = Rational.from_string(mprod).div(Rational.from_float(100))
 }
 
-// color scheme
-export const DEFAULT_COLOR_SCHEME = "default"
-
-export let colorScheme
-
-function renderColorScheme(settings) {
-    let color = DEFAULT_COLOR_SCHEME
-    if (settings.has("c")) {
-        color = settings.get("c")
-    }
-    setColorScheme(color)
-    d3.select("#color_scheme")
-        .on("change", function(event, d) {
-            setColorScheme(event.target.value)
-            spec.display()
-        })
-        .selectAll("option")
-        .data(colorSchemes)
-        .join("option")
-            .attr("value", d => d.key)
-            .property("selected", d => d.key === color)
-            .text(d => d.name)
-}
-
-function setColorScheme(schemeKey) {
-    for (let scheme of colorSchemes) {
-        if (scheme.key === schemeKey) {
-            colorScheme = scheme
-            colorScheme.apply()
-            return
-        }
-    }
-}
-
 // buildings
 
 function renderBuildings(settings) {
@@ -513,29 +478,6 @@ function renderFuel(settings) {
         d => d === spec.fuel,
         fuelHandler,
     )
-}
-
-// visualizer
-
-function renderVisualizer(settings) {
-    if (settings.has("vt")) {
-        setVisualizerType(settings.get("vt"))
-    } else {
-        setVisualizerType(DEFAULT_VISUALIZER)
-    }
-    d3.select(`#${visualizerType}_type`).property("checked", true)
-    if (settings.has("vr")) {
-        setVisualizerRender(settings.get("vr"))
-    } else {
-        setVisualizerRender(DEFAULT_RENDER)
-    }
-    d3.select(`#${visualizerRender}_render`).property("checked", true)
-    if (settings.has("vd")) {
-        setVisualizerDirection(settings.get("vd"))
-    } else {
-        setVisualizerDirection(getDefaultVisDirection())
-    }
-    d3.select(`#${visualizerDirection}_direction`).property("checked", true)
 }
 
 // default module
@@ -843,12 +785,9 @@ function renderResourcePriorities(settings) {
     }
 }
 
-// debug
-
-function renderDebugCheckbox(settings) {
-    spec.debug = settings.has("debug")
-    d3.select("#render_debug").property("checked", spec.debug)
-}
+// Placeholder: init.js calls this once at boot; the settings-tab unit fills
+// it in with the from-save panel and the restyled overrides.
+export function initSettingsTab() {}
 
 export function renderSettings(settings) {
     renderTitle(settings)
@@ -857,17 +796,14 @@ export function renderSettings(settings) {
     renderPrecisions(settings)
     renderValueFormat(settings)
     renderMiningProd(settings)
-    renderColorScheme(settings)
     renderBuildings(settings)
     renderBelts(settings)
     renderFuel(settings)
-    renderVisualizer(settings)
     renderDefaultModule(settings)
     renderDefaultBeacon(settings)
     renderResourcePriorities(settings)
     renderRecipes(settings)
     renderTargets(settings)
     renderModules(settings)
-    renderDebugCheckbox(settings)
     renderTab(settings)
 }

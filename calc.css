@@ -1,62 +1,159 @@
-:root {
-    /* main background, dropdown backgrounds */
-    --dark: #171717;
-    /* tooltip background; should be same as dark, but with alpha channel */
-    --dark-overlay: rgba(23, 23, 23, 0.8);
-    /* visualization node backgrounds, button backgrounds */
-    --medium: #212427;
-    /* background of main visual area */
-    --main: #272b30;
-    /* input field backgrounds, collapsed dropdown borders */
-    --light: #3a3f44;
+/* Factorio Companion's calculator page.
 
-    /* main foreground text color */
-    --foreground: #c8c8c8;
-    /* makes things stand out */
-    --accent: #ff7200;
-    /* slightly brighter than main foreground color */
-    --bright: #f1fff2;
+The component classes below (.frame .titlebar .deep .slot .row .btn .tab ...)
+come from docs/superpowers/mockups/calculator/style.css; the tail of the file
+keeps the rules from Kirk's original sheet that his surviving components
+still need (tooltips, sprite icons, the dropdown/module widgets and the
+Settings-tab renderers), retinted to the tokens below. */
+
+:root {
+    --bg: #1f1f1f;
+    --frame: #313131;
+    --deep: #242424;
+    --text: #ffe6c0;
+    --accent: #f1be64;
+    --accent-dark: #e39827;
+    --muted: #a8a8a8;
+    --edge-light: #4d4d4d;
+    --edge-dark: #1a1a1a;
+    --input-bg: #1c1c1c;
+    --green: #6fc873;
+    --red: #e05a5a;
+
+    /* Kirk's variable names, kept alive for the rules at the foot of this
+       file, pointed at the tokens above. */
+    --dark: #242424;
+    --dark-overlay: rgba(36, 36, 36, 0.92);
+    --medium: #2a2a2a;
+    --main: #1f1f1f;
+    --light: #3a3a3a;
+    --foreground: #ffe6c0;
+    --bright: #ffe6c0;
 }
-/* top-level/shared elements */
-body {
-    font-family: sans-serif;
-    color: var(--foreground);
-    background-color: var(--dark);
+
+/* --- the mockup's component set ---------------------------------------- */
+
+body { margin: 0; font-family: "Titillium Web", "Segoe UI", system-ui, sans-serif; font-size: 15px; color: #ffe6c0; background: #1f1f1f; }
+a { color: #f1be64; } a:hover { color: #ffe6c0; }
+.num { font-variant-numeric: tabular-nums; font-weight: 600; }
+.frame { background: #313131; box-shadow: inset 0 1px 0 #4d4d4d, inset 1px 0 0 #4d4d4d, inset 0 -1px 0 #1a1a1a, inset -1px 0 0 #1a1a1a, 0 2px 6px rgba(0,0,0,0.6); padding: 8px; }
+.titlebar { display: flex; align-items: center; gap: 10px; padding: 2px 4px 8px; }
+.title { font-weight: 700; font-size: 17px; color: #ffe6c0; white-space: nowrap; }
+.drag { flex: 1; height: 14px; background: repeating-linear-gradient(135deg, #3f3f3f 0 2px, #2a2a2a 2px 5px); box-shadow: inset 0 1px 0 #4a4a4a, inset 0 -1px 0 #1a1a1a; }
+.deep { background: #242424; box-shadow: inset 0 2px 4px rgba(0,0,0,0.7), inset 0 -1px 0 #3d3d3d, inset 1px 0 0 #1a1a1a; padding: 6px; }
+.slot { width: 36px; height: 36px; background: linear-gradient(#3d3d3d, #303030); box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -1px 0 #1a1a1a, 0 0 0 1px #1a1a1a; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.slot img { width: 28px; height: 28px; }
+.slot-sm { width: 26px; height: 26px; }
+.slot-sm img { width: 20px; height: 20px; }
+.slot-lg { width: 44px; height: 44px; }
+.slot-lg img { width: 34px; height: 34px; }
+.slot.sel { box-shadow: inset 0 0 0 2px #f1be64, 0 0 0 1px #1a1a1a; background: linear-gradient(#5a4a2a, #3d3520); }
+.slot.dim img { opacity: 0.35; }
+.row { display: flex; align-items: center; gap: 10px; padding: 4px 6px; }
+.row:nth-child(even) { background: rgba(255,255,255,0.025); }
+.row.hot { background: rgba(241,190,100,0.12); box-shadow: inset 0 0 0 1px #6a5a30; }
+.btn { background: linear-gradient(#a9a9a9, #8e8e8e); color: #1f1f1f; font-weight: 700; padding: 5px 14px; box-shadow: inset 0 1px 0 #c8c8c8, inset 0 -2px 0 #6a6a6a, 0 1px 3px rgba(0,0,0,0.6); font-size: 14px; white-space: nowrap; border: none; font-family: inherit; cursor: pointer; }
+.btn-green { background: linear-gradient(#6fc873, #4f9e53); color: #fff; box-shadow: inset 0 1px 0 #9ae09c, inset 0 -2px 0 #3a7a3e, 0 1px 3px rgba(0,0,0,0.6); }
+.btn-orange { background: linear-gradient(#f5b464, #e39827); color: #1f1f1f; box-shadow: inset 0 1px 0 #ffd28f, inset 0 -2px 0 #b8741a, 0 1px 3px rgba(0,0,0,0.6); }
+.btn-red { background: linear-gradient(#e05a5a, #c43e3e); color: #fff; box-shadow: inset 0 1px 0 #f08a8a, inset 0 -2px 0 #8f2b2b, 0 1px 3px rgba(0,0,0,0.6); }
+.btn-sm { padding: 2px 8px; font-size: 13px; }
+.tab { padding: 6px 18px; background: linear-gradient(#3a3a3a, #2c2c2c); color: #a8a8a8; font-weight: 700; box-shadow: inset 0 1px 0 #4a4a4a, inset 0 -1px 0 #1a1a1a; border: none; font-family: inherit; font-size: 15px; cursor: pointer; }
+.tab.on { background: #313131; color: #ffe6c0; box-shadow: inset 0 2px 0 #f1be64, inset 1px 0 0 #4d4d4d, inset -1px 0 0 #1a1a1a; }
+.h { font-weight: 700; color: #ffe6c0; }
+.muted { color: #a8a8a8; font-weight: 400; }
+.sec { font-weight: 700; color: #ffe6c0; padding: 10px 6px 4px; display: flex; align-items: center; gap: 10px; }
+.sec::after { content: ""; flex: 1; height: 2px; background: #3d3d3d; box-shadow: 0 1px 0 #1a1a1a; }
+input { background: #1c1c1c; box-shadow: inset 0 2px 3px rgba(0,0,0,0.8), inset 0 -1px 0 #454545; border: none; color: #ffe6c0; padding: 6px 8px; font: inherit; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: #3a3a3a; box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -1px 0 #1a1a1a; padding: 2px 8px 2px 2px; font-weight: 600; }
+.kv { display: flex; align-items: center; gap: 8px; padding: 3px 6px; }
+.machines { width: 120px; display: flex; align-items: center; gap: 6px; }
+.machines .num { font-size: 18px; }
+.c-name { width: 230px; }
+.c-out { width: 110px; text-align: right; }
+.c-belt { width: 90px; text-align: right; }
+.node { position: absolute; width: 210px; box-sizing: border-box; background: #313131; box-shadow: inset 0 1px 0 #4d4d4d, inset 1px 0 0 #4d4d4d, inset 0 -1px 0 #1a1a1a, inset -1px 0 0 #1a1a1a, 0 2px 6px rgba(0,0,0,0.6); padding: 4px 6px; display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.node.inp { background: #2a2a2a; box-shadow: inset 0 0 0 1px #4d4d4d, 0 2px 6px rgba(0,0,0,0.6); }
+.node.tgt { box-shadow: inset 0 0 0 2px #f1be64, 0 2px 6px rgba(0,0,0,0.6); }
+.lbl { position: absolute; background: #1f1f1f; color: #ffe6c0; font-size: 12px; font-weight: 600; padding: 0 5px; box-shadow: 0 0 0 1px #3d3d3d; transform: translate(-50%, -50%); white-space: nowrap; }
+.bar { height: 12px; background: linear-gradient(#f5b464, #e39827); box-shadow: inset 0 1px 0 #ffd28f, inset 0 -1px 0 #b8741a; }
+.bartrack { flex: 1; height: 12px; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8); }
+.tip { background: #313131; box-shadow: 0 0 0 1px #4d4d4d, 0 4px 12px rgba(0,0,0,0.8); padding: 8px 10px; font-size: 13px; }
+.key { display: inline-block; background: #3a3a3a; box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -2px 0 #1a1a1a; padding: 0 6px; font-size: 12px; font-weight: 700; color: #ffe6c0; }
+.radio { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.dot { width: 14px; height: 14px; border-radius: 50%; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8), 0 0 0 1px #4d4d4d; }
+.dot.on { background: radial-gradient(#f1be64 40%, #1c1c1c 48%); }
+.check { width: 16px; height: 16px; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8), 0 0 0 1px #4d4d4d; display: inline-flex; align-items: center; justify-content: center; color: #f1be64; font-weight: 700; font-size: 13px; }
+
+/* --- page layout -------------------------------------------------------- */
+
+#page {
+    padding: 16px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 100vh;
 }
-a {
-    text-decoration: none;
-    color: var(--accent);
+#titlebar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    position: relative;
 }
-a:active, a:hover {
-    color: var(--bright);
+#save-picker {
+    background: var(--input-bg);
+    box-shadow: inset 0 2px 3px rgba(0,0,0,0.8);
+    border: none;
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+    padding: 4px 10px;
 }
-input, select {
-    color: var(--foreground);
-    background-color: var(--light);
-    padding: 0.25em;
-    border: 1px solid var(--light);
-    border-radius: 0.4em;
+#save-status { color: var(--green); font-weight: 600; }
+#page-note { color: var(--red); font-weight: 600; }
+#tabs { display: flex; }
+#board-panel {
+    position: absolute;
+    right: 12px;
+    top: 100%;
+    z-index: 30;
+    width: 360px;
 }
-input:focus, select:focus {
-    border-color: var(--accent);
-    outline: none;
+.pane[hidden] { display: none; }
+#tab-factory {
+    display: grid;
+    grid-template-columns: 330px minmax(0, 1fr) 360px;
+    gap: 12px;
 }
-.right-align {
-    text-align: right;
+#tab-where {
+    display: grid;
+    grid-template-columns: 330px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
 }
-button.ui {
-    color: var(--accent);
-    background: linear-gradient(to bottom, var(--light), var(--medium));
-    border: 2px outset var(--light);
-    border-radius: 0.4em;
+#tab-settings {
+    display: grid;
+    grid-template-columns: 460px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
 }
-button.ui:active {
-    border-style: inset;
-}
-button.ui:focus {
-    border-color: var(--accent);
-    outline: none;
-}
+.column { display: flex; flex-direction: column; gap: 12px; }
+#factory-frame, #where-side { align-self: start; }
+#targets { list-style-type: none; margin: 0; padding: 0; }
+#target-search, #where-filter, #scratch-input { width: 100%; box-sizing: border-box; }
+#target-search-results:empty { display: none; }
+#target-search-results { background: var(--frame); box-shadow: inset 0 1px 0 var(--edge-light), 0 2px 6px rgba(0,0,0,0.6); }
+#flow-container { position: relative; min-height: 500px; overflow: hidden; }
+#restore-last { cursor: pointer; }
+.example-target { cursor: pointer; padding-right: 10px; }
+#about { padding: 4px; color: var(--muted); font-size: 13px; }
+#about summary { cursor: pointer; }
+
+/* --- rules Kirk's surviving components still need ----------------------- */
+
+/* icon.js: every icon is a crop of the sprite sheet, positioned by
+   background-position; the width/height attributes it sets must survive. */
 img.icon {
     display: inline-block;
     vertical-align: middle;
@@ -64,19 +161,16 @@ img.icon {
 .ignore {
     opacity: 0.3;
 }
-/* tooltips */
+/* tooltip.js */
 div.tooltip {
     opacity: 1;
     z-index: 20;
 }
 div.tooltip .frame {
-    border: 2px solid var(--bright);
-    border-radius: 5px;
-    background-color: var(--dark-overlay);
+    background: var(--dark-overlay);
+    box-shadow: 0 0 0 1px var(--edge-light), 0 4px 12px rgba(0,0,0,0.8);
     padding: 0.4em;
     text-align: left;
-    opacity: 1;
-    z-index: 20;
 }
 div.tooltip h3 {
     margin: 0;
@@ -102,70 +196,113 @@ div.tooltip div.product span.count {
 div.tooltip img.ingredient {
     background-color: var(--light);
 }
-/* "recent changes" box */
-.changecell {
-    vertical-align: top;
+/* dropdown.js (module pickers, and settings.js's icon lists) */
+.dropdownWrapper {
+    display: inline-block;
 }
-.changebox {
-    margin-left: 3em;
-    padding: 1em;
-    border: 2px solid var(--bright);
-    font-family: monospace;
+.dropdownWrapper .dropdown {
+    border: 2px solid var(--light);
+    border-radius: 5px;
+    background-color: var(--dark);
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    cursor: pointer;
 }
-/* build targets */
-.targetButton {
-    height: 2em;
-    width: 2em;
-    padding: 0;
-    text-align: center;
-    font-weight: bold;
-    font-family: sans-serif;
-    margin-right: 0.5em;
+.dropdownWrapper.open .dropdown {
+    border-color: var(--accent);
+    padding: 0.4em;
+    position: absolute;
+    z-index: 10;
+    transition: height 0.1s;
+    height: auto;
+    width: auto;
+    cursor: default;
 }
-ul#targets {
-    list-style-type: none;
-    margin-top: 0;
+.dropdownWrapper .clicker {
+    display: none;
 }
-ul#targets li {
-    margin: 0.25em;
-    border-radius: 0.5em;
+.dropdownWrapper.open .clicker {
+    display: block;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    top: 0px;
+    left: 0px;
+    cursor: default;
+}
+.dropdownWrapper .dropdown:hover {
+    border-color: var(--accent);
+}
+.dropdownWrapper .spacer {
+    display: none;
+}
+.dropdownWrapper.open .spacer {
+    border: 2px solid transparent;
+    margin: 2px;
+    display: inline-block;
+    vertical-align: middle;
+}
+.dropdownWrapper .dropdown br, .dropdownWrapper .dropdown hr {
+    display: none;
+}
+.dropdownWrapper.open .dropdown br {
+    display: inline;
+}
+.dropdownWrapper.open .dropdown hr {
+    display: block;
+    border-color: var(--accent);
+    border-style: solid;
+}
+.dropdownWrapper .dropdown input[type="radio"] {
+    display: none;
+}
+.dropdownWrapper .dropdown input[type="radio"] + label {
+    border-radius: 5px;
+    display: none;
+    margin: 2px;
+}
+.dropdownWrapper.open .dropdown input[type="radio"] + label {
+    display: inline-block;
+}
+.dropdownWrapper .dropdown input[type="radio"] + label:hover {
+    background-color: var(--light);
+}
+.dropdownWrapper .dropdown input[type="radio"]:checked + label {
+    display: inline-block;
+    pointer-events: none;
+}
+.dropdownWrapper.open .dropdown input[type="radio"]:checked + label {
+    background-color: var(--light);
+    pointer-events: auto;
+}
+.dropdownWrapper .dropdown .search {
+    display: none;
+    width: 100%;
+    padding-left: 0.4em;
+    margin-bottom: 0.4em;
+}
+.dropdownWrapper.open .dropdown .search {
+    display: block;
+}
+.dropdownWrapper.open div.itemDropdown {
+    height: 400px;
+    width: 380px;
+    overflow-y: scroll;
 }
 label.selected {
     font-weight: bold;
     color: var(--bright);
 }
-/* settings */
-table#settings {
-    border-collapse: collapse;
+/* module.js's moduleDropdown */
+.moduleRow {
+    white-space: nowrap;
 }
-tr.setting-section td {
-    padding-top: 1em;
-    padding-bottom: 0.5em;
+.module-wrapper, .input {
+    display: inline-block;
 }
-tr.setting-section td span {
-    color: var(--accent);
-    font-style: italic;
-}
-tr.setting-section td hr {
-    display: block;
-    border: 1px solid var(--accent);
-}
-tr.setting-row td:first-child {
-    padding-left: 3em;
-}
-td.setting-label {
-    text-align: right;
-}
-div#miner_settings, div#alt_recipe_settings {
-    padding-left: 3em;
-}
-.top, .top-icon {
-    vertical-align: top;
-}
-.top-icon > div {
-    height: 40px;
-    line-height: 40px;
-}
+/* settings.js's renderers, until the settings-tab unit restyles them */
 input.prec, input.mprod {
     width: 4em;
 }
@@ -175,13 +312,12 @@ input.prec, input.mprod {
 .radio-setting input[type="radio"] + label {
     cursor: pointer;
     background: var(--light);
-    border-radius: 4px;
     display: inline-block;
     margin: 2px;
     padding: 2px;
 }
 .radio-setting input[type="radio"] + label:hover {
-    background: var(--bright);
+    background: var(--edge-light);
 }
 .radio-setting input[type="radio"]:checked + label {
     background: var(--accent);
@@ -189,7 +325,6 @@ input.prec, input.mprod {
 .toggle-list .toggle {
     cursor: pointer;
     display: inline-block;
-    border-radius: 4px;
     border: 2px solid var(--light);
     margin: 2px;
     padding: 2px;
@@ -201,12 +336,12 @@ input.prec, input.mprod {
 .toggle-list .selected {
     border-color: var(--accent);
 }
-.toggle-list .selected:hover {
-    /*border-color: var(--accent);*/
+span.beacon-container {
+    background-color: var(--light);
+    padding: 0.5em;
 }
 #resource_settings {
     border: 2px solid var(--light);
-    border-radius: 5px;
     background-color: var(--dark);
 }
 #resource_settings .resource-tier {
@@ -259,198 +394,4 @@ table.resource input[type="radio"] + label:hover {
 }
 table.resource input[type="radio"]:checked + label {
     fill: var(--accent);
-}
-/* tabs */
-div.tabs {
-    overflow: hidden;
-}
-div.tabs button.tab_button {
-    color: var(--accent);
-    background-color: inherit;
-    border-top-left-radius: 0.25em;
-    border-top-right-radius: 0.25em;
-    float: left;
-    border: none;
-    outline: none;
-    cursor: pointer;
-    padding: 0.5em;
-}
-div.tabs button.tab_button:hover {
-    background-color: var(--medium);
-}
-div.tabs button.active, div.tabs button.active:hover {
-    color: var(--bright);
-    background-color: var(--main);
-}
-button#debug_button {
-    float: right;
-}
-div.tab {
-    display: none;
-    padding: 0.5em;
-    background-color: var(--main);
-}
-/* visualizer */
-div.graph {
-    /*min-width: max-content;*/
-}
-div.graph_setting {
-    display: inline-block;
-    vertical-align: middle;
-    margin-left: 1em;
-    margin-right: 1em;
-}
-#graph_type input[type="radio"] {
-    display: none;
-}
-#graph_type input[type="radio"] + label:hover {
-    color: var(--bright);
-}
-#graph_type input[type="radio"]:checked + label {
-    color: var(--accent);
-}
-#graph_type input[type="radio"]:checked + label:hover {
-    color: var(--accent);
-}
-g.node rect {
-    /*stroke: var(--foreground);*/
-    stroke-width: 1px;
-}
-g.overlay {
-    cursor: pointer;
-}
-g.node .colon {
-    stroke: none;
-    fill: var(--foreground);
-}
-rect.nodeHighlight {
-    stroke: var(--accent);
-}
-g.edgePathHighlight .highlighter {
-    stroke: var(--accent);
-}
-svg.sankey g.edgePathHighlight .highlighter {
-    stroke-opacity: 0.7;
-}
-g.edgePathHighlight rect.highlighter {
-    fill-opacity: 1;
-}
-g.fuel path, path.fuel {
-    stroke-dasharray: 10,5;
-}
-svg#graph {
-    display: block;
-}
-svg#graph text, svg.test text {
-    stroke: none;
-    fill: var(--foreground);
-    /*font: 12px sans-serif;*/
-}
-/* items tab */
-#totals {
-    border-collapse: collapse;
-}
-#totals.nosurplus .surplus {
-    display: none;
-}
-.pad-right {
-    padding-right: 1em;
-}
-tr.display-row td.pad, th.pad {
-    padding-left: 1em;
-}
-tr.display-row .item-icon img {
-    cursor: pointer;
-}
-tr.display-row td, tr.factory-header th, tr.breakdown-row td, tr.power-row td {
-    padding-top: 8px;
-    padding-bottom: 8px;
-}
-tbody.display-group > tr:first-child td, tr.power-row td {
-    border-top: 1px solid var(--light);
-}
-tbody.display-group.multi td.leftmost {
-    border-left: 1px solid var(--light);
-}
-tr.nobuilding td.building > *{
-    display: none;
-}
-tr.nomodule td.module > *{
-    display: none;
-}
-tr.noitem td.item > * {
-    display: none;
-}
-td.belt-count-cell.hide {
-    display: none;
-}
-span.beacon-container {
-    background-color: var(--light);
-    padding: 0.5em;
-}
-svg.popout {
-    color: var(--accent);
-    width: 16;
-    height: 16;
-}
-/* breakdowns */
-.breakdown-open .breakdown-arrow {
-    transform: rotate(90deg);
-}
-.breakdown-arrow {
-    color: var(--foreground);
-    cursor: pointer;
-    transition: transform 0.25s;
-}
-.breakdown-arrow:hover {
-    color: var(--accent);
-}
-.breakdown {
-    display: none;
-    height: 0;
-}
-.breakdown.breakdown-open {
-    display: table-row;
-    height: auto;
-    transition: height 0.25s;
-}
-.breakdown table {
-    border-collapse: collapse;
-    border-left: solid 0.5em var(--medium);
-    border-right: solid 0.5em var(--medium);
-    background: var(--medium);
-    border-radius: 0.25em;
-}
-.usage-arrow {
-    vertical-align: middle;
-    rotate: 180deg;
-}
-.breakdown-first-output td {
-    border-top: 1px solid var(--light);
-}
-/* dropdowns */
-.dropdownWrapper .dropdown .search {
-    display: none;
-    width: 100%;
-    padding-left: 0.4em;
-    margin-bottom: 0.4em;
-}
-.dropdownWrapper.open .dropdown .search {
-    display: block;
-}
-.dropdownWrapper.open div.itemDropdown {
-    height: 400px;
-    width: 380px;
-    overflow-y: scroll;
-    transition: height 0.3s;
-}
-/* about */
-.about-content {
-    max-width: 40em;
-}
-/* footer */
-#footer {
-    border-top: 3px solid var(--accent);
-    padding-top: 2px;
-    background-color: var(--medium);
 }

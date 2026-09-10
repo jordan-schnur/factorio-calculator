@@ -12,10 +12,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT } from "./align.js"
-import { DEFAULT_TAB, currentTab, DEFAULT_VISUALIZER, visualizerType, DEFAULT_RENDER, visualizerRender, isDefaultVisDirection, visualizerDirection } from "./events.js"
+import { DEFAULT_TAB, currentTab } from "./events.js"
 import { spec, DEFAULT_BELT, DEFAULT_FUEL } from "./factory.js"
 import { Rational } from "./rational.js"
-import { currentMod, DEFAULT_TITLE, DEFAULT_COLOR_SCHEME, colorScheme } from "./settings.js"
+import { currentMod, DEFAULT_TITLE } from "./settings.js"
 import { sorted } from "./sort.js"
 
 function getModuleKey(module) {
@@ -40,9 +40,6 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     }
     if (tab !== DEFAULT_TAB) {
         settings += "tab=" + tab + "&"
-    }
-    if (colorScheme.key !== DEFAULT_COLOR_SCHEME) {
-        settings += "c=" + colorScheme.key + "&"
     }
     if (spec.format.rateName !== DEFAULT_RATE) {
         settings += "rate=" + spec.format.rateName + "&"
@@ -97,16 +94,6 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     if (!spec.defaultBeaconCount.isZero()) {
         settings += "dbc=" + spec.defaultBeaconCount.toDecimal(0) + "&"
     }
-    if (visualizerType !== DEFAULT_VISUALIZER) {
-        settings += "vt=" + visualizerType + "&"
-    }
-    if (visualizerRender !== DEFAULT_RENDER) {
-        settings += "vr=" + visualizerRender + "&"
-    }
-    if (!isDefaultVisDirection()) {
-        settings += "vd=" + visualizerDirection + "&"
-    }
-
     settings += "items="
     let targetStrings = []
     if (targets) {
@@ -135,6 +122,21 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     }
     if (ignore.length > 0) {
         settings += "&ignore=" + ignore.join(",")
+    }
+
+    // An empty save name means "whichever save is newest", so it is written
+    // out as `save=` rather than omitted.
+    if (spec.saveState.save !== null) {
+        settings += "&save=" + encodeURIComponent(spec.saveState.save)
+    }
+    if (spec.saveState.follow) {
+        settings += "&follow=1"
+    }
+    if (spec.saveState.overrides.size > 0) {
+        settings += "&ov=" + [...spec.saveState.overrides].join(",")
+    }
+    if (spec.whereItem !== null) {
+        settings += "&item=" + spec.whereItem
     }
 
     if (!spec.isDefaultPlanet()) {
