@@ -108,22 +108,17 @@ export function edgePath(e) {
     return `M ${e.x1} ${e.y1} C ${e.x1 + dx} ${e.y1}, ${e.x2 - dx} ${e.y2}, ${e.x2} ${e.y2}`
 }
 
-// Layered, left-to-right layout ported from the graph-first prototype's
-// renderVals() (docs/superpowers/mockups/calculator/graph-first/Main.tpl.html),
-// plus cycle breaking so a recipe loop (e.g. a chemical-plant cycle) still
-// ranks every node instead of recursing forever. Column 0 is everything
-// brought in (sources); the last column is every sink (targets and anything
-// else nothing consumes), pinned there even if its longest path is shorter.
-export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 10, rowGap = 22, colGap = 96, headerHeight = 46} = {}) {
-    if (model.nodes.length === 0) return {nodes: [], edges: [], columns: [], width: 0, height: 0}
+// Ranks a model: cycle-breaking DFS, then longest path from the sources,
+// then sinks pinned to the last rank. Returned separately from layered()
+// so flow.js can rank the FULL model and lay out only the visible part
+// of it -- a folded card then keeps its stage column instead of being
+// re-ranked as a source. `rankEdges` are the model's edges minus the
+// back edges the DFS dropped.
+export function rankNodes(model) {
     const ids = model.nodes.map(n => n.id)
-    const nodeById = new Map(model.nodes.map(n => [n.id, n]))
-    const out = new Map(ids.map(id => [id, []]))   // forward adjacency, for ranking only
+    const out = new Map(ids.map(id => [id, []]))
     const inn = new Map(ids.map(id => [id, []]))
-
-    // 1. Break cycles: DFS, drop back edges from the ranking graph.
     const state = new Map()  // 0 unvisited, 1 on stack, 2 done
-    const rankEdges = []
     for (const e of model.edges) out.get(e.source).push(e.target)
     const back = new Set()
     const visit = (v) => {
@@ -136,9 +131,8 @@ export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 
         state.set(v, 2)
     }
     for (const id of ids) if (!state.get(id)) visit(id)
+    const rankEdges = []
     for (const e of model.edges) if (!back.has(e.source + "|" + e.target)) { rankEdges.push(e); inn.get(e.target).push(e.source) }
-
-    // 2. Rank: longest path from sources (memoised DFS over rankEdges), then pin sinks to the max rank.
     const rank = new Map()
     const rankOf = (v) => {
         if (rank.has(v)) return rank.get(v)
@@ -149,9 +143,40 @@ export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 
         return r
     }
     ids.forEach(rankOf)
-    const maxRank = Math.max(...rank.values())
+    pinSinks(ids, rank, rankEdges)
+    return {rank, rankEdges}
+}
+
+function pinSinks(ids, rank, rankEdges) {
+    const maxRank = ids.length ? Math.max(...rank.values()) : 0
     const hasOut = new Set(rankEdges.map(e => e.source))
     for (const id of ids) if (!hasOut.has(id)) rank.set(id, maxRank)
+}
+
+// Layered, left-to-right layout ported from the graph-first prototype's
+// renderVals() (docs/superpowers/mockups/calculator/graph-first/Main.tpl.html),
+// plus cycle breaking so a recipe loop (e.g. a chemical-plant cycle) still
+// ranks every node instead of recursing forever. Column 0 is everything
+// brought in (sources); the last column is every sink (targets and anything
+// else nothing consumes), pinned there even if its longest path is shorter.
+export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 10, rowGap = 22, colGap = 96, headerHeight = 46, ranks = null} = {}) {
+    if (model.nodes.length === 0) return {nodes: [], edges: [], columns: [], width: 0, height: 0}
+    const ids = model.nodes.map(n => n.id)
+    const nodeById = new Map(model.nodes.map(n => [n.id, n]))
+
+    // 1+2. Rank. With `ranks` (from rankNodes() on the full model) the given
+    // ranks win for every node that has one; the used ranks are then
+    // compressed to 0..k so hiding a whole stage leaves no empty column, and
+    // sinks are pinned to the last column again.
+    const {rank, rankEdges} = rankNodes(model)
+    if (ranks) {
+        for (const id of ids) if (ranks.has(id)) rank.set(id, ranks.get(id))
+        const used = [...new Set(rank.values())].sort((a, b) => a - b)
+        const packed = new Map(used.map((r, i) => [r, i]))
+        for (const [id, r] of rank) rank.set(id, packed.get(r))
+        pinSinks(ids, rank, rankEdges)
+    }
+    const maxRank = Math.max(...rank.values())
 
     // 3. Columns with real and dummy items.
     const ncols = maxRank + 1

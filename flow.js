@@ -7,7 +7,7 @@
 import { registerRenderer } from "./render.js"
 import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
-import { buildFlowModel, layered, machineWord, pluralise, beltText } from "./flow-core.js"
+import { buildFlowModel, layered, rankNodes, machineWord, pluralise, beltText } from "./flow-core.js"
 import { RATE_LABEL } from "./table-core.js"
 
 let lastTotals = null
@@ -477,7 +477,10 @@ function draw(totals) {
     // name (see .node .name in calc.css) needs the extra height, and the
     // extra width keeps a two-word item name like "Piercing rounds
     // magazine" from wrapping to three lines.
-    let laidOut = layered(shown, {nodeWidth: 240, nodeHeight: 72})
+    // Rank the full model so a folded card keeps its stage column (a card
+    // with no visible producers would otherwise rank as a source).
+    let ranks = rankNodes(model).rank
+    let laidOut = layered(shown, {nodeWidth: 240, nodeHeight: 72, ranks})
     lastLayout = laidOut
 
     ensureZoom()
