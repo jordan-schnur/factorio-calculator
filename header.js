@@ -1,35 +1,17 @@
 // calc/header.js — topbar controls: assembler tier, rate unit, ledger
-// toggle, settings drawer, save line.
+// drawer toggle, settings drawer, save line.
 import { registerRenderer } from "./render.js"
 import { markOverride } from "./savesettings.js"
 
-const LEDGER_KEY = "calc.ledger"
-
-function readLedgerOpen() {
-    try {
-        let v = localStorage.getItem(LEDGER_KEY)
-        return v === null ? true : v === "1"
-    } catch (err) {
-        return true
-    }
-}
-
-function writeLedgerOpen(open) {
-    try {
-        localStorage.setItem(LEDGER_KEY, open ? "1" : "0")
-    } catch (err) {
-        // storage may be unavailable (private mode, quota); the toggle
-        // still works for the current page load.
-    }
-}
-
+// The ledger is an overlay drawer over the graph: opening it changes no
+// layout, so no refit (calc:layout) is needed. Closed on every load.
 function applyLedgerOpen(open) {
-    writeLedgerOpen(open)
     let ledger = document.getElementById("ledger")
     let toggle = document.getElementById("ledger-toggle")
+    let frame = document.getElementById("flow-frame")
     if (ledger) ledger.hidden = !open
     if (toggle) toggle.classList.toggle("on", open)
-    document.dispatchEvent(new CustomEvent("calc:layout"))
+    if (frame) frame.classList.toggle("ledger-open", open)
 }
 
 function openSettings() {
@@ -162,7 +144,7 @@ export function initHeader() {
     document.addEventListener("calc:ledger", event => {
         applyLedgerOpen(event.detail.open)
     })
-    applyLedgerOpen(readLedgerOpen())
+    applyLedgerOpen(false)
 
     let settingsOpen = document.getElementById("settings-open")
     if (settingsOpen) settingsOpen.addEventListener("click", openSettings)
@@ -177,6 +159,8 @@ export function initHeader() {
     document.addEventListener("keydown", event => {
         if (event.key !== "Escape") return
         let drawer = document.getElementById("settings-drawer")
-        if (drawer && !drawer.hidden) closeSettings()
+        if (drawer && !drawer.hidden) { closeSettings(); return }
+        let ledger = document.getElementById("ledger")
+        if (ledger && !ledger.hidden) applyLedgerOpen(false)
     })
 }

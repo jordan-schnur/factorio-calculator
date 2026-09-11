@@ -75,20 +75,20 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
         </div>
         <a id="restore-last" hidden>Restore the last factory</a>
       </div>
-    </div>
-    <div class="frame" id="ledger">
-      <div class="ledger-head"><span class="title">Ledger</span><span class="muted">one row per item &middot; click a row to find it</span><div class="spacer"></div><button class="x" id="ledger-close">&#10005;</button></div>
-      <div class="hdr"><div>Item</div><div class="r">Need</div><div>Source</div><div>Machines</div></div>
-      <div class="well" id="ledger-rows"></div>
-      <details id="scratchpad-frame"><summary>Scratch pad</summary>
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <div id="scratch-history"></div>
-          <input class="num" id="scratch-input" placeholder="2 * 450 / 60" autocomplete="off">
-          <div class="num" id="scratch-result" style="font-size: 22px; text-align: right;">=</div>
-          <div class="muted" style="font-size: 13px;"><span class="key">Enter</span> keeps the line &middot; <span class="key">&uarr;</span> recalls &middot; <b>ans</b> is the last result &middot; units like kW, MW, /min pass through.</div>
-          <button class="btn btn-sm" id="scratch-clear">clear</button>
-        </div>
-      </details>
+      <div class="frame" id="ledger" hidden>
+        <div class="ledger-head"><span class="title">Ledger</span><span class="muted">one row per item &middot; click a row to find it</span><div class="spacer"></div><button class="x" id="ledger-close">&#10005;</button></div>
+        <div class="hdr"><div>Item</div><div class="r">Need</div><div>Source</div><div>Machines</div></div>
+        <div class="well" id="ledger-rows"></div>
+        <details id="scratchpad-frame"><summary>Scratch pad</summary>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div id="scratch-history"></div>
+            <input class="num" id="scratch-input" placeholder="2 * 450 / 60" autocomplete="off">
+            <div class="num" id="scratch-result" style="font-size: 22px; text-align: right;">=</div>
+            <div class="muted" style="font-size: 13px;"><span class="key">Enter</span> keeps the line &middot; <span class="key">&uarr;</span> recalls &middot; <b>ans</b> is the last result &middot; units like kW, MW, /min pass through.</div>
+            <button class="btn btn-sm" id="scratch-clear">clear</button>
+          </div>
+        </details>
+      </div>
     </div>
   </div>
   <div id="settings-drawer" hidden>
