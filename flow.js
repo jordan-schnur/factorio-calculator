@@ -107,6 +107,7 @@ function buildModel(totals) {
             from: from === null ? null : from.key,
             to: to.key,
             rate: rate.toFloat(),
+            rateExact: rate,
             belts: item.phase === "solid" ? spec.getBeltCount(rate).toFloat() : 0,
         }))
 
@@ -348,7 +349,15 @@ function nodeMarkup(node, hasUpstreamProduction) {
     mid.className = "mid"
     let name = document.createElement("span")
     name.className = "name"
-    name.textContent = node.label
+    // A single-product recipe's card is titled by its item (e.g. "Petroleum gas"),
+    // not the recipe name, which can run long and get clipped ("Light oil
+    // cracking to…"). Multi-product recipes (advanced oil processing, coal
+    // liquefaction) keep the recipe name since the icon/rate are only the
+    // first product.
+    let recipe = node.kind === "input" ? null : spec.recipes.get(node.id)
+    let title = node.label
+    if (item && recipe && recipe.products.length === 1) title = item.name
+    name.textContent = title
     mid.appendChild(name)
 
     let sub = document.createElement("span")
@@ -450,12 +459,16 @@ function containerSize() {
 // floats over the graph's right side (320px wide plus margin), so the width
 // term is computed against a narrowed W' and centred within it, leaving the
 // height terms (already pinned to the Make panel/bring-in bar) untouched.
+// The ledger drawer (#flow-frame.ledger-open) slides in over the same right
+// side at 520px wide and is reserved the same way, stacking with the
+// details card's width if both are open.
 export function fitToView() {
     if (lastLayout === null || zoomBehavior === null) return
     let {width: W, height: H} = containerSize()
     if (W === 0 || H === 0) return
     let detailsOpen = !document.getElementById("node-details")?.hidden
-    let Wp = detailsOpen ? W - 340 : W
+    let ledgerOpen = document.getElementById("flow-frame")?.classList.contains("ledger-open") ?? false
+    let Wp = W - (detailsOpen ? 340 : 0) - (ledgerOpen ? 520 : 0)
     let k = Math.min(1, (Wp - 40) / lastLayout.width, (H - 190) / lastLayout.height)
     if (!isFinite(k) || k <= 0) return
     let tx = (Wp - lastLayout.width * k) / 2
@@ -559,16 +572,18 @@ function renderEdges(laidOut) {
 
     // Edge rate labels are plain HTML (like the node cards) rather than SVG
     // <text>, positioned at the edge's own midpoint (lx/ly, from layered()).
-    // `d.rate` is per-second (buildModel's links carry rate.toFloat()); a
-    // Rational round-trip through spec.format.rate() converts it to display
-    // units the same way a node's own rate is converted.
+    // `edge.rateExact` is the exact Rational carried from buildModel's links
+    // (null only for a merged edge whose inputs lacked one); falling back to
+    // Rational.from_float(edge.rate) there avoids a float round-trip that
+    // would otherwise print "10.0/min" next to a card reading "10/min".
     let nodesLayer = document.querySelector("#flow-nodes")
     for (let edge of laidOut.edges) {
         let label = document.createElement("div")
         label.className = "elbl num"
         label.style.left = edge.lx + "px"
         label.style.top = edge.ly + "px"
-        label.textContent = `${spec.format.rate(Rational.from_float(edge.rate))}${RATE_LABEL[spec.format.rateName] || "/min"}`
+        let exact = edge.rateExact ?? Rational.from_float(edge.rate)
+        label.textContent = `${spec.format.rate(exact)}${RATE_LABEL[spec.format.rateName] || "/min"}`
         nodesLayer.appendChild(label)
     }
 }
