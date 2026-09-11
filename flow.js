@@ -431,7 +431,10 @@ function nodeMarkup(node, hasUpstreamProduction) {
 // "Hot" edges are the union of the hovered node's and the selected item's
 // node's edges; recomputed wholesale on every hover/selection change rather
 // than toggled incrementally, so hovering the very node that's selected and
-// then leaving it doesn't clear the selection's own highlight.
+// then leaving it doesn't clear the selection's own highlight. Edge labels
+// (`.elbl`) carry the same data-from/data-to as their edge and follow it,
+// so a hot label survives zoomed-out label hiding (see the `small` toggle
+// in ensureZoom()).
 function refreshEdgeHot() {
     let ids = new Set()
     if (hoverId !== null) ids.add(hoverId)
@@ -442,6 +445,9 @@ function refreshEdgeHot() {
     }
     document.querySelectorAll("#flow path.edge").forEach(p => {
         p.classList.toggle("hot", ids.has(p.dataset.from) || ids.has(p.dataset.to))
+    })
+    document.querySelectorAll("#flow-nodes .elbl").forEach(l => {
+        l.classList.toggle("hot", ids.has(l.dataset.from) || ids.has(l.dataset.to))
     })
 }
 
@@ -510,8 +516,12 @@ function ensureZoom() {
             let t = event.transform
             let css = `translate(${t.x}px, ${t.y}px) scale(${t.k})`
             if (viewport !== null) viewport.attr("transform", t)
-            document.querySelector("#flow-nodes").style.transform = css
+            let nodesLayer = document.querySelector("#flow-nodes")
+            nodesLayer.style.transform = css
             document.querySelector("#flow-columns").style.transform = css
+            // Below this scale the 11px edge labels overlap into unreadable
+            // clutter on a wide graph; hide the non-hot ones (see calc.css).
+            nodesLayer.classList.toggle("small", t.k < 0.6)
         })
     d3.select("#flow-container").call(zoomBehavior).on("dblclick.zoom", null)
 }
@@ -582,6 +592,8 @@ function renderEdges(laidOut) {
         label.className = "elbl num"
         label.style.left = edge.lx + "px"
         label.style.top = edge.ly + "px"
+        label.dataset.from = edge.source
+        label.dataset.to = edge.target
         let exact = edge.rateExact ?? Rational.from_float(edge.rate)
         label.textContent = `${spec.format.rate(exact)}${RATE_LABEL[spec.format.rateName] || "/min"}`
         nodesLayer.appendChild(label)

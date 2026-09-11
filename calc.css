@@ -144,6 +144,9 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 #node-tip .tiprow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 #node-tip .chip { padding: 1px 6px 1px 2px; font-size: 12px; }
 .elbl { position: absolute; transform: translate(-50%, -50%); font-size: 11px; background: #1f1f1f; color: #d8c7a6; padding: 0 5px; pointer-events: none; }
+/* Zoomed out below 0.6, only labels on a hot (hovered/selected) edge stay visible. */
+#flow-nodes.small .elbl:not(.hot) { display: none; }
+.elbl.hot { color: #f1be64; border: 1px solid #5a4a2a; }
 .node .mid { flex: 1; min-width: 0; text-align: left; overflow: hidden; }
 .node .name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14px; font-weight: 700; white-space: normal; line-height: 1.1; overflow: hidden; }
 .node .sub { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #d8c7a6; white-space: nowrap; overflow: hidden; }
