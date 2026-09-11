@@ -12,7 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, longRateNames } from "./align.js"
-import { DEFAULT_TAB, clickTab } from "./events.js"
 import { spec, DEFAULT_PLANET, DEFAULT_BELT, DEFAULT_FUEL, buildingSort } from "./factory.js"
 import { getRecipeGroups } from "./groups.js"
 import { changeMod } from "./init.js"
@@ -115,15 +114,8 @@ export function currentMod() {
 // 5) The setting's GUI is placed into a consistent state.
 // Remember to add the setting to fragment.js, too!
 
-// tab
-
-function renderTab(settings) {
-    let tabName = DEFAULT_TAB
-    if (settings.has("tab")) {
-        tabName = settings.get("tab")
-    }
-    clickTab(tabName)
-}
+// The page is one screen now (calc/events.js); "tab=" in the fragment is a
+// leftover key from before the redesign, read but no longer acted on.
 
 // build targets
 
@@ -163,7 +155,7 @@ function renderTargets(settings) {
         }
     }
     // No `items=` in the fragment: unlike upstream Kirk, a fresh open shows
-    // the empty state (calc.html's #factory-empty) rather than a default item.
+    // the empty state (calc.html's #flow-empty) rather than a default item.
 }
 
 // modules
@@ -1077,5 +1069,4 @@ export function renderSettings(settings) {
     renderRecipes(settings)
     renderTargets(settings)
     renderModules(settings)
-    renderTab(settings)
 }
