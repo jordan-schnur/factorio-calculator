@@ -315,11 +315,15 @@ export function machineWord(building) {
     if (key.includes("assembling")) return "assembler"
     if (key.includes("furnace")) return "furnace"
     if (key.includes("mining-drill")) return "drill"
-    if (key.includes("chemical") || key.includes("refinery")) return "chem plant"
+    if (key.includes("refinery")) return "refinery"
+    if (key.includes("chemical")) return "chem plant"
     return (building.name || key).toLowerCase()
 }
 
-export function pluralise(count, word) { return `${count} ${word}${count === 1 ? "" : "s"}` }
+export function pluralise(count, word) {
+    if (count === 1) return `${count} ${word}`
+    return `${count} ${word.endsWith("y") ? word.slice(0, -1) + "ies" : word + "s"}`
+}
 
 // belts is a float number of belts
 export function beltText(belts) {

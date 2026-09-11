@@ -9,6 +9,7 @@ import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
 import { buildFlowModel, layered, rankNodes, machineWord, pluralise, beltText } from "./flow-core.js"
 import { RATE_LABEL } from "./table-core.js"
+import { relevantRecipes, isSourceOpen, toggleSourcePopover, closeSourcePopover } from "./source.js"
 
 let lastTotals = null
 let lastRenderKey = null
@@ -195,6 +196,126 @@ function selectNode(itemKey) {
     document.dispatchEvent(new CustomEvent("calc:select", {detail: {item: spec.whereItem}}))
 }
 
+// The source pill: bottom-right of every card whose source can change.
+// Mined/piped resources and single-recipe targets have nothing to pick.
+function sourcePill(node, item, div) {
+    if (item === null || node.kind === "mined") return null
+    let isTarget = node.kind === "target"
+    let n = relevantRecipes(item).length
+    let text, title
+    if (node.kind === "input") {
+        text = "brought in"
+        title = "Brought in from another build · pick a recipe to make it here"
+    } else if (n > 1) {
+        text = `${n} ways`
+        title = `Made ${n} ways · pick the recipe` + (isTarget ? "" : ", or bring it in")
+    } else if (!isTarget) {
+        text = "made here"
+        title = "Made here · or bring it in from another build"
+    } else {
+        return null
+    }
+    let pill = document.createElement("button")
+    pill.type = "button"
+    pill.className = "ways" + (node.kind === "input" ? " in" : "") + (isSourceOpen(item.key) ? " open" : "")
+    pill.dataset.ways = text
+    pill.textContent = `${text} ⌄`
+    pill.title = title
+    pill.addEventListener("click", event => {
+        event.stopPropagation()
+        hideTip()
+        toggleSourcePopover(item.key, div)
+    })
+    pill.addEventListener("pointerdown", event => event.stopPropagation())
+    return pill
+}
+
+// Hover tooltip (#node-tip): recipe, per-craft amounts, machines, hint.
+function showTip(node, item, div) {
+    let tip = document.getElementById("node-tip")
+    if (!tip || item === null) return
+    let recipe = node.kind === "input" ? null : spec.recipes.get(node.id)
+    tip.replaceChildren()
+
+    let head = document.createElement("div")
+    head.className = "tiprow"
+    let slot = document.createElement("span")
+    slot.className = "slot slot-sm"
+    slot.appendChild(item.icon.make(24, true))
+    head.appendChild(slot)
+    let name = document.createElement("span")
+    name.className = "title"
+    name.textContent = item.name
+    head.appendChild(name)
+    let rec = document.createElement("span")
+    rec.className = "muted num"
+    rec.textContent = node.kind === "input" ? "Brought in from another build"
+        : recipe && recipe.isResource() ? "Mined"
+        : recipe ? `${recipe.name} · ${recipe.time.toDecimal(1)} s` : ""
+    head.appendChild(rec)
+    tip.appendChild(head)
+
+    if (recipe && !recipe.isResource() && recipe.ingredients.length > 0) {
+        let row = document.createElement("div")
+        row.className = "tiprow"
+        let lbl = document.createElement("span")
+        lbl.className = "lbl"
+        lbl.textContent = "per craft"
+        row.appendChild(lbl)
+        let chip = (icon, amount) => {
+            let c = document.createElement("span")
+            c.className = "chip num"
+            c.appendChild(icon.make(20, true))
+            c.appendChild(document.createTextNode(amount.toDecimal(2)))
+            return c
+        }
+        for (let ing of recipe.ingredients) row.appendChild(chip(ing.item.icon, ing.amount))
+        let arrow = document.createElement("span")
+        arrow.className = "muted"
+        arrow.textContent = "→"
+        row.appendChild(arrow)
+        row.appendChild(chip(item.icon, recipe.gives(item)))
+        tip.appendChild(row)
+    }
+
+    let line = document.createElement("div")
+    line.className = "muted num"
+    let belts = beltsText(node, item, node.rate)
+    if (recipe && node.machine) {
+        let recipeRate = node.rate.isZero() ? zero : node.rate.div(recipe.gives(item))
+        let exact = spec.getCount(recipe, recipeRate)
+        let count = Math.ceil(exact.toFloat())
+        line.textContent = `${count} × ${node.machine.name} (${exact.toDecimal(1)} exactly) · ${belts}`
+    } else {
+        line.textContent = belts
+    }
+    tip.appendChild(line)
+
+    let hint = document.createElement("div")
+    hint.className = "muted"
+    hint.style.fontSize = "11px"
+    hint.textContent = "Click for details" + (div.querySelector(".ways") ? " · ⌄ picks the recipe or brings it in" : "") + (div.querySelector(".fold") ? " · − folds what it needs" : "")
+    tip.appendChild(hint)
+
+    let frame = document.getElementById("flow-frame")
+    let fr = frame.getBoundingClientRect()
+    let cr = div.getBoundingClientRect()
+    let width = 320 + 24
+    let left = cr.right - fr.left + 10
+    if (left + width > fr.width - 8) left = cr.left - fr.left - width - 10
+    left = Math.max(8, left)
+    let top = Math.max(60, Math.min(cr.top - fr.top - 8, fr.height - 160))
+    tip.style.left = `${Math.round(left)}px`
+    tip.style.top = `${Math.round(top)}px`
+    tip.dataset.node = node.id
+    tip.hidden = false
+}
+
+function hideTip() {
+    let tip = document.getElementById("node-tip")
+    if (tip) { tip.hidden = true; delete tip.dataset.node }
+}
+
 function nodeMarkup(node, hasUpstreamProduction) {
     let item = node.itemKey ? spec.items.get(node.itemKey) : null
     let isFluid = item ? item.phase === "fluid" : false
@@ -264,11 +385,14 @@ function nodeMarkup(node, hasUpstreamProduction) {
     body.addEventListener("pointerenter", () => {
         hoverId = node.id
         refreshEdgeHot()
+        showTip(node, item, div)
     })
     body.addEventListener("pointerleave", () => {
         if (hoverId === node.id) hoverId = null
         refreshEdgeHot()
+        hideTip()
     })
+    body.addEventListener("pointerdown", hideTip)
     div.appendChild(body)
 
     if (hasUpstreamProduction) {
@@ -285,6 +409,9 @@ function nodeMarkup(node, hasUpstreamProduction) {
         })
         div.appendChild(fold)
     }
+
+    let pill = sourcePill(node, item, div)
+    if (pill) div.appendChild(pill)
 
     return {div, subText, isFluid}
 }
@@ -363,7 +490,7 @@ function ensureZoom() {
             // drove (wheel, drag, pinch); fitToView()/focusNode() call
             // zoomBehavior.transform programmatically, which fires this
             // handler too but with sourceEvent null.
-            if (event.sourceEvent) isFitted = false
+            if (event.sourceEvent) { isFitted = false; hideTip(); closeSourcePopover() }
             let t = event.transform
             let css = `translate(${t.x}px, ${t.y}px) scale(${t.k})`
             if (viewport !== null) viewport.attr("transform", t)

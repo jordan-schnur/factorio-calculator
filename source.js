@@ -92,6 +92,10 @@ export function sourceOptions(item, totals) {
             exactText: building ? `${exact.toDecimal(1)} exactly` : "",
         })
     }
+    // A share only means something when several recipes are in use.
+    if (options.filter(o => o.inUse).length < 2) {
+        for (let o of options) o.shareText = ""
+    }
     if (!isTarget) {
         let belts = item.phase === "fluid" ? "pipe" : beltText(spec.getBeltCount(itemRate).toFloat())
         options.push({
