@@ -1,4 +1,4 @@
-// calc/power.js — shared by building.js, table.js and whereitgoes.js.
+// calc/power.js — shared by building.js and table.js.
 import { Rational } from "./rational.js"
 
 const THOUSAND = Rational.from_float(1000)

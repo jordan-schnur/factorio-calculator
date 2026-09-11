@@ -5,8 +5,8 @@
 // rows: [{key, name, isReal, isResource, category, isTarget, rate}] with rate a number (per second)
 export const SECTIONS = ["Target", "Intermediates", "Smelting", "Mining", "Supplied from elsewhere"]
 
-// Shared between table.js and inputs.js so the two frames never disagree on
-// how a display-rate unit is abbreviated.
+// Shared between table.js, details.js and bringin.js so every rate readout
+// abbreviates its display unit the same way.
 export const RATE_LABEL = { s: "/s", m: "/min", h: "/h" }
 
 export function sectionOf(row) {
