@@ -24,7 +24,13 @@ function wireRestoreLast() {
     if (!link) {
         return
     }
-    link.addEventListener("click", async () => {
+    if (!link.hasAttribute("href")) {
+        // Give the anchor an href so it is focusable and reads as a link to
+        // assistive tech; the click handler still does the actual navigation.
+        link.setAttribute("href", "#")
+    }
+    link.addEventListener("click", async (event) => {
+        event.preventDefault()
         let hash = localStorage.getItem("calc.lastHash")
         if (!hash) {
             return
@@ -52,6 +58,18 @@ function renderTargets(spec) {
         } catch (err) {
             // Private browsing / storage disabled: losing "restore last" is
             // harmless, so swallow it rather than break rendering.
+        }
+    } else {
+        let link = document.getElementById("restore-last")
+        if (link) {
+            let last = null
+            try {
+                last = localStorage.getItem("calc.lastHash")
+            } catch (err) {
+                // Private browsing / storage disabled: nothing to restore.
+                last = null
+            }
+            link.hidden = !last || last === location.hash
         }
     }
 }
