@@ -20,6 +20,12 @@ let viewport = null
 // size. The dataset fetch that populates spec.items/spec.recipes is async,
 // so the very first solve can land before #flow-container has laid out.
 let needsFit = true
+// True as long as the visible transform is exactly what fitToView() last
+// produced -- set true there, false by any zoom/pan the user initiates
+// (a d3-zoom event with event.sourceEvent non-null). Selecting a node or
+// resizing the container only re-fits while this holds, so a user who has
+// manually framed the graph isn't yanked back to the fitted view.
+let isFitted = true
 
 // Node ids the user has folded (their upstream, non-input production
 // collapsed into this node's card). Module-level so a re-render triggered
@@ -304,17 +310,23 @@ function containerSize() {
 // leave needsFit set so the next render or resize tries again. The 40/190px
 // margins (not a symmetric pad) are pinned: they keep the graph clear of the
 // Make panel (top-left) and the bring-in bar (bottom), which float over the
-// canvas rather than reserving layout space.
+// canvas rather than reserving layout space. When #node-details is open it
+// floats over the graph's right side (320px wide plus margin), so the width
+// term is computed against a narrowed W' and centred within it, leaving the
+// height terms (already pinned to the Make panel/bring-in bar) untouched.
 export function fitToView() {
     if (lastLayout === null || zoomBehavior === null) return
     let {width: W, height: H} = containerSize()
     if (W === 0 || H === 0) return
-    let k = Math.min(1, (W - 40) / lastLayout.width, (H - 190) / lastLayout.height)
+    let detailsOpen = !document.getElementById("node-details")?.hidden
+    let Wp = detailsOpen ? W - 340 : W
+    let k = Math.min(1, (Wp - 40) / lastLayout.width, (H - 190) / lastLayout.height)
     if (!isFinite(k) || k <= 0) return
-    let tx = (W - lastLayout.width * k) / 2
+    let tx = (Wp - lastLayout.width * k) / 2
     let ty = 96 + Math.max(0, (H - 190 - lastLayout.height * k) / 2)
     d3.select("#flow-container").call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
     needsFit = false
+    isFitted = true
 }
 
 function zoomBy(factor) {
@@ -341,6 +353,11 @@ function ensureZoom() {
     zoomBehavior = d3.zoom()
         .scaleExtent([0.1, 4])
         .on("zoom", event => {
+            // event.sourceEvent is set only for a zoom/pan the user actually
+            // drove (wheel, drag, pinch); fitToView()/focusNode() call
+            // zoomBehavior.transform programmatically, which fires this
+            // handler too but with sourceEvent null.
+            if (event.sourceEvent) isFitted = false
             let t = event.transform
             let css = `translate(${t.x}px, ${t.y}px) scale(${t.k})`
             if (viewport !== null) viewport.attr("transform", t)
@@ -449,7 +466,11 @@ function draw(totals) {
     let visible = visibleIds(model, upstream, folded)
     let shown = filterModel(model, visible)
 
-    let laidOut = layered(shown)
+    // 240x72 (up from flow-core's 216x64 default): a two-line-clamped node
+    // name (see .node .name in calc.css) needs the extra height, and the
+    // extra width keeps a two-word item name like "Piercing rounds
+    // magazine" from wrapping to three lines.
+    let laidOut = layered(shown, {nodeWidth: 240, nodeHeight: 72})
     lastLayout = laidOut
 
     ensureZoom()
@@ -493,6 +514,15 @@ export function initFlow() {
 
     document.addEventListener("calc:select", updateSelectionClasses)
 
+    // Selecting or clearing a node toggles #node-details, which changes how
+    // much width fitToView() reserves; refit to it, but only if the user
+    // hasn't since framed the graph themselves. Deferred to a microtask:
+    // initFlow() runs before initDetails(), so this listener is called
+    // before details.js's own calc:select handler has updated card.hidden.
+    document.addEventListener("calc:select", () => {
+        queueMicrotask(() => { if (isFitted) fitToView() })
+    })
+
     document.addEventListener("calc:focus-node", event => {
         let item = event.detail.item
         spec.whereItem = item
@@ -510,6 +540,14 @@ export function initFlow() {
     window.addEventListener("resize", () => {
         if (needsFit) fitToView()
     })
+    // The ledger toggle (calc:layout) already refits after its transition;
+    // this observer catches every other way #flow-container's box changes
+    // size (window resize is also covered by the listener above, but a
+    // ResizeObserver additionally fires for layout-only changes with no
+    // window resize event, e.g. a sidebar collapsing).
+    new ResizeObserver(() => {
+        if (isFitted) fitToView()
+    }).observe(document.querySelector("#flow-container"))
     document.querySelector("#flow-fit").addEventListener("click", () => fitToView())
     document.querySelector("#flow-zoom-in").addEventListener("click", () => zoomBy(1.4))
     document.querySelector("#flow-zoom-out").addEventListener("click", () => zoomBy(1 / 1.4))
