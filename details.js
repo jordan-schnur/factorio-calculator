@@ -7,6 +7,7 @@ import { spec } from "./factory.js"
 import { beltText } from "./flow-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
+import { relevantRecipes, renderOptions } from "./source.js"
 import { RATE_LABEL } from "./table-core.js"
 import { buildingCount, buildRows } from "./table.js"
 
@@ -148,6 +149,16 @@ function buildSourceSeg(item, row) {
     return seg
 }
 
+// "Made by": the same option rows as the card's ⌄ chooser, only when
+// there is a choice to make.
+function buildMadeBy(item, totals) {
+    if (relevantRecipes(item).length < 2) return null
+    let div = document.createElement("div")
+    div.className = "list madeby"
+    div.appendChild(renderOptions(item, totals))
+    return div
+}
+
 function buildMachinesLine(row) {
     let building = spec.getBuilding(row.recipe)
     if (building === null) {
@@ -216,6 +227,12 @@ function renderDetails(spec, totals) {
 
     if (row && !isTarget && !isResource) {
         card.appendChild(buildSourceSeg(item, row))
+    }
+
+    let madeBy = buildMadeBy(item, totals)
+    if (madeBy) {
+        card.appendChild(lbl("Made by"))
+        card.appendChild(madeBy)
     }
 
     if (row && row.isReal) {
