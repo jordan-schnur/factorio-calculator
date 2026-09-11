@@ -311,6 +311,10 @@ export function initSource() {
         closeSourcePopover()
     })
     document.addEventListener("keydown", event => {
-        if (event.key === "Escape" && openItem !== null) closeSourcePopover()
+        if (event.key !== "Escape" || openItem === null) return
+        closeSourcePopover()
+        // One Escape closes one thing: the popover consumes it so the
+        // ledger drawer's own Escape handler (header.js) keeps the drawer.
+        event.stopImmediatePropagation()
     })
 }
