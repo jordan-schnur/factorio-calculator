@@ -52,11 +52,11 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
     <div class="seg"><button id="ledger-toggle">Ledger</button></div>
     <button class="btn" id="settings-open" title="Settings">&#9881;</button>
     <button class="btn btn-green" id="board-button">Add to board</button>
-    <div id="board-panel" hidden></div>
+    <div class="frame" id="board-panel" hidden></div>
   </div>
   <div id="main">
     <div class="frame" id="flow-frame">
-      <div id="flow-container"><svg id="flow"></svg><div id="flow-nodes"></div><div id="flow-columns"></div></div>
+      <div id="flow-container" class="canvas"><svg id="flow"></svg><div id="flow-nodes"></div><div id="flow-columns"></div></div>
       <div class="frame" id="make-panel">
         <div class="make-row"><span class="title">Make</span>
           <div class="search-wrap"><input id="target-search" placeholder="Add an item: red science, gears, blue circuit" autocomplete="off"><div id="target-search-results"></div></div>
