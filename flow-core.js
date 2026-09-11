@@ -11,7 +11,7 @@ export function edgeWidth(belts) {
 }
 
 // spec: {recipes: [{key, name, isReal, isDisable, isResource, isTarget, count, machine}],
-//        links: [{item, itemName, from, to, rate, belts}]}
+//        links: [{item, itemName, from, to, rate, rateExact, belts}]}
 // A link's `from`/`to` are recipe keys (or `from: null` for a link with no
 // producer at all). Two kinds of recipe never get a node of their own:
 // isReal: false is the solver's internal OutputRecipe/SurplusRecipe sink
@@ -46,9 +46,12 @@ export function buildFlowModel({recipes, links}) {
         const existing = edges.get(key)
         if (existing) {
             existing.rate += link.rate
+            // A merge with either side missing rateExact can't be summed exactly,
+            // so the label falls back to the float sum (see renderEdges()).
+            existing.rateExact = existing.rateExact && link.rateExact ? existing.rateExact.add(link.rateExact) : null
             existing.belts += link.belts
         } else {
-            edges.set(key, {source, target: link.to, item: link.item, itemName: link.itemName, rate: link.rate, belts: link.belts})
+            edges.set(key, {source, target: link.to, item: link.item, itemName: link.itemName, rate: link.rate, rateExact: link.rateExact ?? null, belts: link.belts})
         }
     }
 
