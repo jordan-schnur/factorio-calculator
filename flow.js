@@ -138,9 +138,14 @@ function renderFlow(_spec, totals) {
     lastLayout = null
 
     if (model.nodes.length === 0) {
-        document.querySelector("#flow-note").textContent = spec.buildTargets.length === 0
-            ? "Add a target to see its flow graph."
-            : "Nothing to draw: no recipe produces these targets with the current settings."
+        // #flow-note was removed by the graph-first page skeleton; Task 3
+        // replaces this whole function, so just skip the write until then.
+        let emptyNote = document.querySelector("#flow-note")
+        if (emptyNote) {
+            emptyNote.textContent = spec.buildTargets.length === 0
+                ? "Add a target to see its flow graph."
+                : "Nothing to draw: no recipe produces these targets with the current settings."
+        }
         return
     }
 
@@ -183,11 +188,13 @@ function renderFlow(_spec, totals) {
     }
 
     let note = document.querySelector("#flow-note")
-    let sentence = "Scroll to zoom, drag to pan. Hover an edge for its rate and belt load. Click a node to open it in “Where it goes”. Supplied items and mined resources both start on the left; nothing is drawn upstream of them."
-    if (laidOut.nodes.length > 60) {
-        sentence += ` This graph has ${laidOut.nodes.length} nodes; supply intermediates from elsewhere to simplify it.`
+    if (note) {
+        let sentence = "Scroll to zoom, drag to pan. Hover an edge for its rate and belt load. Click a node to open it in “Where it goes”. Supplied items and mined resources both start on the left; nothing is drawn upstream of them."
+        if (laidOut.nodes.length > 60) {
+            sentence += ` This graph has ${laidOut.nodes.length} nodes; supply intermediates from elsewhere to simplify it.`
+        }
+        note.textContent = sentence
     }
-    note.textContent = sentence
 
     needsFit = true
     fitToView()
