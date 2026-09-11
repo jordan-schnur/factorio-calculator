@@ -417,6 +417,7 @@ function renderEdges(laidOut) {
     let svg = d3.select("svg#flow")
     svg.selectAll("*").remove()
     viewport = svg.append("g").classed("viewport", true)
+    viewport.attr("transform", d3.zoomTransform(document.querySelector("#flow-container")))
     viewport.selectAll("path")
         .data(laidOut.edges)
         .join("path")
