@@ -64,7 +64,6 @@ a { color: #f1be64; } a:hover { color: #ffe6c0; }
 input { background: #1c1c1c; box-shadow: inset 0 2px 3px rgba(0,0,0,0.8), inset 0 -1px 0 #454545; border: none; color: #ffe6c0; padding: 6px 8px; font: inherit; }
 .chip { display: inline-flex; align-items: center; gap: 6px; background: #3a3a3a; box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -1px 0 #1a1a1a; padding: 2px 8px 2px 2px; font-weight: 600; }
 .kv { display: flex; align-items: center; gap: 8px; padding: 3px 6px; }
-.machines { width: 120px; display: flex; align-items: center; gap: 6px; }
 .machines .num { font-size: 18px; }
 .c-name { width: 230px; }
 .c-out { width: 110px; text-align: right; }
@@ -72,7 +71,6 @@ input { background: #1c1c1c; box-shadow: inset 0 2px 3px rgba(0,0,0,0.8), inset 
 .node { position: absolute; width: 210px; box-sizing: border-box; background: #313131; box-shadow: inset 0 1px 0 #4d4d4d, inset 1px 0 0 #4d4d4d, inset 0 -1px 0 #1a1a1a, inset -1px 0 0 #1a1a1a, 0 2px 6px rgba(0,0,0,0.6); padding: 4px 6px; display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
 .node.inp { background: #2a2a2a; box-shadow: inset 0 0 0 1px #4d4d4d, 0 2px 6px rgba(0,0,0,0.6); }
 .node.tgt { box-shadow: inset 0 0 0 2px #f1be64, 0 2px 6px rgba(0,0,0,0.6); }
-.lbl { position: absolute; background: #1f1f1f; color: #ffe6c0; font-size: 12px; font-weight: 600; padding: 0 5px; box-shadow: 0 0 0 1px #3d3d3d; transform: translate(-50%, -50%); white-space: nowrap; }
 .bar { height: 12px; background: linear-gradient(#f5b464, #e39827); box-shadow: inset 0 1px 0 #ffd28f, inset 0 -1px 0 #b8741a; }
 .bartrack { flex: 1; height: 12px; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8); }
 .tip { background: #313131; box-shadow: 0 0 0 1px #4d4d4d, 0 4px 12px rgba(0,0,0,0.8); padding: 8px 10px; font-size: 13px; }
@@ -123,6 +121,12 @@ input { background: #1c1c1c; box-shadow: inset 0 2px 3px rgba(0,0,0,0.8), inset 
 .lrow.sel { background: #3a3323; box-shadow: inset 2px 0 0 #f1be64, inset 0 -1px 0 #2c2c2c; }
 .lrow.dim { color: #a8a8a8; }
 .lrow.dim .icon { opacity: 0.6; }
+.slot.sm { width: 30px; height: 30px; }
+.slot.sm .icon, .slot.sm img { width: 24px; height: 24px; }
+.lrow .item { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.lrow .item .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+.lrow .need { text-align: right; }
+.lrow .machines { display: flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* --- page layout -------------------------------------------------------- */
 
