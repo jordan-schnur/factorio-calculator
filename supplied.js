@@ -1,6 +1,4 @@
-// calc/supplied.js — the calc:toggle-supplied handler. Rendering of what's
-// supplied lives in ledger.js/bringin.js now (Task 4 of the graph-first
-// plan); this module only flips the solver's ignore set.
+// calc/supplied.js — flips an item's supplied/ignore membership on the solver.
 import { spec } from "./factory.js"
 
 export function initSupplied() {

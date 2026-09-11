@@ -123,6 +123,12 @@ input { background: #1c1c1c; box-shadow: inset 0 2px 3px rgba(0,0,0,0.8), inset 
 .lrow.sel { background: #3a3323; box-shadow: inset 2px 0 0 #f1be64, inset 0 -1px 0 #2c2c2c; }
 .lrow.dim { color: #a8a8a8; }
 .lrow.dim .icon { opacity: 0.6; }
+.slot.sm { width: 30px; height: 30px; }
+.slot.sm .icon, .slot.sm img { width: 24px; height: 24px; }
+.lrow .item { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.lrow .item .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+.lrow .need { text-align: right; }
+.lrow .machines { display: flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* --- page layout -------------------------------------------------------- */
 

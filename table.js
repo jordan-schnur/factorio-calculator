@@ -1,9 +1,5 @@
-// calc/table.js — row shape shared by the Ledger (ledger.js) and the
-// Inputs frame (inputs.js): one entry per real crafting recipe in the
-// current solution, plus the building-count/power helpers both frames'
-// totals need to agree on. No rendering lives here any more (Task 4 of the
-// graph-first plan moved it to ledger.js); table-core.js still carries the
-// pure grouping/label logic tests/js/calc_table_check.mjs exercises.
+// calc/table.js — builds the row shape used by the Ledger, plus the
+// building-count/power helpers so every panel's totals agree.
 import { spec } from "./factory.js"
 import { formatPower } from "./power.js"
 import { zero } from "./rational.js"
@@ -55,10 +51,8 @@ export function buildingCount(row) {
     return Math.ceil(spec.getCount(row.recipe, row.recipeRate).toFloat())
 }
 
-// Shared with inputs.js: the power formatter for its Totals section, so
-// both frames' totals always agree. inputs.js still imports this as
-// `powerRepr` with one argument, so it is wrapped with spec.format rather
-// than touching inputs.js.
+// Wraps formatPower with the current spec so every caller's power total
+// uses the same display precision.
 export function powerRepr(x) {
     return formatPower(x, spec.format)
 }

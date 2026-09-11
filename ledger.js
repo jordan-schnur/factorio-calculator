@@ -8,7 +8,7 @@ import { buildRows } from "./table.js"
 import { RATE_LABEL } from "./table-core.js"
 
 function rateText(rate) {
-    return spec.format.alignRate(rate) + (RATE_LABEL[spec.format.rateName] || "/min")
+    return spec.format.rate(rate) + (RATE_LABEL[spec.format.rateName] || "/min")
 }
 
 // Groups a row belongs to only one of: target, real-and-built, supplied,
@@ -89,6 +89,9 @@ function sourceCell(row) {
     })
     seg.appendChild(here)
     seg.appendChild(bringIn)
+    // Also guard the wrapper: a click on its own padding (not either
+    // button) must not fall through to the row's focus-node handler.
+    seg.addEventListener("click", event => event.stopPropagation())
     cell.appendChild(seg)
     return cell
 }
