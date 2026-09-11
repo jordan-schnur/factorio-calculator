@@ -187,6 +187,7 @@ select.muted { color: #ffe6c0; font-weight: 700; }
     font-weight: 600;
     padding: 4px 10px;
 }
+#save-picker:empty { display: none; }
 #save-status { color: var(--green); font-weight: 600; }
 #page-note { color: var(--red); font-weight: 600; }
 #board-panel {
@@ -217,17 +218,18 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 #flow-empty { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); text-align: center; z-index: 4; display: flex; flex-direction: column; gap: 6px; align-items: center; }
 #flow-empty .examples { display: flex; gap: 8px; margin-top: 8px; }
 .column { display: flex; flex-direction: column; gap: 12px; }
-#ledger { position: absolute; right: 0; top: 0; bottom: 0; width: 460px; z-index: 7; display: flex; flex-direction: column; min-height: 0; box-shadow: -8px 0 24px rgba(0,0,0,0.6), inset 1px 0 0 #4d4d4d, inset 0 1px 0 #4d4d4d, inset 0 -1px 0 #1a1a1a; animation: ledger-slide 180ms ease-out; }
+#ledger { position: absolute; right: 0; top: 0; bottom: 0; width: 520px; z-index: 7; display: flex; flex-direction: column; min-height: 0; box-shadow: -8px 0 24px rgba(0,0,0,0.6), inset 1px 0 0 #4d4d4d, inset 0 1px 0 #4d4d4d, inset 0 -1px 0 #1a1a1a; animation: ledger-slide 180ms ease-out; }
 @keyframes ledger-slide { from { transform: translateX(100%); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { #ledger { animation: none; } }
-#flow-frame.ledger-open #node-details { right: 474px; }
+#flow-frame.ledger-open #node-details { right: 534px; }
 #ledger .ledger-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px 6px; }
-#ledger .hdr { display: grid; grid-template-columns: 150px 62px 122px minmax(0, 1fr); gap: 8px; padding: 4px 14px; }
+#ledger .hdr { display: grid; grid-template-columns: 150px 66px 122px minmax(0, 1fr); gap: 8px; padding: 4px 14px; }
 #ledger .hdr .r { text-align: right; }
 #ledger-rows { flex: 1; overflow: auto; min-height: 0; }
-.lrow { display: grid; grid-template-columns: 150px 62px 122px minmax(0, 1fr); gap: 8px; align-items: center; padding: 3px 14px; min-height: 36px; }
+.lrow { display: grid; grid-template-columns: 150px 66px 122px minmax(0, 1fr); gap: 8px; align-items: center; padding: 3px 14px; min-height: 36px; }
 .lrow .seg button { white-space: nowrap; padding: 2px 7px; font-size: 12px; }
 .lrow .machines { font-size: 13px; }
+#ledger .machines { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #settings-drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 50; display: flex; justify-content: flex-end; }
 #settings-drawer[hidden] { display: none; }
 #settings-panel { width: min(980px, 92vw); height: 100%; overflow: auto; padding: 14px; box-sizing: border-box; }
