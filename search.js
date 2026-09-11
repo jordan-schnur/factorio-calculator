@@ -148,7 +148,12 @@ function onSearchKeydown(event) {
 let activeGroup = 0
 
 function renderBrowse() {
+    // The graph-first page has no browse grid; guard rather than assume the
+    // element is there, since this is still called from the search flow.
     let container = document.getElementById("target-browse")
+    if (!container) {
+        return
+    }
     container.innerHTML = ""
     if (!spec.itemGroups || spec.itemGroups.length === 0) {
         return

@@ -16,8 +16,13 @@ import { Rational } from "./rational.js"
 import { setTitle } from "./settings.js"
 
 // tab events
+//
+// The page is one screen now (the flow graph); there is no tab strip left to
+// click. These exports survive only because fragment.js still writes/reads a
+// `tab=` key (for links minted before the redesign) and needs a constant tab
+// name to compare against -- see fragment.js and init.js's applyPageState.
 
-export const DEFAULT_TAB = "factory"
+export const DEFAULT_TAB = "flow"
 
 // Fragments written before the redesign name two of the tabs differently;
 // links from the plan tool and from board cards must keep working.
@@ -34,27 +39,6 @@ export function tabName(raw) {
 }
 
 export let currentTab = DEFAULT_TAB
-
-// Shows a tab without touching the fragment. init.js applies the fragment's
-// tab this way, before the dataset is loaded and formatSettings() could run.
-export function setTab(rawName) {
-    let name = tabName(rawName)
-    currentTab = name
-    for (let pane of document.querySelectorAll(".pane")) {
-        pane.hidden = pane.id !== "tab-" + name
-    }
-    for (let button of document.querySelectorAll("#tabs .tab")) {
-        button.classList.toggle("on", button.dataset.tab === name)
-    }
-    // Panes that size themselves to the viewport (the flow graph) can only
-    // measure once they are visible; let them know which pane just showed.
-    document.dispatchEvent(new CustomEvent("calc:tab", {detail: {tab: name}}))
-}
-
-export function clickTab(rawName) {
-    setTab(rawName)
-    spec.setHash()
-}
 
 // shared events
 

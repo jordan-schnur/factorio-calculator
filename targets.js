@@ -12,7 +12,7 @@ function addTargetAtPerMinute(itemKey, perMinute) {
 }
 
 function wireExampleChips() {
-    for (let chip of document.querySelectorAll("#factory-empty .example-target")) {
+    for (let chip of document.querySelectorAll("#flow-empty .example-target")) {
         chip.addEventListener("click", () => {
             addTargetAtPerMinute(chip.dataset.item, Number(chip.dataset.rate))
         })
@@ -35,7 +35,7 @@ function wireRestoreLast() {
 }
 
 function renderTargets(spec) {
-    let empty = document.getElementById("factory-empty")
+    let empty = document.getElementById("flow-empty")
     let hasTargets = spec.buildTargets.length > 0
     let notes = document.getElementById("target-notes")
     notes.replaceChildren()
@@ -46,9 +46,6 @@ function renderTargets(spec) {
     }
     notes.hidden = spec.targetNotes.length === 0
     empty.hidden = hasTargets
-    // calc.html gives #factory-empty an inline `display: flex`, which beats
-    // the UA [hidden] rule; toggle it explicitly too.
-    empty.style.display = hasTargets ? "none" : "flex"
     if (hasTargets) {
         try {
             localStorage.setItem("calc.lastHash", location.hash)

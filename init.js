@@ -13,16 +13,18 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 import { getBelts } from "./belt.js"
 import { initBoard } from "./board.js"
+import { initBringin } from "./bringin.js"
 import { getBuildings } from "./building.js"
-import { setTab } from "./events.js"
+import { initDetails } from "./details.js"
 import { spec, resetSpec } from "./factory.js"
 import { initFlow } from "./flow.js"
 import { formatSettings, loadSettings, writeHash, isOwnHash } from "./fragment.js"
 import { getFuel } from "./fuel.js"
 import { getItemGroups } from "./group.js"
+import { initHeader } from "./header.js"
 import { getSprites } from "./icon.js"
-import { initInputs } from "./inputs.js"
 import { getItems } from "./item.js"
+import { initLedger } from "./ledger.js"
 import { getModules } from "./module.js"
 import { getPlanets } from "./planet.js"
 import { getRecipes } from "./recipe.js"
@@ -32,10 +34,8 @@ import { initScratchpad } from "./scratchpad.js"
 import { initSearch } from "./search.js"
 import { currentMod, MODIFICATIONS, initSettingsTab, renderDataSetOptions, renderSettings } from "./settings.js"
 import { initSupplied } from "./supplied.js"
-import { initTable } from "./table.js"
 import { initTargets } from "./targets.js"
 import { reapTooltips } from "./tooltip.js"
-import { initWhere } from "./whereitgoes.js"
 
 export function changeMod() {
     let currentSettings = loadSettings("#" + formatSettings())
@@ -118,7 +118,9 @@ function applyPageState(settings) {
     let ov = settings.get("ov")
     spec.saveState.overrides = new Set(ov ? ov.split(",") : [])
     spec.whereItem = settings.has("item") ? settings.get("item") : null
-    setTab(settings.get("tab"))
+    // "tab=" is a leftover fragment key from before the redesign (the page
+    // is one screen now); it is still read so old links round-trip, but is
+    // never acted on.
 }
 
 // display() is now nothing but renderAll(), so the bookkeeping it used to do
@@ -142,15 +144,16 @@ function initModules() {
     registerRenderer(renderHousekeeping)
     initSearch()
     initTargets()
-    initTable()
-    initInputs()
     initSupplied()
     initScratchpad()
     initFlow()
-    initWhere()
     initSettingsTab()
     initBoard()
     initSaveSettings()
+    initHeader()
+    initLedger()
+    initDetails()
+    initBringin()
 }
 
 export let useLegacyCalculation
