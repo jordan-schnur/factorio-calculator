@@ -6,7 +6,7 @@
 // spec/d3/the DOM.
 import { registerRenderer } from "./render.js"
 import { spec } from "./factory.js"
-import { zero } from "./rational.js"
+import { Rational, zero } from "./rational.js"
 import { buildFlowModel, layered, machineWord, pluralise, beltText } from "./flow-core.js"
 import { RATE_LABEL } from "./table-core.js"
 
@@ -26,6 +26,11 @@ let needsFit = true
 // by an unrelated solve doesn't reset what the user folded, mirroring
 // table.js's expandedRows.
 const folded = new Set()
+
+// The node id currently under the pointer, if any -- combined with the
+// selected item's node id(s) in refreshEdgeHot() so hover and selection
+// can both mark edges "hot" without stomping on each other.
+let hoverId = null
 
 function renderKey() {
     return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}`
@@ -206,45 +211,52 @@ function nodeMarkup(node, hasUpstreamProduction) {
     if (item) slot.appendChild(item.icon.make(20, true))
     body.appendChild(slot)
 
-    let info = document.createElement("span")
-    info.style.cssText = "flex: 1; min-width: 0; text-align: left; overflow: hidden;"
-    let name = document.createElement("div")
-    name.style.cssText = "font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+    let mid = document.createElement("span")
+    mid.className = "mid"
+    let name = document.createElement("span")
+    name.className = "name"
     name.textContent = node.label
-    info.appendChild(name)
+    mid.appendChild(name)
 
-    let sub = document.createElement("div")
-    sub.className = "sub num muted"
-    sub.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden;"
+    let sub = document.createElement("span")
+    sub.className = "sub num"
     if (node.machine) {
         sub.appendChild(node.machine.icon.make(16, true))
     }
     let subText = document.createElement("span")
     sub.appendChild(subText)
-    info.appendChild(sub)
-    body.appendChild(info)
+    mid.appendChild(sub)
+    body.appendChild(mid)
 
-    let rateBlock = document.createElement("span")
-    rateBlock.style.cssText = "text-align: right;"
+    let right = document.createElement("span")
+    right.className = "right"
     let rateText = spec.format.rate(node.rate)
     let rateSpan = document.createElement("span")
     rateSpan.className = "rate num"
     rateSpan.dataset.value = rateText
     rateSpan.textContent = `${rateText}${RATE_LABEL[spec.format.rateName] || "/min"}`
-    rateBlock.appendChild(rateSpan)
-    let beltsSpan = document.createElement("div")
+    right.appendChild(rateSpan)
+    let beltsSpan = document.createElement("span")
     beltsSpan.className = "belts num muted"
-    beltsSpan.style.fontSize = "11px"
     beltsSpan.textContent = beltsText(node, item, node.rate)
-    rateBlock.appendChild(beltsSpan)
-    body.appendChild(rateBlock)
+    right.appendChild(beltsSpan)
+    body.appendChild(right)
 
     body.addEventListener("click", event => {
+        // d3-zoom sets defaultPrevented on the click that ends a drag, so a
+        // pan doesn't also register as a node click.
+        if (event.defaultPrevented) return
         if (event.target.closest(".rate")) return
         selectNode(node.itemKey)
     })
-    body.addEventListener("pointerenter", () => setEdgeHot(node.id, true))
-    body.addEventListener("pointerleave", () => setEdgeHot(node.id, false))
+    body.addEventListener("pointerenter", () => {
+        hoverId = node.id
+        refreshEdgeHot()
+    })
+    body.addEventListener("pointerleave", () => {
+        if (hoverId === node.id) hoverId = null
+        refreshEdgeHot()
+    })
     div.appendChild(body)
 
     if (hasUpstreamProduction) {
@@ -265,9 +277,20 @@ function nodeMarkup(node, hasUpstreamProduction) {
     return {div, subText, isFluid}
 }
 
-function setEdgeHot(nodeId, on) {
-    document.querySelectorAll(`#flow path[data-from="${nodeId}"], #flow path[data-to="${nodeId}"]`).forEach(p => {
-        p.classList.toggle("hot", on)
+// "Hot" edges are the union of the hovered node's and the selected item's
+// node's edges; recomputed wholesale on every hover/selection change rather
+// than toggled incrementally, so hovering the very node that's selected and
+// then leaving it doesn't clear the selection's own highlight.
+function refreshEdgeHot() {
+    let ids = new Set()
+    if (hoverId !== null) ids.add(hoverId)
+    if (spec.whereItem !== null) {
+        document.querySelectorAll("#flow-nodes .node").forEach(el => {
+            if (el.dataset.item === spec.whereItem) ids.add(el.dataset.node)
+        })
+    }
+    document.querySelectorAll("#flow path.edge").forEach(p => {
+        p.classList.toggle("hot", ids.has(p.dataset.from) || ids.has(p.dataset.to))
     })
 }
 
@@ -278,16 +301,18 @@ function containerSize() {
 
 // Fits the whole graph inside the container, centred, never scaling nodes
 // above their natural size. A hidden/zero-size container can't be fitted;
-// leave needsFit set so the next render or resize tries again.
+// leave needsFit set so the next render or resize tries again. The 40/190px
+// margins (not a symmetric pad) are pinned: they keep the graph clear of the
+// Make panel (top-left) and the bring-in bar (bottom), which float over the
+// canvas rather than reserving layout space.
 export function fitToView() {
     if (lastLayout === null || zoomBehavior === null) return
-    let {width, height} = containerSize()
-    if (width === 0 || height === 0) return
-    const PAD = 24
-    let k = Math.min(1, (width - 2 * PAD) / lastLayout.width, (height - 2 * PAD) / lastLayout.height)
+    let {width: W, height: H} = containerSize()
+    if (W === 0 || H === 0) return
+    let k = Math.min(1, (W - 40) / lastLayout.width, (H - 190) / lastLayout.height)
     if (!isFinite(k) || k <= 0) return
-    let tx = (width - lastLayout.width * k) / 2
-    let ty = (height - lastLayout.height * k) / 2
+    let tx = (W - lastLayout.width * k) / 2
+    let ty = 96 + Math.max(0, (H - 190 - lastLayout.height * k) / 2)
     d3.select("#flow-container").call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
     needsFit = false
 }
@@ -365,18 +390,33 @@ function renderNodes(model, laidOut, upstream, nodeById) {
 }
 
 function renderEdges(laidOut) {
+    let nodeKind = new Map(laidOut.nodes.map(n => [n.id, n.kind]))
     let svg = d3.select("svg#flow")
     svg.selectAll("*").remove()
     viewport = svg.append("g").classed("viewport", true)
     viewport.selectAll("path")
         .data(laidOut.edges)
         .join("path")
+            .attr("class", d => nodeKind.get(d.source) === "input" ? "edge in" : "edge")
             .attr("d", d => d.d)
             .attr("data-from", d => d.source)
             .attr("data-to", d => d.target)
-            .attr("stroke", "#8a7040")
             .attr("stroke-width", d => d.width)
-            .attr("fill", "none")
+
+    // Edge rate labels are plain HTML (like the node cards) rather than SVG
+    // <text>, positioned at the edge's own midpoint (lx/ly, from layered()).
+    // `d.rate` is per-second (buildModel's links carry rate.toFloat()); a
+    // Rational round-trip through spec.format.rate() converts it to display
+    // units the same way a node's own rate is converted.
+    let nodesLayer = document.querySelector("#flow-nodes")
+    for (let edge of laidOut.edges) {
+        let label = document.createElement("div")
+        label.className = "elbl num"
+        label.style.left = edge.lx + "px"
+        label.style.top = edge.ly + "px"
+        label.textContent = `${spec.format.rate(Rational.from_float(edge.rate))}${RATE_LABEL[spec.format.rateName] || "/min"}`
+        nodesLayer.appendChild(label)
+    }
 }
 
 // The full draw pass: unconditional (unlike renderFlow's solve-triggered
@@ -416,6 +456,10 @@ function draw(totals) {
     renderColumns(laidOut)
     renderNodes(model, laidOut, upstream, nodeById)
     renderEdges(laidOut)
+    // Node markup already sets .sel from spec.whereItem, but the edges it
+    // implies (e.g. a selection carried in from the page's own fragment on
+    // the very first draw) need the same pass hover uses.
+    refreshEdgeHot()
 
     let idsKey = laidOut.nodes.map(n => n.id).sort().join(",")
     if (idsKey !== lastNodeIdsKey) {
@@ -441,6 +485,7 @@ function updateSelectionClasses() {
     document.querySelectorAll("#flow-nodes .node").forEach(el => {
         el.classList.toggle("sel", sel !== null && el.dataset.item === sel)
     })
+    refreshEdgeHot()
 }
 
 export function initFlow() {
