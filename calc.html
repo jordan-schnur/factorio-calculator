@@ -105,10 +105,10 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
               <div class="titlebar"><span class="title">Display</span><div class="drag"></div></div>
               <div class="deep" id="settings-display">
                   <div class="kv"><span class="muted" style="width: 90px;">Rates</span><form id="display_rate"></form></div>
-                  <div class="kv"><span class="muted" style="width: 90px;">Precision</span>
-                      <input id="rprec" class="num prec" type="number" value="3" min="0" onchange="handlers.changeRatePrecision(event)">
+                  <div class="kv"><span class="muted" style="width: 90px;">Decimal places</span>
+                      <input id="rprec" class="num prec" type="number" value="1" min="0" max="6" onchange="handlers.changeRatePrecision(event)">
                       <span class="muted">decimals for rates,</span>
-                      <input id="cprec" class="num prec" type="number" value="1" min="0" onchange="handlers.changeCountPrecision(event)">
+                      <input id="cprec" class="num prec" type="number" value="1" min="0" max="6" onchange="handlers.changeCountPrecision(event)">
                       <span class="muted">for machine counts</span>
                   </div>
                   <div class="kv"><span class="muted" style="width: 90px;">Values</span><form id="value_format">
