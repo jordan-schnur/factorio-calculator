@@ -4,7 +4,7 @@ import { registerRenderer } from "./render.js"
 import { markOverride } from "./savesettings.js"
 
 // The ledger is an overlay drawer over the graph: opening it changes no
-// layout, so no refit (calc:layout) is needed. Closed on every load.
+// layout and requires no refit. Closed on every load.
 function applyLedgerOpen(open) {
     let ledger = document.getElementById("ledger")
     let toggle = document.getElementById("ledger-toggle")

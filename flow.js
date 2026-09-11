@@ -675,18 +675,11 @@ export function initFlow() {
         focusNode(item)
     })
 
-    // The ledger toggle changes #flow-container's width without a new
-    // solve; refit once its transition/reflow has actually happened.
-    document.addEventListener("calc:layout", () => {
-        requestAnimationFrame(() => fitToView())
-    })
-
     window.addEventListener("resize", () => {
         if (needsFit) fitToView()
     })
-    // The ledger toggle (calc:layout) already refits after its transition;
-    // this observer catches every other way #flow-container's box changes
-    // size (window resize is also covered by the listener above, but a
+    // This observer catches every way #flow-container's box changes size
+    // (window resize is also covered by the listener above, but a
     // ResizeObserver additionally fires for layout-only changes with no
     // window resize event, e.g. a sidebar collapsing).
     new ResizeObserver(() => {
