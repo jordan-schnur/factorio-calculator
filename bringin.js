@@ -4,13 +4,13 @@
 import { spec } from "./factory.js"
 import { zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
+import { RATE_LABEL } from "./table-core.js"
 import { buildingCount, buildRows, powerRepr } from "./table.js"
 
-const RATE_UNIT = { s: "s", m: "min", h: "h" }
 const HINT = "Scroll to zoom, drag to pan, Fit resets. Click a node for details. The − on a node folds everything to its left into one line."
 
 function formatRate(rate) {
-    return `${spec.format.alignRate(rate)}/${RATE_UNIT[spec.format.rateName] || spec.format.rateName}`
+    return `${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`
 }
 
 function chip(item, rate) {

@@ -362,11 +362,11 @@ export function initTable() {
     registerRenderer(renderTable)
 }
 
-// Shared with inputs.js: the same row shape (so the Inputs frame doesn't
-// re-derive it), the power formatter for its Totals section, and
-// buildingCount (needs spec.getBuilding/getCount) so both frames' totals
-// always agree. inputs.js still imports this as `powerRepr` with one
-// argument, so it is wrapped with spec.format rather than touching inputs.js.
+// Shared with bringin.js: the same row shape (so the bring-in bar doesn't
+// re-derive it), the power formatter for its totals readout, and
+// buildingCount (needs spec.getBuilding/getCount) so both agree on machine
+// counts. bringin.js imports this as `powerRepr` with one argument, so it is
+// wrapped with spec.format rather than touching bringin.js.
 function powerRepr(x) {
     return formatPower(x, spec.format)
 }

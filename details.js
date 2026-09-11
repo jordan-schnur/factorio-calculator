@@ -7,9 +7,9 @@ import { spec } from "./factory.js"
 import { beltText } from "./flow-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
-import { buildingCount, buildRows, powerRepr } from "./table.js"
+import { RATE_LABEL } from "./table-core.js"
+import { buildingCount, buildRows } from "./table.js"
 
-const RATE_UNIT = { s: "s", m: "min", h: "h" }
 const HUNDRED = Rational.from_float(100)
 
 // The "Goes to" share as a rounded percentage, with a floor of "<1%" so a
@@ -23,7 +23,7 @@ function percentText(share) {
 }
 
 function rateText(rate) {
-    return `${spec.format.alignRate(rate)}/${RATE_UNIT[spec.format.rateName] || spec.format.rateName}`
+    return `${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`
 }
 
 // data-value must be the exact decimal text on screen, not the raw
@@ -32,6 +32,15 @@ function numSpan(text, extraClass) {
     let span = document.createElement("span")
     span.className = extraClass ? `num ${extraClass}` : "num"
     span.dataset.value = text
+    span.textContent = text
+    return span
+}
+
+// A "num" span with no data-value, for numbers that are not a rate or count
+// the scratch pad should ever insert -- a percentage share evaluates to "?".
+function plainNum(text) {
+    let span = document.createElement("span")
+    span.className = "num"
     span.textContent = text
     return span
 }
@@ -176,7 +185,7 @@ function buildGoesTo(item, totals) {
     let rows = consumers.map(([recipe, rate]) => {
         let product = recipe.products[0].item
         let share = totalRate.isZero() ? zero : rate.div(totalRate)
-        return listRow(product.icon, recipe.name, numSpan(percentText(share)), numSpan(rateText(rate)))
+        return listRow(product.icon, recipe.name, plainNum(percentText(share)), numSpan(rateText(rate)))
     })
     return list(rows, "Nothing consumes it.")
 }
