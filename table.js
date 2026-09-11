@@ -37,9 +37,8 @@ export function buildRows(totals) {
     return rows
 }
 
-// The building total in #factory-totals/#inputs must always agree, and
-// neither can be a fraction of a building: roundMachines only controls what
-// a single row's own cell displays, not what the two totals add up.
+// Building count must always be a whole number: roundMachines only controls
+// what a single row's own cell displays, not the actual building total.
 export function buildingCount(row) {
     if (!row.isReal) {
         return 0

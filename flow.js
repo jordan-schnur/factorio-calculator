@@ -169,10 +169,16 @@ function hiddenCountFor(model, upstream, id) {
 
 function nodeSub(node, isFluid, hidden) {
     let base
-    if (node.kind === "input") {
-        base = isFluid ? "piped in" : "brought in"
+    if (isFluid) {
+        base = "piped in"
+    } else if (node.kind === "input") {
+        base = "brought in"
     } else {
-        base = pluralise(node.count, machineWord(node.machine))
+        if (node.machine === null || node.count === 0) {
+            base = ""
+        } else {
+            base = pluralise(node.count, machineWord(node.machine))
+        }
     }
     return hidden > 0 ? `${base} · ${hidden} hidden` : base
 }

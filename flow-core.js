@@ -1,7 +1,7 @@
-// calc/flow-core.js — pure model-building and dagre-layout math for the
-// Flow tab. Imports nothing that touches window/document/d3/dagre/pako at
-// import time; `dagre` itself is passed into layout() by the caller so this
-// file stays node-testable (see tests/js/calc_flow_check.mjs).
+// calc/flow-core.js — pure model-building and layered left-to-right layout
+// math for the Flow tab. Imports nothing that touches window/document/d3/dagre
+// at import time; this file stays node-testable (see
+// tests/js/calc_flow_check.mjs).
 
 // Belt-load edge width in SVG px: 1.5px minimum (so a hairline flow is still
 // visible) growing with belt count, capped at 8px so a firehose input

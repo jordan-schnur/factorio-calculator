@@ -153,7 +153,7 @@ export async function applySaveSettings(settings) {
             return
         }
         let active = document.activeElement
-        if (active && active.closest && (active.closest("#targets-frame") || active.closest("#target-search-results"))) {
+        if (active && active.closest && (active.closest("#make-panel") || active.closest("#target-search-results"))) {
             return
         }
         applyFromServer()
