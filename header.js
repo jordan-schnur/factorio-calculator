@@ -1,6 +1,7 @@
-// calc/header.js — Task 6 of the graph-first plan: assembler tier, rate
-// unit, ledger toggle, settings drawer, save line.
+// calc/header.js — topbar controls: assembler tier, rate unit, ledger
+// toggle, settings drawer, save line.
 import { registerRenderer } from "./render.js"
+import { markOverride } from "./savesettings.js"
 
 const LEDGER_KEY = "calc.ledger"
 
@@ -69,18 +70,32 @@ function renderAsmSeg(spec) {
         if (lbl && lbl.classList.contains("lbl")) lbl.hidden = true
         return
     }
+    let tiers = group.buildings
+        .filter(b => b.key.startsWith("assembling-machine"))
+        .sort((a, b) => Number(a.key.match(/(\d+)$/)[1]) - Number(b.key.match(/(\d+)$/)[1]))
+    if (tiers.length === 0) {
+        seg.hidden = true
+        if (lbl && lbl.classList.contains("lbl")) lbl.hidden = true
+        return
+    }
     seg.hidden = false
     if (lbl && lbl.classList.contains("lbl")) lbl.hidden = false
     seg.innerHTML = ""
-    for (let building of group.buildings) {
-        let tier = building.key.match(/(\d+)$/)
+    for (let building of tiers) {
+        let tier = building.key.match(/(\d+)$/)[1]
         let button = document.createElement("button")
         button.dataset.building = building.key
-        button.textContent = tier ? tier[1] : building.name
+        button.textContent = tier
         button.title = building.name
         button.classList.toggle("on", group.building === building)
         button.addEventListener("click", () => {
             spec.setMinimumBuilding(building)
+            markOverride("buildings")
+            // buildingHandler in settings.js refreshes this same slot
+            // highlight itself, since it's not touched by any registered
+            // renderer -- mirror it so the drawer doesn't show a stale pick.
+            d3.selectAll("#building_selector button.slot")
+                .classed("sel", b => spec.getBuildingGroup(b).building === b)
             spec.updateSolution()
         })
         seg.appendChild(button)
@@ -100,7 +115,7 @@ function renderSaveLine(spec) {
     let line = document.getElementById("save-line")
     if (!line) return
     let fetched = spec.saveState && spec.saveState.fetched
-    if (!fetched || !fetched.save) {
+    if (!fetched || !fetched.save || !spec.saveState.follow) {
         line.textContent = "not following a save"
         return
     }
