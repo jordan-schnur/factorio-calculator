@@ -226,7 +226,11 @@ function sourcePill(node, item, div) {
         hideTip()
         toggleSourcePopover(item.key, div)
     })
-    pill.addEventListener("pointerdown", event => event.stopPropagation())
+    // d3-zoom pans on mousedown at the container; a press on the pill must
+    // neither pan nor start a card drag.
+    for (let type of ["pointerdown", "mousedown", "touchstart"]) {
+        pill.addEventListener(type, event => event.stopPropagation())
+    }
     return pill
 }
 
@@ -399,6 +403,9 @@ function nodeMarkup(node, hasUpstreamProduction) {
         let fold = document.createElement("button")
         fold.type = "button"
         fold.className = "fold"
+        for (let type of ["pointerdown", "mousedown", "touchstart"]) {
+            fold.addEventListener(type, event => event.stopPropagation())
+        }
         fold.textContent = isFolded ? "+" : "−"
         fold.title = isFolded ? "Show what it needs" : "Fold what it needs into this node"
         fold.addEventListener("click", event => {
