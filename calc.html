@@ -11,6 +11,19 @@
     <script src="third_party/dagre.min.js"></script>
     <script src="third_party/pako.min.js"></script>
     <script src="third_party/popper.min.js"></script>
+    <script>
+        // A module that fails to load or link (typically a stale cached copy
+        // after an update) leaves a dead page with no visible sign. Say so.
+        window.addEventListener("error", function (e) {
+            var msg = String(e.message || "")
+            if (!/module|export|import|handlers is not defined/i.test(msg)) return
+            var bar = document.getElementById("stale-banner") || document.createElement("div")
+            bar.id = "stale-banner"
+            bar.textContent = "The calculator did not load (" + msg + "). Press Ctrl+F5 to reload it fresh."
+            bar.style.cssText = "position: fixed; left: 0; right: 0; top: 0; z-index: 1000; background: #c43e3e; color: #fff; font: 700 14px sans-serif; padding: 10px 16px;"
+            ;(document.body || document.documentElement).appendChild(bar)
+        })
+    </script>
     <script type="module">
         import { clickTab, changeRatePrecision, changeCountPrecision, changeFormat, changeMprod, changeTitle } from "./events.js"
         import { init } from "./init.js"
