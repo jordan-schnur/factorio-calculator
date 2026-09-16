@@ -1,15 +1,16 @@
-// calc/details.js — the per-node details card (#node-details): head (icon,
-// rate, belts), the make-here/bring-in switch, the exact machine count, and
-// the Needs/Goes-to ingredient and consumer lists. Rendered both as a normal
-// renderer (registerRenderer) and directly off calc:select, since selecting
-// a node from flow.js does not itself trigger a re-solve.
+// calc/details.js — the shared "row opened" detail markup: Needs, Goes to
+// and Source (make-here/bring-in switch, recipe picker, exact machine
+// count). `renderDetail` is pure DOM-building, called by both the table's
+// open row (itemtable.js, `.detail` under the clicked `.lrow`) and the
+// graph view's side card (`#graph-side`, built here since selecting a node
+// does not itself trigger a re-solve).
 import { spec } from "./factory.js"
 import { beltText } from "./flow-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { relevantRecipes, renderOptions } from "./source.js"
 import { RATE_LABEL } from "./table-core.js"
-import { buildingCount, buildRows } from "./table.js"
+import { buildRows, powerRepr } from "./table.js"
 
 const HUNDRED = Rational.from_float(100)
 
@@ -29,42 +30,34 @@ function rateText(rate) {
 
 // data-value must be the exact decimal text on screen, not the raw
 // per-second Rational -- the scratch pad inserts it verbatim.
-function numSpan(text, extraClass) {
+function numSpan(text) {
     let span = document.createElement("span")
-    span.className = extraClass ? `num ${extraClass}` : "num"
+    span.className = "num"
     span.dataset.value = text
     span.textContent = text
     return span
 }
 
-// A "num" span with no data-value, for numbers that are not a rate or count
-// the scratch pad should ever insert -- a percentage share evaluates to "?".
-function plainNum(text) {
+// The "Goes to" share, which the scratch pad should never insert.
+function shareSpan(text) {
     let span = document.createElement("span")
-    span.className = "num"
+    span.className = "share num"
     span.textContent = text
     return span
 }
 
-function slot(icon, size) {
+function badgeSpan(kind, text) {
     let span = document.createElement("span")
-    span.className = "slot"
-    span.appendChild(icon.make(size, true))
+    span.className = `badge ${kind}`
+    span.textContent = text
     return span
 }
 
-function listRow(icon, name, ...trailing) {
-    let row = document.createElement("div")
-    row.className = "row"
-    row.appendChild(slot(icon, 20))
-    let nameSpan = document.createElement("span")
-    nameSpan.style.flex = "1"
-    nameSpan.textContent = name
-    row.appendChild(nameSpan)
-    for (let el of trailing) {
-        row.appendChild(el)
-    }
-    return row
+function mutedSpan(text, extraClass) {
+    let span = document.createElement("span")
+    span.className = extraClass ? `muted ${extraClass}` : "muted"
+    span.textContent = text
+    return span
 }
 
 function lbl(text) {
@@ -74,31 +67,49 @@ function lbl(text) {
     return span
 }
 
-function list(rows, emptyText) {
+function slotXs(icon) {
+    let span = document.createElement("span")
+    span.className = "slot xs"
+    span.appendChild(icon.make(18, true))
+    return span
+}
+
+function drow(icon, name, badge, numEl) {
     let div = document.createElement("div")
-    div.className = "list"
-    if (rows.length === 0) {
-        let muted = document.createElement("span")
-        muted.className = "muted"
-        muted.textContent = emptyText
-        div.appendChild(muted)
-    } else {
-        for (let row of rows) {
-            div.appendChild(row)
-        }
+    div.className = "drow"
+    div.appendChild(slotXs(icon))
+    let grow = document.createElement("span")
+    grow.className = "grow"
+    grow.textContent = name
+    div.appendChild(grow)
+    if (badge) {
+        div.appendChild(badge)
+    }
+    div.appendChild(numEl)
+    return div
+}
+
+function col(className, children) {
+    let div = document.createElement("div")
+    div.className = `col ${className}`
+    for (let child of children) {
+        div.appendChild(child)
     }
     return div
 }
 
-function buildHead(item, rate) {
+function buildHead(item, rate, size) {
     let head = document.createElement("div")
     head.className = "head"
     head.style.cssText = "display: flex; align-items: center; gap: 10px;"
-    head.appendChild(slot(item.icon, 32))
+    let icon = document.createElement("span")
+    icon.className = "slot"
+    icon.appendChild(item.icon.make(size, true))
+    head.appendChild(icon)
 
     let grow = document.createElement("span")
-    grow.className = "grow"
     grow.style.flex = "1"
+    grow.style.lineHeight = "1.15"
     let title = document.createElement("span")
     title.className = "title"
     title.textContent = item.name
@@ -126,19 +137,76 @@ function buildHead(item, rate) {
     return head
 }
 
+// The ingredient's own row, for the "brought in"/"mined"/"piped in" badge
+// on a Needs line -- an ingredient can be supplied or a raw resource
+// independently of the row being expanded.
+function needBadge(rows, item) {
+    let ingredientRow = rows.find(r => r.item === item)
+    if (!ingredientRow) {
+        return null
+    }
+    if (!ingredientRow.isReal) {
+        return badgeSpan("in", "brought in")
+    }
+    if (ingredientRow.isResource) {
+        return item.phase === "fluid" ? badgeSpan("pipe", "piped in") : badgeSpan("mine", "mined")
+    }
+    return null
+}
+
+function buildNeedsCol(rows, row) {
+    let children = [lbl("Needs")]
+    if (!row) {
+        children.push(mutedSpan("Nothing needed."))
+    } else if (!row.isReal) {
+        children.push(mutedSpan("Made in another build; nothing needed here."))
+    } else if (row.isResource) {
+        children.push(mutedSpan(row.item.phase === "fluid" ? "Piped in." : "Mined here."))
+    } else {
+        let ingredients = row.recipe.ingredients || []
+        if (ingredients.length === 0) {
+            children.push(mutedSpan("Nothing needed."))
+        }
+        for (let ing of ingredients) {
+            let amount = ing.amount.mul(row.recipeRate)
+            children.push(drow(ing.item.icon, ing.item.name, needBadge(rows, ing.item), numSpan(rateText(amount))))
+        }
+    }
+    return col("needs", children)
+}
+
+function buildGoesToCol(item, totals, isTarget) {
+    let children = [lbl("Goes to")]
+    let totalRate = totals.items.get(item) || zero
+    let consumers = [...(totals.consumers.get(item) || new Map())]
+        .filter(([recipe]) => recipe.isReal())
+        .sort((a, b) => b[1].toFloat() - a[1].toFloat())
+    if (consumers.length === 0) {
+        children.push(mutedSpan(isTarget ? "This is what you asked for." : "Nothing consumes it."))
+    } else {
+        for (let [recipe, rate] of consumers) {
+            let product = recipe.products[0].item
+            let share = totalRate.isZero() ? zero : rate.div(totalRate)
+            children.push(drow(product.icon, recipe.name, shareSpan(percentText(share)), numSpan(rateText(rate))))
+        }
+    }
+    return col("goesto", children)
+}
+
 function buildSourceSeg(item, row) {
     let seg = document.createElement("span")
     seg.className = "seg source"
     let here = document.createElement("button")
     here.type = "button"
-    here.textContent = "make here"
+    here.textContent = "Make here"
     let bringIn = document.createElement("button")
     bringIn.type = "button"
-    bringIn.textContent = "bring in"
+    bringIn.textContent = "Bring in from another build"
 
     let supplied = !row.isReal
     here.classList.toggle("on", !supplied)
     bringIn.classList.toggle("on", supplied)
+    bringIn.classList.toggle("in", supplied)
 
     let toggle = () => document.dispatchEvent(new CustomEvent("calc:toggle-supplied", { detail: { item: item.key } }))
     here.addEventListener("click", () => { if (supplied) toggle() })
@@ -149,109 +217,61 @@ function buildSourceSeg(item, row) {
     return seg
 }
 
-// "Made by": the same option rows as the card's ⌄ chooser, only when
-// there is a choice to make.
-function buildMadeBy(item, totals) {
-    if (relevantRecipes(item).length < 2) return null
-    let div = document.createElement("div")
-    div.className = "list madeby"
-    div.appendChild(renderOptions(item, totals))
-    return div
+function buildSourceCol(item, row, totals, isTarget, isResource) {
+    let children = []
+    if (row && !isTarget && !isResource) {
+        children.push(buildSourceSeg(item, row))
+    }
+    if (relevantRecipes(item).length > 1) {
+        children.push(lbl("Recipe"))
+        children.push(renderOptions(item, totals))
+    }
+    if (row && spec.getBuilding(row.recipe) !== null) {
+        let exact = spec.getCount(row.recipe, row.recipeRate).toDecimal(2)
+        let power = powerRepr(spec.getPowerUsage(row.recipe, row.recipeRate).power)
+        children.push(mutedSpan(`${exact} machines exactly · ${power}`, "exact"))
+    }
+    return col("source", children)
 }
 
-function buildMachinesLine(row) {
-    let building = spec.getBuilding(row.recipe)
-    if (building === null) {
-        return null
-    }
-    let div = document.createElement("div")
-    div.className = "machines num"
-    div.appendChild(slot(building.icon, 24))
-    let count = buildingCount(row)
-    let exact = spec.getCount(row.recipe, row.recipeRate).toDecimal(1)
-    div.appendChild(document.createTextNode(`${count} × ${building.name} `))
-    let muted = document.createElement("span")
-    muted.className = "muted"
-    muted.textContent = `(${exact} exactly)`
-    div.appendChild(muted)
-    return div
-}
-
-function buildNeeds(row) {
-    if (!row) {
-        return list([], "Nothing needed.")
-    }
-    let rows = (row.recipe.ingredients || []).map(ing => {
-        let amount = ing.amount.mul(row.recipeRate)
-        return listRow(ing.item.icon, ing.item.name, numSpan(rateText(amount)))
-    })
-    return list(rows, "Nothing needed.")
-}
-
-function buildGoesTo(item, totals) {
-    let totalRate = totals.items.get(item) || zero
-    let consumers = [...(totals.consumers.get(item) || new Map())]
-        .filter(([recipe]) => recipe.isReal())
-        .sort((a, b) => b[1].toFloat() - a[1].toFloat())
-    let rows = consumers.map(([recipe, rate]) => {
-        let product = recipe.products[0].item
-        let share = totalRate.isZero() ? zero : rate.div(totalRate)
-        return listRow(product.icon, recipe.name, plainNum(percentText(share)), numSpan(rateText(rate)))
-    })
-    return list(rows, "Nothing consumes it.")
-}
-
-function renderDetails(spec, totals) {
-    let card = document.getElementById("node-details")
-    if (!card) {
-        return
-    }
-    let item = spec.whereItem ? spec.items.get(spec.whereItem) : null
-    if (!totals || !item || !totals.items.has(item)) {
-        card.hidden = true
-        card.removeAttribute("data-item")
-        card.textContent = ""
-        return
-    }
-
-    card.dataset.item = item.key
-    card.textContent = ""
-
-    let rate = totals.items.get(item) || zero
+// Fills `container` (emptying it first) with the Needs/Goes to/Source
+// columns for `item`'s row, looked up fresh from `totals` every call --
+// callers never cache a row across a re-solve.
+export function renderDetail(container, item, totals) {
+    container.textContent = ""
     let rows = buildRows(totals)
     let row = rows.find(r => r.item === item) || null
     let isTarget = row ? row.isTarget : spec.buildTargets.some(t => t.item === item)
     let isResource = row ? row.isResource : false
 
-    card.appendChild(buildHead(item, rate))
+    container.appendChild(buildNeedsCol(rows, row))
+    container.appendChild(buildGoesToCol(item, totals, isTarget))
+    container.appendChild(buildSourceCol(item, row, totals, isTarget, isResource))
+}
 
-    if (row && !isTarget && !isResource) {
-        card.appendChild(buildSourceSeg(item, row))
+function renderGraphSide(_spec, totals) {
+    let side = document.getElementById("graph-side")
+    if (!side) {
+        return
+    }
+    let item = spec.view === "graph" && spec.whereItem ? spec.items.get(spec.whereItem) : null
+    if (!item || !totals || !totals.items.has(item)) {
+        side.hidden = true
+        side.textContent = ""
+        return
     }
 
-    let madeBy = buildMadeBy(item, totals)
-    if (madeBy) {
-        card.appendChild(lbl("Made by"))
-        card.appendChild(madeBy)
-    }
-
-    if (row && row.isReal) {
-        let machines = buildMachinesLine(row)
-        if (machines) {
-            card.appendChild(machines)
-        }
-    }
-
-    card.appendChild(lbl("Needs"))
-    card.appendChild(buildNeeds(row))
-
-    card.appendChild(lbl("Goes to"))
-    card.appendChild(buildGoesTo(item, totals))
-
-    card.hidden = false
+    side.textContent = ""
+    let rate = totals.items.get(item) || zero
+    side.appendChild(buildHead(item, rate, 28))
+    let detail = document.createElement("div")
+    detail.className = "detail"
+    renderDetail(detail, item, totals)
+    side.appendChild(detail)
+    side.hidden = false
 }
 
 export function initDetails() {
-    document.addEventListener("calc:select", () => renderDetails(spec, spec.lastTotals))
-    registerRenderer(renderDetails)
+    document.addEventListener("calc:select", () => renderGraphSide(spec, spec.lastTotals))
+    registerRenderer(renderGraphSide)
 }

@@ -1,19 +1,16 @@
-// calc/source.js — the card source chooser: where an item comes from. One
-// popover (#source-pop) anchored under a card lists the item's relevant
-// recipes (spec: 2026-09-11-calculator-source-chooser-design.md) and, for
-// non-targets, "bring it in". Also builds the same option rows for the
-// details card's Made by list.
+// calc/source.js — which recipe makes an item, or bring it in from another
+// build. `renderOptions` builds the option-row list (spec:
+// 2026-09-11-calculator-source-chooser-design.md) that details.js's Recipe
+// section renders for any item with more than one relevant recipe; picking
+// a row applies it directly (`useOnly`/`bringIn`), there is no popover to
+// open or anchor any more -- the rows live inline in the open table row or
+// graph side card that details.js already redraws.
 import { spec } from "./factory.js"
 import { beltText, machineWord, pluralise } from "./flow-core.js"
 import { zero } from "./rational.js"
-import { registerRenderer } from "./render.js"
 import { markOverride } from "./savesettings.js"
 import { relevantCandidates, isRecycling, shareOf, shareText } from "./source-core.js"
 import { RATE_LABEL } from "./table-core.js"
-
-let openItem = null      // item key the popover shows, or null
-let openAnchor = null    // the card element it is anchored to
-let lastTotals = null
 
 function rateText(rate) {
     return spec.format.rate(rate) + (RATE_LABEL[spec.format.rateName] || "/min")
@@ -180,15 +177,14 @@ function optionButton(state, option) {
 
     button.addEventListener("click", event => {
         event.stopPropagation()
-        closeSourcePopover()
         if (option.kind === "bring-in") bringIn(state.item)
         else useOnly(state.item, option.recipe)
     })
     return button
 }
 
-// The option rows for an item, as a fragment; shared by the popover and
-// the details card's Made by list.
+// The option rows for an item, as a fragment; shared by the table's open
+// row and the graph side card's Recipe section (both via details.js).
 export function renderOptions(item, totals) {
     let state = sourceOptions(item, totals)
     let fragment = document.createDocumentFragment()
@@ -198,123 +194,9 @@ export function renderOptions(item, totals) {
     return fragment
 }
 
-export function isSourceOpen(itemKey) {
-    return openItem === itemKey
-}
-
-function positionPopover(pop, anchor) {
-    let frame = document.getElementById("flow-frame")
-    let fr = frame.getBoundingClientRect()
-    let cr = anchor.getBoundingClientRect()
-    let width = 372 + 24
-    let left = Math.max(8, Math.min(cr.left - fr.left, fr.width - width - 8))
-    let top = Math.max(8, Math.min(cr.bottom - fr.top + 6, fr.height - 80))
-    pop.style.left = `${Math.round(left)}px`
-    pop.style.top = `${Math.round(top)}px`
-}
-
-function renderPopover() {
-    let pop = document.getElementById("source-pop")
-    if (!pop) return
-    let item = openItem ? spec.items.get(openItem) : null
-    if (!item || !openAnchor || !openAnchor.isConnected) {
-        pop.hidden = true
-        pop.replaceChildren()
-        openItem = null
-        openAnchor = null
-        return
-    }
-    let state = sourceOptions(item, lastTotals)
-    pop.replaceChildren()
-    pop.dataset.item = item.key
-
-    let head = document.createElement("div")
-    head.className = "head"
-    let slot = document.createElement("span")
-    slot.className = "slot slot-sm"
-    slot.appendChild(item.icon.make(24, true))
-    head.appendChild(slot)
-    let title = document.createElement("span")
-    title.className = "title"
-    title.textContent = item.name
-    head.appendChild(title)
-    let sub = document.createElement("span")
-    sub.className = "muted num"
-    sub.textContent = `where it comes from · ${rateText(state.itemRate)}`
-    head.appendChild(sub)
-    let spacer = document.createElement("span")
-    spacer.className = "spacer"
-    head.appendChild(spacer)
-    let close = document.createElement("button")
-    close.type = "button"
-    close.className = "x"
-    close.id = "source-pop-close"
-    close.textContent = "✕"
-    close.addEventListener("click", event => { event.stopPropagation(); closeSourcePopover() })
-    head.appendChild(close)
-    pop.appendChild(head)
-
-    for (let option of state.options) {
-        pop.appendChild(optionButton(state, option))
-    }
-
-    let foot = document.createElement("div")
-    foot.className = "muted"
-    foot.style.fontSize = "11px"
-    foot.textContent = state.isTarget
-        ? "One recipe per item. A target is always made here."
-        : "One recipe per item. An item this leaves without a recipe shows up as brought in, with its own ⌄."
-    pop.appendChild(foot)
-
-    pop.hidden = false
-    positionPopover(pop, openAnchor)
-}
-
-export function closeSourcePopover() {
-    if (openItem === null) return
-    let was = openItem
-    openItem = null
-    openAnchor = null
-    let pop = document.getElementById("source-pop")
-    if (pop) { pop.hidden = true; pop.replaceChildren() }
-    document.querySelectorAll(`#flow-nodes .node[data-item="${was}"] .ways.open`).forEach(el => el.classList.remove("open"))
-}
-
-// Opens the chooser for `itemKey` under `anchor` (the card element); a
-// second call for the same item closes it.
-export function toggleSourcePopover(itemKey, anchor) {
-    if (openItem === itemKey) { closeSourcePopover(); return }
-    closeSourcePopover()
-    openItem = itemKey
-    openAnchor = anchor
-    renderPopover()
-    let pill = anchor.querySelector(".ways")
-    if (pill) pill.classList.add("open")
-}
-
-function render(_spec, totals) {
-    lastTotals = totals
-    if (openItem !== null) {
-        // The cards were just redrawn: re-anchor to the new element.
-        openAnchor = document.querySelector(`#flow-nodes .node[data-item="${openItem}"]`)
-        renderPopover()
-        let pill = openAnchor && openAnchor.querySelector(".ways")
-        if (pill) pill.classList.add("open")
-    }
-}
-
+// Nothing left to wire up here: renderOptions' rows already carry their own
+// click handlers (useOnly/bringIn, which re-solve on their own), and there
+// is no popover state to track any more. Kept so initModules' call list
+// doesn't need to know that.
 export function initSource() {
-    registerRenderer(render)
-    document.addEventListener("pointerdown", event => {
-        if (openItem === null) return
-        if (event.target.closest("#source-pop") || event.target.closest(".ways")) return
-        closeSourcePopover()
-    })
-    document.addEventListener("keydown", event => {
-        if (event.key !== "Escape" || openItem === null) return
-        closeSourcePopover()
-        // One Escape closes one thing: the popover consumes it so the
-        // ledger drawer's own Escape handler (header.js) keeps the drawer.
-        event.stopImmediatePropagation()
-    })
 }
