@@ -187,8 +187,11 @@ function nodeMarkup(node) {
     right.className = "right"
     let rateText = spec.format.rate(node.rate)
     let rateSpan = document.createElement("span")
+    // No data-value here: scratchpad.js's document-wide click delegate
+    // pastes any `.num[data-value]` it catches into the scratch pad, and a
+    // card click already does something else (toggles selection) -- the
+    // graph card's rate isn't click-to-paste.
     rateSpan.className = "rate num"
-    rateSpan.dataset.value = rateText
     rateSpan.textContent = `${rateText}${RATE_LABEL[spec.format.rateName] || "/min"}`
     right.appendChild(rateSpan)
     body.appendChild(right)
