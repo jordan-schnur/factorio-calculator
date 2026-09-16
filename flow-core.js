@@ -330,6 +330,8 @@ export function pluralise(count, word) {
 
 // belts is a float number of belts
 export function beltText(belts) {
+    if (belts < 0.05) return "a trickle"
+    if (belts <= 0.25) return "a quarter belt"
     if (belts <= 0.5) return "half a belt"
     if (belts <= 1) return "1 belt"
     return `${Math.ceil(belts * 10) / 10} belts`
