@@ -1,43 +1,43 @@
-// calc/flow.js — DOM layer for the graph: builds a flow-core model from the
-// current solution, lays it out (flow-core's layered(), a pure left-to-right
-// stage layout -- see the plan's "Layout") and renders node cards, stage
-// stripes and edges into the page. All the model math and layout arithmetic
-// live in flow-core.js so they stay node-testable; this file only touches
-// spec/d3/the DOM.
+// calc/flow.js — DOM layer for the reduced Graph view: builds a flow-core
+// model from the current solution, lays it out (flow-core's layered(), a
+// pure left-to-right stage layout) and renders node cards, stage stripes
+// and edges into #graph-frame. The card itself is deliberately thin (icon,
+// name, machine count, rate) -- recipe pick, needs/goes-to and the fold/tip
+// affordances that used to live on the card now live in the item table
+// (itemtable.js) and the details side card (details.js); this file only
+// draws the picture and dispatches calc:select on a click. All the model
+// math and layout arithmetic live in flow-core.js so they stay
+// node-testable; this file only touches spec/d3/the DOM.
 import { registerRenderer } from "./render.js"
 import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
-import { buildFlowModel, layered, rankNodes, machineWord, pluralise, beltText } from "./flow-core.js"
+import { buildFlowModel, layered, rankNodes } from "./flow-core.js"
 import { RATE_LABEL } from "./table-core.js"
-import { relevantRecipes, isSourceOpen, toggleSourcePopover, closeSourcePopover } from "./source.js"
 
+// The last totals a solve produced, remembered even while the Graph view
+// isn't showing (view=table) so switching to it via calc:view can draw
+// immediately instead of waiting for the next solve.
 let lastTotals = null
-let lastRenderKey = null
+// Snapshot of the totals/format the graph was actually drawn for, so an
+// unrelated re-render (e.g. a solve with the exact same result) is a no-op.
+let lastDrawnTotals = null
+let lastDrawnKey = null
 let lastLayout = null
 let lastNodeIdsKey = null
 let zoomBehavior = null
 let viewport = null
 // True until the graph has been fitted inside a container that had a real
 // size. The dataset fetch that populates spec.items/spec.recipes is async,
-// so the very first solve can land before #flow-container has laid out.
+// and the container is hidden (width/height 0) whenever the page isn't on
+// the Graph view, so the first draw after either can land before
+// #flow-container has laid out.
 let needsFit = true
 // True as long as the visible transform is exactly what fitToView() last
 // produced -- set true there, false by any zoom/pan the user initiates
-// (a d3-zoom event with event.sourceEvent non-null). Selecting a node or
-// resizing the container only re-fits while this holds, so a user who has
-// manually framed the graph isn't yanked back to the fitted view.
+// (a d3-zoom event with event.sourceEvent non-null). A resize only re-fits
+// while this holds, so a user who has manually framed the graph isn't
+// yanked back to the fitted view.
 let isFitted = true
-
-// Node ids the user has folded (their upstream, non-input production
-// collapsed into this node's card). Module-level so a re-render triggered
-// by an unrelated solve doesn't reset what the user folded, mirroring
-// table.js's expandedRows.
-const folded = new Set()
-
-// The node id currently under the pointer, if any -- combined with the
-// selected item's node id(s) in refreshEdgeHot() so hover and selection
-// can both mark edges "hot" without stomping on each other.
-let hoverId = null
 
 function renderKey() {
     return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}`
@@ -119,73 +119,6 @@ function buildModel(totals) {
     return model
 }
 
-// target -> [ids of nodes whose output it directly consumes], built once per
-// draw from the unfiltered model so fold state never has to touch it.
-function upstreamOf(model) {
-    let up = new Map(model.nodes.map(n => [n.id, []]))
-    for (let e of model.edges) {
-        up.get(e.target).push(e.source)
-    }
-    return up
-}
-
-// Walks from every target backwards across `edges`, stopping at any node in
-// `foldedSet` (its own upstream stays hidden). Mirrors the graph-first
-// prototype's visibleRows().
-function visibleIds(model, upstream, foldedSet) {
-    let seen = new Set()
-    let walk = id => {
-        if (seen.has(id)) return
-        seen.add(id)
-        if (foldedSet.has(id)) return
-        for (let src of upstream.get(id) || []) walk(src)
-    }
-    for (let n of model.nodes) {
-        if (n.kind === "target") walk(n.id)
-    }
-    return seen
-}
-
-function filterModel(model, ids) {
-    return {
-        nodes: model.nodes.filter(n => ids.has(n.id)),
-        edges: model.edges.filter(e => ids.has(e.source) && ids.has(e.target)),
-    }
-}
-
-// A node can fold only if it has at least one upstream node that is itself
-// a production step (not a brought-in input) -- folding an input away
-// wouldn't hide anything.
-function canFold(nodeById, upstream, id) {
-    return (upstream.get(id) || []).some(src => {
-        let n = nodeById.get(src)
-        return n && n.kind !== "input"
-    })
-}
-
-function hiddenCountFor(model, upstream, id) {
-    let without = visibleIds(model, upstream, new Set([...folded].filter(k => k !== id)))
-    let withIt = visibleIds(model, upstream, folded)
-    return without.size - withIt.size
-}
-
-function nodeSub(node, isFluid, hidden) {
-    let base
-    if (node.kind === "input" || node.kind === "mined") {
-        base = isFluid ? "piped in" : node.kind === "input" ? "brought in" : (node.machine === null || node.count === 0 ? "" : pluralise(node.count, machineWord(node.machine)))
-    } else if (node.machine === null || node.count === 0) {
-        base = ""
-    } else {
-        base = pluralise(node.count, machineWord(node.machine))
-    }
-    return hidden > 0 ? `${base} · ${hidden} hidden` : base
-}
-
-function beltsText(node, item, rateRat) {
-    if (item && item.phase === "fluid") return "pipe"
-    return beltText(spec.getBeltCount(rateRat).toFloat())
-}
-
 function selectNode(itemKey) {
     if (itemKey === null) return
     spec.whereItem = spec.whereItem === itemKey ? null : itemKey
@@ -193,140 +126,20 @@ function selectNode(itemKey) {
     document.dispatchEvent(new CustomEvent("calc:select", {detail: {item: spec.whereItem}}))
 }
 
-// The source pill: bottom-right of every card whose source can change.
-// Mined/piped resources and single-recipe targets have nothing to pick.
-function sourcePill(node, item, div) {
-    if (item === null || node.kind === "mined") return null
-    let isTarget = node.kind === "target"
-    let n = relevantRecipes(item).length
-    let text, title
-    if (node.kind === "input") {
-        text = "brought in"
-        title = "Brought in from another build · pick a recipe to make it here"
-    } else if (n > 1) {
-        text = `${n} ways`
-        title = `Made ${n} ways · pick the recipe` + (isTarget ? "" : ", or bring it in")
-    } else if (!isTarget) {
-        text = "made here"
-        title = "Made here · or bring it in from another build"
-    } else {
-        return null
-    }
-    let pill = document.createElement("button")
-    pill.type = "button"
-    pill.className = "ways" + (node.kind === "input" ? " in" : "") + (isSourceOpen(item.key) ? " open" : "")
-    pill.dataset.ways = text
-    pill.textContent = `${text} ⌄`
-    pill.title = title
-    pill.addEventListener("click", event => {
-        event.stopPropagation()
-        hideTip()
-        toggleSourcePopover(item.key, div)
-    })
-    // d3-zoom pans on mousedown at the container; a press on the pill must
-    // neither pan nor start a card drag.
-    for (let type of ["pointerdown", "mousedown", "touchstart"]) {
-        pill.addEventListener(type, event => event.stopPropagation())
-    }
-    return pill
+// span.sub.num: machine icon + "N × <machine name>", empty for a node with
+// no machine (brought-in, or a recipe/target the solver gave zero count).
+function nodeSub(node) {
+    if (!node.machine || !node.count) return null
+    return {icon: node.machine.icon, text: `${node.count} × ${node.machine.name}`}
 }
 
-// Hover tooltip (#node-tip): recipe, per-craft amounts, machines, hint.
-function showTip(node, item, div) {
-    let tip = document.getElementById("node-tip")
-    if (!tip || item === null) return
-    let recipe = node.kind === "input" ? null : spec.recipes.get(node.id)
-    tip.replaceChildren()
-
-    let head = document.createElement("div")
-    head.className = "tiprow"
-    let slot = document.createElement("span")
-    slot.className = "slot slot-sm"
-    slot.appendChild(item.icon.make(24, true))
-    head.appendChild(slot)
-    let name = document.createElement("span")
-    name.className = "title"
-    name.textContent = item.name
-    head.appendChild(name)
-    let rec = document.createElement("span")
-    rec.className = "muted num"
-    rec.textContent = node.kind === "input" ? "Brought in from another build"
-        : recipe && recipe.isResource() ? "Mined"
-        : recipe ? `${recipe.name} · ${recipe.time.toDecimal(1)} s` : ""
-    head.appendChild(rec)
-    tip.appendChild(head)
-
-    if (recipe && !recipe.isResource() && recipe.ingredients.length > 0) {
-        let row = document.createElement("div")
-        row.className = "tiprow"
-        let lbl = document.createElement("span")
-        lbl.className = "lbl"
-        lbl.textContent = "per craft"
-        row.appendChild(lbl)
-        let chip = (icon, amount) => {
-            let c = document.createElement("span")
-            c.className = "chip num"
-            c.appendChild(icon.make(20, true))
-            c.appendChild(document.createTextNode(amount.toDecimal(2)))
-            return c
-        }
-        for (let ing of recipe.ingredients) row.appendChild(chip(ing.item.icon, ing.amount))
-        let arrow = document.createElement("span")
-        arrow.className = "muted"
-        arrow.textContent = "→"
-        row.appendChild(arrow)
-        row.appendChild(chip(item.icon, recipe.gives(item)))
-        tip.appendChild(row)
-    }
-
-    let line = document.createElement("div")
-    line.className = "muted num"
-    let belts = beltsText(node, item, node.rate)
-    if (recipe && node.machine) {
-        let recipeRate = node.rate.isZero() ? zero : node.rate.div(recipe.gives(item))
-        let exact = spec.getCount(recipe, recipeRate)
-        let count = Math.ceil(exact.toFloat())
-        line.textContent = `${count} × ${node.machine.name} (${exact.toDecimal(1)} exactly) · ${belts}`
-    } else {
-        line.textContent = belts
-    }
-    tip.appendChild(line)
-
-    let hint = document.createElement("div")
-    hint.className = "muted"
-    hint.style.fontSize = "11px"
-    hint.textContent = "Click for details" + (div.querySelector(".ways") ? " · ⌄ picks the recipe or brings it in" : "") + (div.querySelector(".fold") ? " · − folds what it needs" : "")
-    tip.appendChild(hint)
-
-    let frame = document.getElementById("flow-frame")
-    let fr = frame.getBoundingClientRect()
-    let cr = div.getBoundingClientRect()
-    let width = 320 + 24
-    let left = cr.right - fr.left + 10
-    if (left + width > fr.width - 8) left = cr.left - fr.left - width - 10
-    left = Math.max(8, left)
-    let top = Math.max(60, Math.min(cr.top - fr.top - 8, fr.height - 160))
-    tip.style.left = `${Math.round(left)}px`
-    tip.style.top = `${Math.round(top)}px`
-    tip.dataset.node = node.id
-    tip.hidden = false
-}
-
-function hideTip() {
-    let tip = document.getElementById("node-tip")
-    if (tip) { tip.hidden = true; delete tip.dataset.node }
-}
-
-function nodeMarkup(node, hasUpstreamProduction) {
+function nodeMarkup(node) {
     let item = node.itemKey ? spec.items.get(node.itemKey) : null
-    let isFluid = item ? item.phase === "fluid" : false
-    let isFolded = folded.has(node.id)
 
     let div = document.createElement("div")
     let cls = ["node"]
     if (node.kind === "input") cls.push("in")
     if (node.kind === "target") cls.push("tgt")
-    if (isFolded) cls.push("folded")
     if (node.itemKey !== null && spec.whereItem === node.itemKey) cls.push("sel")
     div.className = cls.join(" ")
     div.dataset.node = node.id
@@ -362,11 +175,11 @@ function nodeMarkup(node, hasUpstreamProduction) {
 
     let sub = document.createElement("span")
     sub.className = "sub num"
-    if (node.machine) {
-        sub.appendChild(node.machine.icon.make(16, true))
+    let subInfo = nodeSub(node)
+    if (subInfo) {
+        sub.appendChild(subInfo.icon.make(16, true))
+        sub.appendChild(document.createTextNode(subInfo.text))
     }
-    let subText = document.createElement("span")
-    sub.appendChild(subText)
     mid.appendChild(sub)
     body.appendChild(mid)
 
@@ -378,66 +191,26 @@ function nodeMarkup(node, hasUpstreamProduction) {
     rateSpan.dataset.value = rateText
     rateSpan.textContent = `${rateText}${RATE_LABEL[spec.format.rateName] || "/min"}`
     right.appendChild(rateSpan)
-    let beltsSpan = document.createElement("span")
-    beltsSpan.className = "belts num muted"
-    beltsSpan.textContent = beltsText(node, item, node.rate)
-    right.appendChild(beltsSpan)
     body.appendChild(right)
 
     body.addEventListener("click", event => {
         // d3-zoom sets defaultPrevented on the click that ends a drag, so a
         // pan doesn't also register as a node click.
         if (event.defaultPrevented) return
-        if (event.target.closest(".rate")) return
         selectNode(node.itemKey)
     })
-    body.addEventListener("pointerenter", () => {
-        hoverId = node.id
-        refreshEdgeHot()
-        showTip(node, item, div)
-    })
-    body.addEventListener("pointerleave", () => {
-        if (hoverId === node.id) hoverId = null
-        refreshEdgeHot()
-        hideTip()
-    })
-    body.addEventListener("pointerdown", hideTip)
     div.appendChild(body)
 
-    if (hasUpstreamProduction) {
-        let fold = document.createElement("button")
-        fold.type = "button"
-        fold.className = "fold"
-        for (let type of ["pointerdown", "mousedown", "touchstart"]) {
-            fold.addEventListener(type, event => event.stopPropagation())
-        }
-        fold.textContent = isFolded ? "+" : "−"
-        fold.title = isFolded ? "Show what it needs" : "Fold what it needs into this node"
-        fold.addEventListener("click", event => {
-            event.stopPropagation()
-            if (isFolded) folded.delete(node.id)
-            else folded.add(node.id)
-            draw(lastTotals)
-        })
-        div.appendChild(fold)
-    }
-
-    let pill = sourcePill(node, item, div)
-    if (pill) div.appendChild(pill)
-
-    return {div, subText, isFluid}
+    return div
 }
 
-// "Hot" edges are the union of the hovered node's and the selected item's
-// node's edges; recomputed wholesale on every hover/selection change rather
-// than toggled incrementally, so hovering the very node that's selected and
-// then leaving it doesn't clear the selection's own highlight. Edge labels
+// The selected item's node(s) get their edges/labels marked "hot" -- there
+// is no hover state any more (see the module header comment). Edge labels
 // (`.elbl`) carry the same data-from/data-to as their edge and follow it,
 // so a hot label survives zoomed-out label hiding (see the `small` toggle
 // in ensureZoom()).
 function refreshEdgeHot() {
     let ids = new Set()
-    if (hoverId !== null) ids.add(hoverId)
     if (spec.whereItem !== null) {
         document.querySelectorAll("#flow-nodes .node").forEach(el => {
             if (el.dataset.item === spec.whereItem) ids.add(el.dataset.node)
@@ -453,40 +226,28 @@ function refreshEdgeHot() {
 
 function containerSize() {
     let container = document.querySelector("#flow-container")
-    return {width: container.clientWidth, height: container.clientHeight}
+    return container ? {width: container.clientWidth, height: container.clientHeight} : {width: 0, height: 0}
 }
 
 // Fits the whole graph inside the container, centred, never scaling nodes
 // above their natural size. A hidden/zero-size container can't be fitted;
 // leave needsFit set so the next render or resize tries again. The 40/190px
 // margins (not a symmetric pad) are pinned: they keep the graph clear of the
-// Make panel (top-left) and the bring-in bar (bottom), which float over the
-// canvas rather than reserving layout space. When #node-details is open it
-// floats over the graph's right side (320px wide plus margin), so the width
-// term is computed against a narrowed W' and centred within it, leaving the
-// height terms (already pinned to the Make panel/bring-in bar) untouched.
-// The ledger drawer (#flow-frame.ledger-open) slides in over the same right
-// side at 520px wide and is reserved the same way, stacking with the
-// details card's width if both are open.
+// Make panel (top-left) and the footer (bottom), which float over the
+// canvas rather than reserving layout space. #graph-side (details.js) and
+// #flow-fit sit on top of the canvas as absolute overlays, not reserved
+// width -- the graph always fits the whole #flow-container.
 export function fitToView() {
     if (lastLayout === null || zoomBehavior === null) return
     let {width: W, height: H} = containerSize()
     if (W === 0 || H === 0) return
-    let detailsOpen = !document.getElementById("node-details")?.hidden
-    let ledgerOpen = document.getElementById("flow-frame")?.classList.contains("ledger-open") ?? false
-    let Wp = W - (detailsOpen ? 340 : 0) - (ledgerOpen ? 520 : 0)
-    let k = Math.min(1, (Wp - 40) / lastLayout.width, (H - 190) / lastLayout.height)
+    let k = Math.min(1, (W - 40) / lastLayout.width, (H - 190) / lastLayout.height)
     if (!isFinite(k) || k <= 0) return
-    let tx = (Wp - lastLayout.width * k) / 2
+    let tx = (W - lastLayout.width * k) / 2
     let ty = 96 + Math.max(0, (H - 190 - lastLayout.height * k) / 2)
     d3.select("#flow-container").call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
     needsFit = false
     isFitted = true
-}
-
-function zoomBy(factor) {
-    if (zoomBehavior === null) return
-    d3.select("#flow-container").transition().duration(150).call(zoomBehavior.scaleBy, factor)
 }
 
 // Pans (keeping scale) so `item`'s node card sits at the container's centre.
@@ -512,7 +273,7 @@ function ensureZoom() {
             // drove (wheel, drag, pinch); fitToView()/focusNode() call
             // zoomBehavior.transform programmatically, which fires this
             // handler too but with sourceEvent null.
-            if (event.sourceEvent) { isFitted = false; hideTip(); closeSourcePopover() }
+            if (event.sourceEvent) isFitted = false
             let t = event.transform
             let css = `translate(${t.x}px, ${t.y}px) scale(${t.k})`
             if (viewport !== null) viewport.attr("transform", t)
@@ -534,6 +295,7 @@ function stageLabel(rank, lastRank) {
 
 function renderColumns(laidOut) {
     let container = document.querySelector("#flow-columns")
+    if (!container) return
     container.replaceChildren()
     let lastRank = laidOut.columns.length - 1
     for (let col of laidOut.columns) {
@@ -554,20 +316,20 @@ function renderColumns(laidOut) {
     }
 }
 
-function renderNodes(model, laidOut, upstream, nodeById) {
+function renderNodes(laidOut) {
     let nodesLayer = document.querySelector("#flow-nodes")
+    if (!nodesLayer) return
     nodesLayer.replaceChildren()
     for (let node of laidOut.nodes) {
-        let {div, subText, isFluid} = nodeMarkup(node, canFold(nodeById, upstream, node.id))
-        let hidden = folded.has(node.id) ? hiddenCountFor(model, upstream, node.id) : 0
-        subText.textContent = nodeSub(node, isFluid, hidden)
-        nodesLayer.appendChild(div)
+        nodesLayer.appendChild(nodeMarkup(node))
     }
 }
 
 function renderEdges(laidOut) {
+    let svgEl = document.querySelector("svg#flow")
+    if (!svgEl) return
     let nodeKind = new Map(laidOut.nodes.map(n => [n.id, n.kind]))
-    let svg = d3.select("svg#flow")
+    let svg = d3.select(svgEl)
     svg.selectAll("*").remove()
     viewport = svg.append("g").classed("viewport", true)
     viewport.attr("transform", d3.zoomTransform(document.querySelector("#flow-container")))
@@ -587,6 +349,7 @@ function renderEdges(laidOut) {
     // Rational.from_float(edge.rate) there avoids a float round-trip that
     // would otherwise print "10.0/min" next to a card reading "10/min".
     let nodesLayer = document.querySelector("#flow-nodes")
+    if (!nodesLayer) return
     for (let edge of laidOut.edges) {
         let label = document.createElement("div")
         label.className = "elbl num"
@@ -600,53 +363,46 @@ function renderEdges(laidOut) {
     }
 }
 
-// The full draw pass: unconditional (unlike renderFlow's solve-triggered
-// entry point), since fold/select changes need to redraw without a new
-// solve, and folding needs the *unfiltered* model to compute hidden counts
-// and fold eligibility.
+// The full draw pass, called whenever the Graph view needs a picture: on a
+// fresh solve while it's showing, and once when calc:view switches to it
+// (see initFlow()).
 function draw(totals) {
-    let empty = document.querySelector("#flow-empty")
-    if (spec.buildTargets.length === 0) {
-        empty.hidden = false
-        document.querySelector("#flow-columns").replaceChildren()
-        document.querySelector("#flow-nodes").replaceChildren()
+    if (spec.buildTargets.length === 0 || totals === null) {
+        document.querySelector("#flow-columns")?.replaceChildren()
+        document.querySelector("#flow-nodes")?.replaceChildren()
         d3.select("svg#flow").selectAll("*").remove()
         lastLayout = null
         lastNodeIdsKey = null
         return
     }
-    empty.hidden = true
-    if (totals === null) return
+
+    // Set here, not in renderFlow(), so a draw() triggered off the
+    // calc:view listener (a solve whose renderFlow() call returned early
+    // because the Graph view wasn't showing yet) also marks itself drawn --
+    // otherwise a later renderFlow() call with that same totals/key would
+    // wrongly dedupe away a redraw the page never actually did (e.g. rate
+    // unit changes while off Graph, then back).
+    lastDrawnTotals = totals
+    lastDrawnKey = renderKey()
 
     let model = buildModel(totals)
-    let nodeById = new Map(model.nodes.map(n => [n.id, n]))
-    let upstream = upstreamOf(model)
-    // A folded node the model no longer contains (its recipe dropped out of
-    // the solution) can never unfold again; drop it rather than carry dead
-    // state across solves.
-    for (let id of [...folded]) {
-        if (!upstream.has(id)) folded.delete(id)
-    }
-    let visible = visibleIds(model, upstream, folded)
-    let shown = filterModel(model, visible)
 
     // 240x72 (up from flow-core's 216x64 default): a two-line-clamped node
     // name (see .node .name in calc.css) needs the extra height, and the
     // extra width keeps a two-word item name like "Piercing rounds
     // magazine" from wrapping to three lines.
-    // Rank the full model so a folded card keeps its stage column (a card
-    // with no visible producers would otherwise rank as a source).
     let ranks = rankNodes(model).rank
-    let laidOut = layered(shown, {nodeWidth: 240, nodeHeight: 72, ranks})
+    let laidOut = layered(model, {nodeWidth: 240, nodeHeight: 72, ranks})
     lastLayout = laidOut
 
     ensureZoom()
     renderColumns(laidOut)
-    renderNodes(model, laidOut, upstream, nodeById)
+    renderNodes(laidOut)
     renderEdges(laidOut)
     // Node markup already sets .sel from spec.whereItem, but the edges it
     // implies (e.g. a selection carried in from the page's own fragment on
-    // the very first draw) need the same pass hover uses.
+    // the very first draw) need the same pass the details card's open/close
+    // uses.
     refreshEdgeHot()
 
     let idsKey = laidOut.nodes.map(n => n.id).sort().join(",")
@@ -654,17 +410,34 @@ function draw(totals) {
         lastNodeIdsKey = idsKey
         needsFit = true
     }
-    if (needsFit) fitToView()
+    if (needsFit) fitWithRetry()
+}
+
+// fitToView() early-returns on a 0x0 container -- true not just while the
+// dataset fetch is pending but on a first load of a view=graph link, where
+// header.js's calc:view dispatch (and the renderer that draws off it, see
+// below) runs before header's own renderer has unhidden #graph-frame.
+// Deferring one frame gives that renderer a chance to run first; if the
+// container is still 0x0 even then (e.g. two renderers land in the same
+// microtask but different rAF callbacks), retry exactly once more rather
+// than looping forever.
+function fitWithRetry() {
+    requestAnimationFrame(() => {
+        fitToView()
+        if (needsFit) requestAnimationFrame(() => fitToView())
+    })
 }
 
 // `spec` is always the module singleton imported above; the renderer
 // registry calls every renderer as fn(spec, totals) so the parameter is
-// kept (unused) to match that shape.
+// kept (unused) to match that shape. The graph only actually redraws while
+// it's the visible view (spec.view === "graph"); otherwise it just
+// remembers `totals` for the calc:view listener below to draw with once the
+// container has a real size to fit into.
 function renderFlow(_spec, totals) {
-    let key = renderKey()
-    if (spec.buildTargets.length !== 0 && totals === lastTotals && key === lastRenderKey) return
     lastTotals = totals
-    lastRenderKey = key
+    if (spec.view !== "graph") return
+    if (spec.buildTargets.length !== 0 && totals === lastDrawnTotals && renderKey() === lastDrawnKey) return
     draw(totals)
 }
 
@@ -681,21 +454,19 @@ export function initFlow() {
 
     document.addEventListener("calc:select", updateSelectionClasses)
 
-    // Selecting or clearing a node toggles #node-details, which changes how
-    // much width fitToView() reserves; refit to it, but only if the user
-    // hasn't since framed the graph themselves. Deferred to a microtask:
-    // initFlow() runs before initDetails(), so this listener is called
-    // before details.js's own calc:select handler has updated card.hidden.
-    document.addEventListener("calc:select", () => {
-        queueMicrotask(() => { if (isFitted) fitToView() })
-    })
-
-    document.addEventListener("calc:focus-node", event => {
-        let item = event.detail.item
-        spec.whereItem = item
-        spec.setHash()
-        document.dispatchEvent(new CustomEvent("calc:select", {detail: {item}}))
-        focusNode(item)
+    // The container is hidden (0-size) until the view actually switches to
+    // Graph, so a solve that happened while on Table couldn't have fitted
+    // anything. header.js dispatches this event BEFORE its own renderer
+    // unhides #graph-frame (applyVisibility runs after the dispatch), so
+    // drawing/fitting on the same frame would still see a 0x0 container;
+    // deferring to the next frame gives that unhide a chance to land first.
+    document.addEventListener("calc:view", event => {
+        if (event.detail && event.detail.view === "graph" && lastTotals) {
+            requestAnimationFrame(() => {
+                draw(lastTotals)
+                fitToView()
+            })
+        }
     })
 
     window.addEventListener("resize", () => {
@@ -704,11 +475,12 @@ export function initFlow() {
     // This observer catches every way #flow-container's box changes size
     // (window resize is also covered by the listener above, but a
     // ResizeObserver additionally fires for layout-only changes with no
-    // window resize event, e.g. a sidebar collapsing).
-    new ResizeObserver(() => {
-        if (isFitted) fitToView()
-    }).observe(document.querySelector("#flow-container"))
-    document.querySelector("#flow-fit").addEventListener("click", () => fitToView())
-    document.querySelector("#flow-zoom-in").addEventListener("click", () => zoomBy(1.4))
-    document.querySelector("#flow-zoom-out").addEventListener("click", () => zoomBy(1 / 1.4))
+    // window resize event, e.g. switching to the Graph view).
+    let container = document.querySelector("#flow-container")
+    if (container) {
+        new ResizeObserver(() => {
+            if (isFitted) fitToView()
+        }).observe(container)
+    }
+    document.querySelector("#flow-fit")?.addEventListener("click", () => fitToView())
 }
