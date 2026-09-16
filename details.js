@@ -273,5 +273,9 @@ function renderGraphSide(_spec, totals) {
 
 export function initDetails() {
     document.addEventListener("calc:select", () => renderGraphSide(spec, spec.lastTotals))
+    // A view switch doesn't re-solve and doesn't change spec.whereItem, but
+    // #graph-side must appear/disappear with it -- header.js dispatches
+    // calc:view on every Table<->Graph click.
+    document.addEventListener("calc:view", () => renderGraphSide(spec, spec.lastTotals))
     registerRenderer(renderGraphSide)
 }
