@@ -138,6 +138,9 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     if (spec.whereItem !== null) {
         settings += "&item=" + spec.whereItem
     }
+    if (spec.view === "graph") {
+        settings += "&view=graph"
+    }
 
     if (!spec.isDefaultPlanet()) {
         let planets = []

@@ -1,6 +1,7 @@
-// calc/targets.js — the empty-state panel, example chips and "Restore last"
-// link around ul#targets. BuildTarget itself (the target rows) lives in
-// target.js; the search box and browse grid live in search.js.
+// calc/targets.js — example chips, "Restore last" link, and target notes
+// around ul#targets. The intro/table/graph visibility switch is
+// header.js's job (#make-panel.intro). BuildTarget itself (the target rows)
+// lives in target.js; the search box and browse grid live in search.js.
 import { spec } from "./factory.js"
 import { Rational } from "./rational.js"
 import { registerRenderer } from "./render.js"
@@ -12,7 +13,7 @@ function addTargetAtPerMinute(itemKey, perMinute) {
 }
 
 function wireExampleChips() {
-    for (let chip of document.querySelectorAll("#flow-empty .example-target")) {
+    for (let chip of document.querySelectorAll("#intro-extras .example-target")) {
         chip.addEventListener("click", () => {
             addTargetAtPerMinute(chip.dataset.item, Number(chip.dataset.rate))
         })
@@ -41,17 +42,17 @@ function wireRestoreLast() {
 }
 
 function renderTargets(spec) {
-    let empty = document.getElementById("flow-empty")
     let hasTargets = spec.buildTargets.length > 0
     let notes = document.getElementById("target-notes")
-    notes.replaceChildren()
-    for (let note of spec.targetNotes) {
-        let line = document.createElement("div")
-        line.textContent = note
-        notes.appendChild(line)
+    if (notes) {
+        notes.replaceChildren()
+        for (let note of spec.targetNotes) {
+            let line = document.createElement("div")
+            line.textContent = note
+            notes.appendChild(line)
+        }
+        notes.hidden = spec.targetNotes.length === 0
     }
-    notes.hidden = spec.targetNotes.length === 0
-    empty.hidden = hasTargets
     if (hasTargets) {
         try {
             localStorage.setItem("calc.lastHash", location.hash)

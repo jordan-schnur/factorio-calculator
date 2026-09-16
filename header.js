@@ -1,18 +1,9 @@
-// calc/header.js — topbar controls: assembler tier, rate unit, ledger
-// drawer toggle, settings drawer, save line.
+// calc/header.js — topbar controls: view switch (table/graph), assembler
+// tier, save line, settings drawer, and page-visibility (intro vs. table vs.
+// graph) driven by spec.buildTargets/spec.view.
+import { spec } from "./factory.js"
 import { registerRenderer } from "./render.js"
 import { markOverride } from "./savesettings.js"
-
-// The ledger is an overlay drawer over the graph: opening it changes no
-// layout and requires no refit. Closed on every load.
-function applyLedgerOpen(open) {
-    let ledger = document.getElementById("ledger")
-    let toggle = document.getElementById("ledger-toggle")
-    let frame = document.getElementById("flow-frame")
-    if (ledger) ledger.hidden = !open
-    if (toggle) toggle.classList.toggle("on", open)
-    if (frame) frame.classList.toggle("ledger-open", open)
-}
 
 function openSettings() {
     let drawer = document.getElementById("settings-drawer")
@@ -84,15 +75,6 @@ function renderAsmSeg(spec) {
     }
 }
 
-function renderRateSeg(spec) {
-    let seg = document.getElementById("rate-seg")
-    if (!seg) return
-    let rateName = spec.format.rateName
-    for (let button of seg.querySelectorAll("button[data-rate]")) {
-        button.classList.toggle("on", button.dataset.rate === rateName)
-    }
-}
-
 function renderSaveLine(spec) {
     let line = document.getElementById("save-line")
     if (!line) return
@@ -109,42 +91,63 @@ function renderSaveLine(spec) {
     line.textContent = `Reading ${name} · ${planets} · ${belt} · ${furnace}`
 }
 
-function render(spec, totals) {
-    renderRateSeg(spec)
-    renderAsmSeg(spec)
-    renderSaveLine(spec)
+// From spec.buildTargets/spec.view: which top-level frames show. The intro
+// (no targets yet) hides everything below the search box; once there are
+// targets, exactly one of #table-frame/#graph-frame is visible.
+export function applyVisibility() {
+    let makePanel = document.getElementById("make-panel")
+    let hasTargets = spec.buildTargets.length > 0
+    if (makePanel) makePanel.classList.toggle("intro", !hasTargets)
+
+    let viewSeg = document.getElementById("view-seg")
+    let boardButton = document.getElementById("board-button")
+    let tableFrame = document.getElementById("table-frame")
+    let graphFrame = document.getElementById("graph-frame")
+    let footer = document.getElementById("footer")
+    let scratchpadFrame = document.getElementById("scratchpad-frame")
+
+    if (viewSeg) viewSeg.hidden = !hasTargets
+    if (boardButton) boardButton.hidden = !hasTargets
+    if (footer) footer.hidden = !hasTargets
+    if (scratchpadFrame) scratchpadFrame.hidden = !hasTargets
+
+    if (!hasTargets) {
+        if (tableFrame) tableFrame.hidden = true
+        if (graphFrame) graphFrame.hidden = true
+        return
+    }
+
+    let view = spec.view === undefined ? "table" : spec.view
+    if (tableFrame) tableFrame.hidden = view !== "table"
+    if (graphFrame) graphFrame.hidden = view !== "graph"
+
+    if (viewSeg) {
+        for (let button of viewSeg.querySelectorAll("button[data-view]")) {
+            button.classList.toggle("on", button.dataset.view === view)
+        }
+    }
 }
 
-function rateButtonClick(button) {
-    let rate = button.dataset.rate
-    let radio = document.querySelector(`#display_rate input[value="${rate}"]`)
-    if (!radio) return
-    radio.checked = true
-    radio.dispatchEvent(new Event("change", {bubbles: true}))
+function render(spec, totals) {
+    renderAsmSeg(spec)
+    renderSaveLine(spec)
+    applyVisibility()
 }
 
 export function initHeader() {
     registerRenderer(render)
 
-    let rateSeg = document.getElementById("rate-seg")
-    if (rateSeg) {
-        rateSeg.addEventListener("click", event => {
-            let button = event.target.closest("button[data-rate]")
-            if (button) rateButtonClick(button)
+    let viewSeg = document.getElementById("view-seg")
+    if (viewSeg) {
+        viewSeg.addEventListener("click", event => {
+            let button = event.target.closest("button[data-view]")
+            if (!button) return
+            spec.view = button.dataset.view
+            spec.setHash()
+            document.dispatchEvent(new CustomEvent("calc:view", {detail: {view: spec.view}}))
+            applyVisibility()
         })
     }
-
-    let ledgerToggle = document.getElementById("ledger-toggle")
-    if (ledgerToggle) {
-        ledgerToggle.addEventListener("click", () => {
-            let ledger = document.getElementById("ledger")
-            applyLedgerOpen(ledger ? ledger.hidden : false)
-        })
-    }
-    document.addEventListener("calc:ledger", event => {
-        applyLedgerOpen(event.detail.open)
-    })
-    applyLedgerOpen(false)
 
     let settingsOpen = document.getElementById("settings-open")
     if (settingsOpen) settingsOpen.addEventListener("click", openSettings)
@@ -159,8 +162,6 @@ export function initHeader() {
     document.addEventListener("keydown", event => {
         if (event.key !== "Escape") return
         let drawer = document.getElementById("settings-drawer")
-        if (drawer && !drawer.hidden) { closeSettings(); return }
-        let ledger = document.getElementById("ledger")
-        if (ledger && !ledger.hidden) applyLedgerOpen(false)
+        if (drawer && !drawer.hidden) closeSettings()
     })
 }
