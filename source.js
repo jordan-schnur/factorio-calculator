@@ -1,20 +1,15 @@
-// calc/source.js — which recipe makes an item, or bring it in from another
-// build. `renderOptions` builds the option-row list (spec:
-// 2026-09-11-calculator-source-chooser-design.md) that details.js's Recipe
-// section renders for any item with more than one relevant recipe; picking
-// a row applies it directly (`useOnly`/`bringIn`), there is no popover to
-// open or anchor any more -- the rows live inline in the open table row or
-// graph side card that details.js already redraws.
+// calc/source.js — which recipe makes an item. `renderOptions` builds the
+// recipe option-row list (spec: 2026-09-11-calculator-source-chooser-design.md)
+// that details.js's Recipe section renders for any item with more than one
+// relevant recipe; picking a row applies it directly (`useOnly`, which
+// re-solves on its own). Bringing an item in from another build is not a
+// row here -- that is the Source segment's own button, built by
+// details.js and wired straight to the calc:toggle-supplied event.
 import { spec } from "./factory.js"
-import { beltText, machineWord, pluralise } from "./flow-core.js"
+import { machineWord, pluralise } from "./flow-core.js"
 import { zero } from "./rational.js"
 import { markOverride } from "./savesettings.js"
 import { relevantCandidates, isRecycling, shareOf, shareText } from "./source-core.js"
-import { RATE_LABEL } from "./table-core.js"
-
-function rateText(rate) {
-    return spec.format.rate(rate) + (RATE_LABEL[spec.format.rateName] || "/min")
-}
 
 function allowedOnSelectedPlanets(recipe) {
     if (!spec.planets || spec.selectedPlanets.size === 0) return true
@@ -57,8 +52,10 @@ function amountText(amount) {
     return amount.toDecimal(2)
 }
 
-// One entry per relevant recipe (+ bring in for a non-target), with the
-// machine count each would need at the item's current total rate.
+// One entry per relevant recipe, with the machine count each would need at
+// the item's current total rate. Bringing the item in is not one of these
+// rows -- that action lives only on the Source segment's own button, right
+// above the Recipe list in the detail markup (details.js).
 export function sourceOptions(item, totals) {
     let itemRate = (totals && totals.items.get(item)) || zero
     let producers = (totals && totals.producers.get(item)) || new Map()
@@ -93,22 +90,6 @@ export function sourceOptions(item, totals) {
     if (options.filter(o => o.inUse).length < 2) {
         for (let o of options) o.shareText = ""
     }
-    if (!isTarget) {
-        let belts = item.phase === "fluid" ? "pipe" : beltText(spec.getBeltCount(itemRate).toFloat())
-        options.push({
-            kind: "bring-in",
-            key: "bring-in",
-            recipe: null,
-            name: "Bring it in from another build",
-            icon: item.icon,
-            inUse: ignored,
-            shareText: "",
-            locked: false,
-            line: `no machines here · ${belts} arriving`,
-            countText: rateText(itemRate),
-            exactText: "from elsewhere",
-        })
-    }
     return {item, itemRate, ignored, isTarget, options}
 }
 
@@ -125,16 +106,10 @@ export function useOnly(item, recipe) {
     spec.updateSolution()
 }
 
-export function bringIn(item) {
-    if (isTargetItem(item) || spec.ignore.has(item)) return
-    spec.toggleIgnore(item)
-    spec.updateSolution()
-}
-
 function optionButton(state, option) {
     let button = document.createElement("button")
     button.type = "button"
-    button.className = "opt" + (option.inUse ? " cur" : "") + (option.kind === "bring-in" && option.inUse ? " in" : "")
+    button.className = "opt" + (option.inUse ? " cur" : "")
     button.dataset.option = option.key
 
     let mark = document.createElement("span")
@@ -177,8 +152,7 @@ function optionButton(state, option) {
 
     button.addEventListener("click", event => {
         event.stopPropagation()
-        if (option.kind === "bring-in") bringIn(state.item)
-        else useOnly(state.item, option.recipe)
+        useOnly(state.item, option.recipe)
     })
     return button
 }
@@ -195,8 +169,8 @@ export function renderOptions(item, totals) {
 }
 
 // Nothing left to wire up here: renderOptions' rows already carry their own
-// click handlers (useOnly/bringIn, which re-solve on their own), and there
-// is no popover state to track any more. Kept so initModules' call list
-// doesn't need to know that.
+// click handler (useOnly, which re-solves on its own), and there is no
+// popover state to track any more. Kept so initModules' call list doesn't
+// need to know that.
 export function initSource() {
 }
