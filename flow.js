@@ -401,7 +401,22 @@ function draw(totals) {
         lastNodeIdsKey = idsKey
         needsFit = true
     }
-    if (needsFit) fitToView()
+    if (needsFit) fitWithRetry()
+}
+
+// fitToView() early-returns on a 0x0 container -- true not just while the
+// dataset fetch is pending but on a first load of a view=graph link, where
+// header.js's calc:view dispatch (and the renderer that draws off it, see
+// below) runs before header's own renderer has unhidden #graph-frame.
+// Deferring one frame gives that renderer a chance to run first; if the
+// container is still 0x0 even then (e.g. two renderers land in the same
+// microtask but different rAF callbacks), retry exactly once more rather
+// than looping forever.
+function fitWithRetry() {
+    requestAnimationFrame(() => {
+        fitToView()
+        if (needsFit) requestAnimationFrame(() => fitToView())
+    })
 }
 
 // `spec` is always the module singleton imported above; the renderer
@@ -435,11 +450,16 @@ export function initFlow() {
 
     // The container is hidden (0-size) until the view actually switches to
     // Graph, so a solve that happened while on Table couldn't have fitted
-    // anything; draw and fit now that it can.
+    // anything. header.js dispatches this event BEFORE its own renderer
+    // unhides #graph-frame (applyVisibility runs after the dispatch), so
+    // drawing/fitting on the same frame would still see a 0x0 container;
+    // deferring to the next frame gives that unhide a chance to land first.
     document.addEventListener("calc:view", event => {
         if (event.detail && event.detail.view === "graph" && lastTotals) {
-            draw(lastTotals)
-            fitToView()
+            requestAnimationFrame(() => {
+                draw(lastTotals)
+                fitToView()
+            })
         }
     })
 
