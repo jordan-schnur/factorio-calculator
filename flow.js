@@ -417,15 +417,19 @@ function draw(totals) {
 // dataset fetch is pending but on a first load of a view=graph link, where
 // header.js's calc:view dispatch (and the renderer that draws off it, see
 // below) runs before header's own renderer has unhidden #graph-frame.
-// Deferring one frame gives that renderer a chance to run first; if the
+// Deferring one tick gives that renderer a chance to run first; if the
 // container is still 0x0 even then (e.g. two renderers land in the same
-// microtask but different rAF callbacks), retry exactly once more rather
-// than looping forever.
+// microtask but different timer callbacks), retry exactly once more rather
+// than looping forever. setTimeout, not requestAnimationFrame: headless
+// Edge under the page tests' --virtual-time-budget never fires rAF, so a
+// deferral built on it would just never run there (see the note near
+// tests/test_calc_page.py:124); a 0ms timer advances under virtual time the
+// same as it would after one real frame.
 function fitWithRetry() {
-    requestAnimationFrame(() => {
+    setTimeout(() => {
         fitToView()
-        if (needsFit) requestAnimationFrame(() => fitToView())
-    })
+        if (needsFit) setTimeout(() => fitToView(), 0)
+    }, 0)
 }
 
 // `spec` is always the module singleton imported above; the renderer
@@ -458,14 +462,15 @@ export function initFlow() {
     // Graph, so a solve that happened while on Table couldn't have fitted
     // anything. header.js dispatches this event BEFORE its own renderer
     // unhides #graph-frame (applyVisibility runs after the dispatch), so
-    // drawing/fitting on the same frame would still see a 0x0 container;
-    // deferring to the next frame gives that unhide a chance to land first.
+    // drawing/fitting on the same tick would still see a 0x0 container;
+    // deferring gives that unhide a chance to land first. setTimeout, not
+    // requestAnimationFrame -- see the comment on fitWithRetry().
     document.addEventListener("calc:view", event => {
         if (event.detail && event.detail.view === "graph" && lastTotals) {
-            requestAnimationFrame(() => {
+            setTimeout(() => {
                 draw(lastTotals)
                 fitToView()
-            })
+            }, 0)
         }
     })
 
