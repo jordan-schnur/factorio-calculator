@@ -387,12 +387,12 @@ function draw(totals) {
 
     let model = buildModel(totals)
 
-    // 240x72 (up from flow-core's 216x64 default): a two-line-clamped node
-    // name (see .node .name in calc.css) needs the extra height, and the
-    // extra width keeps a two-word item name like "Piercing rounds
-    // magazine" from wrapping to three lines.
+    // 210x58: the prototype's .gcard size, which calc.css's .node now
+    // matches exactly -- these are the inline width/height nodeMarkup()
+    // writes onto each card, so a mismatch here would leave .node's CSS
+    // size dead.
     let ranks = rankNodes(model).rank
-    let laidOut = layered(model, {nodeWidth: 240, nodeHeight: 72, ranks})
+    let laidOut = layered(model, {nodeWidth: 210, nodeHeight: 58, ranks})
     lastLayout = laidOut
 
     ensureZoom()
