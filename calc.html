@@ -60,9 +60,9 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
     <div id="target-notes" class="muted" hidden></div>
     <div id="intro-extras">
       <div class="examples">
-        <button class="btn example-target" data-item="automation-science-pack" data-rate="60"><img class="icon">Red science 60/min</button>
-        <button class="btn example-target" data-item="military-science-pack" data-rate="60"><img class="icon">Military science 60/min</button>
-        <button class="btn example-target" data-item="chemical-science-pack" data-rate="30"><img class="icon">Blue science 30/min</button>
+        <button class="btn example-target" data-item="automation-science-pack" data-rate="60">Red science 60/min</button>
+        <button class="btn example-target" data-item="military-science-pack" data-rate="60">Military science 60/min</button>
+        <button class="btn example-target" data-item="chemical-science-pack" data-rate="30">Blue science 30/min</button>
       </div>
       <a id="restore-last" hidden>Restore the last factory</a>
     </div>
@@ -101,24 +101,26 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
       <div class="sec">From your save</div>
       <div class="deep" id="settings-fromsave"></div>
 
-      <div class="sec">Machines</div>
-      <div class="deep">
-        <div class="kv"><span class="muted" style="width: 110px;">Assemblers</span><div class="seg" id="asm-seg"></div></div>
-        <div class="kv"><span class="muted" style="width: 110px;">Machines</span><span id="building_selector"></span></div>
-        <div class="kv"><span class="muted" style="width: 110px;">Belt</span><span id="belt_selector" class="radio-setting"></span></div>
-        <div class="kv"><span class="muted" style="width: 110px;">Modules</span><span id="default_module"></span><span id="secondary_module"></span><span class="muted">Beacons</span><span id="default_beacon" class="beacon-container"></span>&times;<input id="default_beacon_count" class="num" type="text" size="3"></div>
-        <div class="kv"><span class="muted" style="width: 110px;">Mining</span><span class="muted">productivity</span>+<input id="mprod" class="num mprod" type="number" step="10" value="0" min="0" onchange="handlers.changeMprod(event)"><span class="muted">%</span></div>
-      </div>
+      <div id="settings-overrides">
+        <div class="sec">Machines</div>
+        <div class="deep">
+          <div class="kv"><span class="muted" style="width: 110px;">Assemblers</span><div class="seg" id="asm-seg"></div></div>
+          <div class="kv"><span class="muted" style="width: 110px;">Machines</span><span id="building_selector"></span></div>
+          <div class="kv"><span class="muted" style="width: 110px;">Belt</span><span id="belt_selector" class="radio-setting"></span></div>
+          <div class="kv"><span class="muted" style="width: 110px;">Modules</span><span id="default_module"></span><span id="secondary_module"></span><span class="muted">Beacons</span><span id="default_beacon" class="beacon-container"></span>&times;<input id="default_beacon_count" class="num" type="text" size="3"></div>
+          <div class="kv"><span class="muted" style="width: 110px;">Mining</span><span class="muted">productivity</span>+<input id="mprod" class="num mprod" type="number" step="10" value="0" min="0" onchange="handlers.changeMprod(event)"><span class="muted">%</span></div>
+        </div>
 
-      <div class="sec">Recipes</div>
-      <div class="deep">
-        <div class="kv" id="planet_setting_row"><span class="muted" style="width: 110px;">Planets</span><div id="planet_selector"></div></div>
-        <div class="kv"><span class="muted" style="width: 110px;">Preferred fuel</span><span id="fuel_selector" class="radio-setting"></span></div>
-        <span class="muted">Which recipe makes each item is picked on its row in the table.</span>
+        <div class="sec">Recipes</div>
+        <div class="deep">
+          <div class="kv" id="planet_setting_row"><span class="muted" style="width: 110px;">Planets</span><div id="planet_selector"></div></div>
+          <div class="kv"><span class="muted" style="width: 110px;">Preferred fuel</span><span id="fuel_selector" class="radio-setting"></span></div>
+          <span class="muted">Which recipe makes each item is picked on its row in the table.</span>
+        </div>
       </div>
 
       <div class="sec">Display</div>
-      <div class="deep">
+      <div class="deep" id="settings-display">
         <div class="kv"><span class="muted" style="width: 90px;">Rates</span><form id="display_rate"></form></div>
         <div class="kv"><span class="muted" style="width: 90px;">Decimal places</span>
             <input id="rprec" class="num prec" type="number" value="1" min="0" max="6" onchange="handlers.changeRatePrecision(event)">
@@ -134,8 +136,8 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
 
       <details class="adv">
         <summary class="kv"><span class="title">Advanced</span></summary>
-        <div class="kv"><span class="muted" style="width: 110px;">Toggle recipes</span><div id="recipe_toggles"></div></div>
-        <div class="kv"><span class="muted" style="width: 110px;">Resource priority</span><div id="resource_settings"></div></div>
+        <details><summary class="kv"><span class="muted" style="width: 110px;">Toggle recipes</span></summary><div id="recipe_toggles"></div></details>
+        <details><summary class="kv"><span class="muted" style="width: 110px;">Resource priority</span></summary><div id="resource_settings"></div></details>
         <div class="kv"><span class="muted" style="width: 110px;">Data</span><select id="data_set"></select></div>
         <div class="kv"><span class="muted" style="width: 110px;">Title</span><input id="title_setting" type="text" size="30" placeholder="Factorio Calculator" oninput="handlers.changeTitle(event)"></div>
       </details>
