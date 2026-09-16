@@ -376,6 +376,15 @@ function draw(totals) {
         return
     }
 
+    // Set here, not in renderFlow(), so a draw() triggered off the
+    // calc:view listener (a solve whose renderFlow() call returned early
+    // because the Graph view wasn't showing yet) also marks itself drawn --
+    // otherwise a later renderFlow() call with that same totals/key would
+    // wrongly dedupe away a redraw the page never actually did (e.g. rate
+    // unit changes while off Graph, then back).
+    lastDrawnTotals = totals
+    lastDrawnKey = renderKey()
+
     let model = buildModel(totals)
 
     // 240x72 (up from flow-core's 216x64 default): a two-line-clamped node
@@ -428,10 +437,7 @@ function fitWithRetry() {
 function renderFlow(_spec, totals) {
     lastTotals = totals
     if (spec.view !== "graph") return
-    let key = renderKey()
-    if (spec.buildTargets.length !== 0 && totals === lastDrawnTotals && key === lastDrawnKey) return
-    lastDrawnTotals = totals
-    lastDrawnKey = key
+    if (spec.buildTargets.length !== 0 && totals === lastDrawnTotals && renderKey() === lastDrawnKey) return
     draw(totals)
 }
 
