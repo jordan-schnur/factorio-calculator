@@ -44,106 +44,103 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
     <span id="save-status" class="muted"></span>
     <span id="page-note" class="muted"></span>
     <div class="spacer"></div>
-    <span class="muted lbl">Assemblers</span><div class="seg" id="asm-seg"></div>
-    <span class="muted lbl">Rates</span>
-    <div class="seg" id="rate-seg"><button data-rate="s">/s</button><button data-rate="m">/min</button><button data-rate="h">/h</button></div>
-    <div class="seg"><button id="flow-zoom-out">&minus;</button><button id="flow-zoom-in">+</button><button id="flow-fit">Fit</button></div>
-    <div class="seg"><button id="ledger-toggle">Ledger</button></div>
-    <button class="btn" id="settings-open" title="Settings">&#9881;</button>
+    <div class="seg" id="view-seg"><button data-view="table">Table</button><button data-view="graph">Graph</button></div>
+    <button class="btn" id="settings-open" title="Settings">Settings</button>
     <button class="btn btn-green" id="board-button">Add to board</button>
     <div class="frame" id="board-panel" hidden></div>
   </div>
-  <div id="main">
-    <div class="frame" id="flow-frame">
-      <div id="flow-container" class="canvas"><div id="flow-columns"></div><svg id="flow"></svg><div id="flow-nodes"></div></div>
-      <div class="frame" id="make-panel">
-        <div class="make-row"><span class="title">Make</span>
-          <div class="search-wrap"><input id="target-search" placeholder="Add an item: red science, gears, blue circuit" autocomplete="off"><div id="target-search-results"></div></div>
-        </div>
-        <ul id="targets"><li id="plusButton" hidden></li></ul>
-        <div id="target-notes" class="muted" hidden></div>
+
+  <div class="frame intro" id="make-panel">
+    <span class="title" id="intro-title">What do you want to make?</span>
+    <div class="make-row"><span class="title">Make</span>
+      <div class="search-wrap"><input id="target-search" placeholder="red science 60, gears, blue chip 45" autocomplete="off"><div id="target-search-results"></div></div>
+    </div>
+    <span class="muted" id="make-hint">Nicknames work. A trailing number is the rate per minute. Enter adds it.</span>
+    <ul id="targets"><li id="plusButton" hidden></li></ul>
+    <div id="target-notes" class="muted" hidden></div>
+    <div id="intro-extras">
+      <div class="examples">
+        <button class="btn example-target" data-item="automation-science-pack" data-rate="60">Red science 60/min</button>
+        <button class="btn example-target" data-item="military-science-pack" data-rate="60">Military science 60/min</button>
+        <button class="btn example-target" data-item="chemical-science-pack" data-rate="30">Blue science 30/min</button>
       </div>
-      <div class="frame" id="node-details" hidden></div>
-      <div class="frame" id="bringin-bar"></div>
-      <div id="flow-empty" hidden>
-        <div class="title">Nothing to make yet</div>
-        <div class="muted">Type what you want in the Make box. Nicknames work: red science, mil sci, blue chip, gears.</div>
-        <div class="examples">
-          <button class="btn example-target" data-item="automation-science-pack" data-rate="60">Red science 60/min</button>
-          <button class="btn example-target" data-item="military-science-pack" data-rate="60">Military science 60/min</button>
-          <button class="btn example-target" data-item="chemical-science-pack" data-rate="30">Blue science 30/min</button>
-        </div>
-        <a id="restore-last" hidden>Restore the last factory</a>
-      </div>
-      <div class="frame pop" id="source-pop" hidden></div>
-      <div id="node-tip" hidden></div>
-      <div class="frame" id="ledger" hidden>
-        <div class="ledger-head"><span class="title">Ledger</span><span class="muted">one row per item &middot; click a row to find it</span><div class="spacer"></div><button class="x" id="ledger-close">&#10005;</button></div>
-        <div class="hdr"><div>Item</div><div class="r">Need</div><div>Source</div><div>Machines</div></div>
-        <div class="well" id="ledger-rows"></div>
-        <details id="scratchpad-frame"><summary>Scratch pad</summary>
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <div id="scratch-history"></div>
-            <input class="num" id="scratch-input" placeholder="2 * 450 / 60" autocomplete="off">
-            <div class="num" id="scratch-result" style="font-size: 22px; text-align: right;">=</div>
-            <div class="muted" style="font-size: 13px;"><span class="key">Enter</span> keeps the line &middot; <span class="key">&uarr;</span> recalls &middot; <b>ans</b> is the last result &middot; units like kW, MW, /min pass through.</div>
-            <button class="btn btn-sm" id="scratch-clear">clear</button>
-          </div>
-        </details>
-      </div>
+      <a id="restore-last" hidden>Restore the last factory</a>
     </div>
   </div>
+
+  <div class="frame" id="table-frame">
+    <div id="item-table"></div>
+  </div>
+
+  <div class="frame" id="graph-frame" hidden>
+    <div id="flow-container" class="canvas"><div id="flow-columns"></div><svg id="flow"></svg><div id="flow-nodes"></div></div>
+    <button class="btn btn-sm" id="flow-fit">Fit</button>
+    <div class="frame" id="graph-side" hidden></div>
+  </div>
+
+  <div class="frame" id="footer">
+    <span class="num" id="footer-totals"></span>
+    <div class="spacer"></div>
+    <span class="muted" id="footer-bring"></span>
+  </div>
+
+  <details id="scratchpad-frame"><summary>Scratch pad</summary>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div id="scratch-history"></div>
+      <input class="num" id="scratch-input" placeholder="2 * 450 / 60" autocomplete="off">
+      <div class="num" id="scratch-result" style="font-size: 22px; text-align: right;">=</div>
+      <div class="muted" style="font-size: 13px;"><span class="key">Enter</span> keeps the line &middot; <span class="key">&uarr;</span> recalls &middot; <b>ans</b> is the last result &middot; units like kW, MW, /min pass through.</div>
+      <button class="btn btn-sm" id="scratch-clear">clear</button>
+    </div>
+  </details>
+
   <div id="settings-drawer" hidden>
     <div class="frame" id="settings-panel">
-      <div class="titlebar"><span class="title">Settings</span><div class="drag"></div><button class="x" id="settings-close">&#10005;</button></div>
+      <div class="titlebar"><span class="title">Settings</span><div class="spacer"></div><button class="x" id="settings-close">&#10005;</button></div>
 
-      <div class="column">
-          <div class="frame">
-              <div class="titlebar"><span class="title">From your save</span><div class="drag"></div></div>
-              <div class="deep" id="settings-fromsave"></div>
-          </div>
+      <div class="sec">From your save</div>
+      <div class="deep" id="settings-fromsave"></div>
 
-          <div class="frame">
-              <div class="titlebar"><span class="title">Display</span><div class="drag"></div></div>
-              <div class="deep" id="settings-display">
-                  <div class="kv"><span class="muted" style="width: 90px;">Rates</span><form id="display_rate"></form></div>
-                  <div class="kv"><span class="muted" style="width: 90px;">Decimal places</span>
-                      <input id="rprec" class="num prec" type="number" value="1" min="0" max="6" onchange="handlers.changeRatePrecision(event)">
-                      <span class="muted">decimals for rates,</span>
-                      <input id="cprec" class="num prec" type="number" value="1" min="0" max="6" onchange="handlers.changeCountPrecision(event)">
-                      <span class="muted">for machine counts</span>
-                  </div>
-                  <div class="kv"><span class="muted" style="width: 90px;">Values</span><form id="value_format">
-                      <input id="decimal_format" type="radio" name="format" value="decimal" checked onchange="handlers.changeFormat(event)"><label for="decimal_format">Decimals</label>
-                      <input id="rational_format" type="radio" name="format" value="rational" onchange="handlers.changeFormat(event)"><label for="rational_format">Rationals</label>
-                  </form></div>
-                  <div class="kv"><span class="muted" style="width: 90px;">Data</span><select id="data_set"></select></div>
-                  <div class="kv"><span class="muted" style="width: 90px;">Title</span><input id="title_setting" type="text" size="30" placeholder="Factorio Calculator" oninput="handlers.changeTitle(event)"></div>
-              </div>
-          </div>
+      <div id="settings-overrides">
+        <div class="sec">Machines</div>
+        <div class="deep">
+          <div class="kv"><span class="muted" style="width: 110px;">Assemblers</span><div class="seg" id="asm-seg"></div></div>
+          <div class="kv"><span class="muted" style="width: 110px;">Machines</span><span id="building_selector"></span></div>
+          <div class="kv"><span class="muted" style="width: 110px;">Belt</span><span id="belt_selector" class="radio-setting"></span></div>
+          <div class="kv"><span class="muted" style="width: 110px;">Modules</span><span id="default_module"></span><span id="secondary_module"></span><span class="muted">Beacons</span><span id="default_beacon" class="beacon-container"></span>&times;<input id="default_beacon_count" class="num" type="text" size="3"></div>
+          <div class="kv"><span class="muted" style="width: 110px;">Mining</span><span class="muted">productivity</span>+<input id="mprod" class="num mprod" type="number" step="10" value="0" min="0" onchange="handlers.changeMprod(event)"><span class="muted">%</span></div>
+        </div>
+
+        <div class="sec">Recipes</div>
+        <div class="deep">
+          <div class="kv" id="planet_setting_row"><span class="muted" style="width: 110px;">Planets</span><div id="planet_selector"></div></div>
+          <div class="kv"><span class="muted" style="width: 110px;">Preferred fuel</span><span id="fuel_selector" class="radio-setting"></span></div>
+          <span class="muted">Which recipe makes each item is picked on its row in the table.</span>
+        </div>
       </div>
 
-      <div class="frame">
-          <div class="titlebar"><span class="title">Overrides</span><div class="drag"></div><span class="muted">anything you set here sticks until you reset it</span></div>
-          <div class="deep" id="settings-overrides">
-              <div class="sec">Belt</div>
-              <div class="kv"><span id="belt_selector" class="radio-setting"></span></div>
-
-              <div class="sec">Machines</div>
-              <div class="kv"><span id="building_selector"></span></div>
-              <div class="kv"><span class="muted" style="width: 110px;">Mining</span><span class="muted">productivity</span>+<input id="mprod" class="num mprod" type="number" step="10" value="0" min="0" onchange="handlers.changeMprod(event)"><span class="muted">%</span></div>
-
-              <div class="sec">Default modules</div>
-              <div class="kv"><span class="muted" style="width: 110px;">Every machine</span><span id="default_module"></span><span id="secondary_module"></span></div>
-              <div class="kv"><span class="muted" style="width: 110px;">Beacons</span><span id="default_beacon" class="beacon-container"></span>&times;<input id="default_beacon_count" class="num" type="text" size="3"></div>
-
-              <div class="sec">Recipes</div>
-              <div class="kv" id="planet_setting_row"><span class="muted" style="width: 110px;">Planets</span><div id="planet_selector"></div></div>
-              <div class="kv"><span class="muted" style="width: 110px;">Preferred fuel</span><span id="fuel_selector" class="radio-setting"></span></div>
-              <details><summary class="kv"><span class="muted" style="width: 110px;">Toggle recipes</span></summary><div id="recipe_toggles"></div></details>
-              <details><summary class="kv"><span class="muted" style="width: 110px;">Resource priority</span></summary><div id="resource_settings"></div></details>
-          </div>
+      <div class="sec">Display</div>
+      <div class="deep" id="settings-display">
+        <div class="kv"><span class="muted" style="width: 90px;">Rates</span><form id="display_rate"></form></div>
+        <div class="kv"><span class="muted" style="width: 90px;">Decimal places</span>
+            <input id="rprec" class="num prec" type="number" value="1" min="0" max="6" onchange="handlers.changeRatePrecision(event)">
+            <span class="muted">decimals for rates,</span>
+            <input id="cprec" class="num prec" type="number" value="1" min="0" max="6" onchange="handlers.changeCountPrecision(event)">
+            <span class="muted">for machine counts</span>
+        </div>
+        <div class="kv"><span class="muted" style="width: 90px;">Values</span><form id="value_format">
+            <input id="decimal_format" type="radio" name="format" value="decimal" checked onchange="handlers.changeFormat(event)"><label for="decimal_format">Decimals</label>
+            <input id="rational_format" type="radio" name="format" value="rational" onchange="handlers.changeFormat(event)"><label for="rational_format">Rationals</label>
+        </form></div>
       </div>
+
+      <details class="adv">
+        <summary class="kv"><span class="title">Advanced</span></summary>
+        <details><summary class="kv"><span class="muted" style="width: 110px;">Toggle recipes</span></summary><div id="recipe_toggles"></div></details>
+        <details><summary class="kv"><span class="muted" style="width: 110px;">Resource priority</span></summary><div id="resource_settings"></div></details>
+        <div class="kv"><span class="muted" style="width: 110px;">Data</span><select id="data_set"></select></div>
+        <div class="kv"><span class="muted" style="width: 110px;">Title</span><input id="title_setting" type="text" size="30" placeholder="Factorio Calculator" oninput="handlers.changeTitle(event)"></div>
+      </details>
     </div>
   </div>
   <div id="tooltip_container"></div>
