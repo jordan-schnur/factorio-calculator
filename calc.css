@@ -51,6 +51,11 @@ a { color: #f1be64; } a:hover { color: #ffe6c0; }
 /* settings.js's Available row: a machine switched off for planning. */
 .slot.off { opacity: 0.35; background: repeating-linear-gradient(135deg, #303030 0 6px, #262626 6px 12px); }
 .slot.dim img { opacity: 0.35; }
+/* details.js's Machine line under a row's Recipe list. */
+.machines { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 4px; }
+.machines button.slot { border: none; padding: 0; cursor: pointer; }
+.machine-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.machine-actions .btn { white-space: normal; text-align: left; }
 .row { display: flex; align-items: center; gap: 10px; padding: 4px 6px; }
 .row:nth-child(even) { background: rgba(255,255,255,0.025); }
 .row.hot { background: rgba(241,190,100,0.12); box-shadow: inset 0 0 0 1px #6a5a30; }

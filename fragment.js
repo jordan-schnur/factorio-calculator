@@ -14,6 +14,7 @@ limitations under the License.*/
 import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT } from "./align.js"
 import { DEFAULT_TAB, currentTab } from "./events.js"
 import { spec, DEFAULT_BELT, DEFAULT_FUEL } from "./factory.js"
+import { formatRecipeMachines } from "./machines-core.js"
 import { Rational } from "./rational.js"
 import { currentMod, DEFAULT_TITLE } from "./settings.js"
 import { sorted } from "./sort.js"
@@ -70,6 +71,9 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     }
     if (spec.excludedBuildings.size > 0) {
         settings += "nomach=" + [...spec.excludedBuildings].sort().join(",") + "&"
+    }
+    if (spec.recipeBuildings.size > 0) {
+        settings += "mach=" + formatRecipeMachines(spec.recipeBuildings) + "&"
     }
     if (spec.belt.key !== DEFAULT_BELT) {
         settings += "belt=" + spec.belt.key + "&"

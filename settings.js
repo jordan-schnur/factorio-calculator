@@ -19,7 +19,7 @@ import { shortModules, moduleRows, moduleDropdown } from "./module.js"
 import { Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { markOverride, clearOverrides } from "./savesettings.js"
-import { excludedMachines } from "./machines-core.js"
+import { excludedMachines, parseRecipeMachines } from "./machines-core.js"
 import { sorted } from "./sort.js"
 
 // Category keys (spec.buildings' Map keys, also the C5 payload's
@@ -414,6 +414,7 @@ function renderBuildings(settings) {
             spec.setMinimumBuilding(building)
         }
     }
+    spec.setRecipeBuildings(parseRecipeMachines(settings.get("mach")))
 
     // It doesn't really matter how we order these, but pick something just to
     // make it consistent.

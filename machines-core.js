@@ -23,8 +23,12 @@ export function excludedMachines(machines, planets) {
 // the best capable one below it -- upstream's rule -- skipping `excluded`
 // keys. When no allowed machine can make it at all, the upstream pick is
 // kept and `fallback` is true, so the plan still solves and the page can
-// say why.
-export function pickBuilding(buildings, selected, category, excluded) {
+// say why. `chosen`, a machine picked for this one recipe by hand, wins
+// over all of that (even over `excluded`) as long as it can make it.
+export function pickBuilding(buildings, selected, category, excluded, chosen) {
+    if (chosen && chosen.categories.has(category) && buildings.includes(chosen)) {
+        return { building: chosen, fallback: false }
+    }
     let allowed = choose(buildings, selected, category, excluded)
     if (allowed !== null || excluded.size === 0) {
         return { building: allowed, fallback: false }
@@ -45,4 +49,32 @@ function choose(buildings, selected, category, excluded) {
         }
     }
     return b
+}
+
+// The machines in `buildings` that can make a recipe of `category`, in
+// `buildings`' order.
+export function capableBuildings(buildings, category) {
+    return buildings.filter(b => b.categories.has(category))
+}
+
+// "Use this machine for everything in this build": the recipes among
+// `recipes` (the plan's) that `building` can make.
+export function recipesFor(building, recipes) {
+    return recipes.filter(r => r.category !== null && r.category !== undefined && building.categories.has(r.category))
+}
+
+// The `mach=` fragment value <-> Map(recipe key -> machine key).
+export function parseRecipeMachines(text) {
+    let out = new Map()
+    for (let pair of (text || "").split(",")) {
+        let i = pair.lastIndexOf(":")
+        if (i > 0 && i < pair.length - 1) {
+            out.set(pair.slice(0, i), pair.slice(i + 1))
+        }
+    }
+    return out
+}
+
+export function formatRecipeMachines(map) {
+    return [...map.keys()].sort().map(k => `${k}:${map.get(k)}`).join(",")
 }

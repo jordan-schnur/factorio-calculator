@@ -6,6 +6,7 @@
 // does not itself trigger a re-solve).
 import { spec } from "./factory.js"
 import { beltText } from "./flow-core.js"
+import { recipesFor } from "./machines-core.js"
 import { goesToRatio, needsRatio } from "./ratio-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
@@ -262,6 +263,70 @@ function buildSourceSeg(item, row) {
     return seg
 }
 
+function smallButton(text, className, onClick) {
+    let button = document.createElement("button")
+    button.type = "button"
+    button.className = `btn btn-sm ${className}`
+    button.textContent = text
+    button.addEventListener("click", event => {
+        event.stopPropagation()
+        onClick()
+    })
+    return button
+}
+
+// The Machine line: one slot per machine that can make `recipe`, the one in
+// use lit. A click pins this recipe to that machine (factory.js's
+// recipeBuildings, `mach=`); "for everything in this build" pins every
+// recipe in the plan it can make; "Automatic" drops this recipe's pin.
+function buildMachinePicker(recipe, totals) {
+    let capable = spec.capableBuildings(recipe)
+    if (capable.length < 2) {
+        return []
+    }
+    let current = spec.getBuilding(recipe)
+    let slots = document.createElement("div")
+    slots.className = "machines"
+    for (let building of capable) {
+        let off = spec.excludedBuildings.has(building.key)
+        let button = document.createElement("button")
+        button.type = "button"
+        button.className = "slot" + (building === current ? " sel" : "") + (off ? " dim" : "")
+        button.dataset.machine = building.key
+        button.title = building.name + (off ? " (off in Settings → Machines)" : "")
+        button.appendChild(building.icon.make(28, false))
+        button.addEventListener("click", event => {
+            event.stopPropagation()
+            if (building !== current) {
+                spec.setRecipeBuilding(recipe, building)
+                spec.updateSolution()
+            }
+        })
+        slots.appendChild(button)
+    }
+
+    let actions = document.createElement("div")
+    actions.className = "machine-actions"
+    let others = recipesFor(current, [...totals.rates.keys()])
+        .filter(r => r !== recipe && spec.getBuilding(r) !== current)
+    if (others.length > 0) {
+        let text = `Use ${current.name.toLowerCase()} for everything in this build (${others.length} more)`
+        actions.appendChild(smallButton(text, "machine-all", () => {
+            for (let r of others) {
+                spec.setRecipeBuilding(r, current)
+            }
+            spec.updateSolution()
+        }))
+    }
+    if (spec.recipeBuildings.has(recipe.key)) {
+        actions.appendChild(smallButton("Automatic", "machine-auto", () => {
+            spec.setRecipeBuilding(recipe, null)
+            spec.updateSolution()
+        }))
+    }
+    return actions.childElementCount > 0 ? [lbl("Machine"), slots, actions] : [lbl("Machine"), slots]
+}
+
 function buildSourceCol(item, row, totals, isTarget, isResource) {
     let children = []
     if (row && !isTarget && !isResource) {
@@ -272,6 +337,7 @@ function buildSourceCol(item, row, totals, isTarget, isResource) {
         children.push(renderOptions(item, totals))
     }
     if (row && spec.getBuilding(row.recipe) !== null) {
+        children.push(...buildMachinePicker(row.recipe, totals))
         let exact = spec.getCount(row.recipe, row.recipeRate).toDecimal(2)
         let power = powerRepr(spec.getPowerUsage(row.recipe, row.recipeRate).power)
         children.push(mutedSpan(`${exact} machines exactly · ${power}`, "exact"))

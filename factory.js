@@ -20,7 +20,7 @@ import { DISABLED_RECIPE_PREFIX } from "./recipe.js"
 import { renderAll } from "./render.js"
 import { solve } from "./solve.js"
 import { BuildTarget } from "./target.js"
-import { pickBuilding } from "./machines-core.js"
+import { capableBuildings, pickBuilding } from "./machines-core.js"
 
 const DEFAULT_ITEM_KEY = "advanced-circuit"
 
@@ -82,8 +82,8 @@ class BuildingGroup {
         return this.buildings[this.buildings.length - 1]
     }
     // {building, fallback} -- see machines-core.js's pickBuilding.
-    pick(recipe, excluded) {
-        return pickBuilding(this.buildings, this.building, recipe.category, excluded)
+    pick(recipe, excluded, chosen) {
+        return pickBuilding(this.buildings, this.building, recipe.category, excluded, chosen)
     }
 }
 
@@ -153,6 +153,9 @@ class FactorySpecification {
         // Keys of machines the page must not plan with (fragment `nomach`):
         // the save's default for the selected planet, or the user's picks.
         this.excludedBuildings = new Set()
+        // Recipe key -> machine key, picked by hand in a row's details
+        // (`mach=`); wins over the automatic pick above.
+        this.recipeBuildings = new Map()
         // The item the "Where it goes" tab is open on. Fragment key item=.
         this.whereItem = null
 
@@ -488,7 +491,36 @@ class FactorySpecification {
         if (recipe.category === null || recipe.category === undefined) {
             return null
         } else {
-            return this.buildings.get(recipe.category).pick(recipe, this.excludedBuildings).building
+            return this.pickFor(recipe).building
+        }
+    }
+    pickFor(recipe) {
+        let chosen = this.buildingKeys.get(this.recipeBuildings.get(recipe.key))
+        return this.buildings.get(recipe.category).pick(recipe, this.excludedBuildings, chosen)
+    }
+    // The machines that can make `recipe`, slowest first.
+    capableBuildings(recipe) {
+        if (recipe.category === null || recipe.category === undefined) {
+            return []
+        }
+        return capableBuildings(this.buildings.get(recipe.category).buildings, recipe.category)
+    }
+    // Pins `recipe` to `building`, or back to the automatic pick when null.
+    setRecipeBuilding(recipe, building) {
+        if (building === null) {
+            this.recipeBuildings.delete(recipe.key)
+        } else {
+            this.recipeBuildings.set(recipe.key, building.key)
+        }
+        let moduleSpec = this.spec.get(recipe)
+        if (moduleSpec !== undefined) {
+            moduleSpec.setBuilding(this.getBuilding(recipe), this)
+        }
+    }
+    setRecipeBuildings(map) {
+        this.recipeBuildings = new Map(map)
+        for (let [recipe, moduleSpec] of this.spec) {
+            moduleSpec.setBuilding(this.getBuilding(recipe), this)
         }
     }
     // True when every machine that can make `recipe` is excluded, so
@@ -497,7 +529,7 @@ class FactorySpecification {
         if (recipe.category === null || recipe.category === undefined) {
             return false
         }
-        return this.buildings.get(recipe.category).pick(recipe, this.excludedBuildings).fallback
+        return this.pickFor(recipe).fallback
     }
     setExcludedBuildings(keys) {
         this.excludedBuildings = new Set(keys)
