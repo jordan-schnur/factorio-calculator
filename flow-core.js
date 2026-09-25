@@ -312,6 +312,22 @@ export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 
 }
 
 // "assembler" | "furnace" | "drill" | "chem plant" | the building's own name lower-cased
+// What a hover on card `id` lights up: the card itself, every card one edge
+// upstream (what it is made from) or downstream (where it goes), and those
+// edges, keyed "source>target" as flow.js tags each path.
+export function hoverSet(edges, id) {
+    const nodes = new Set([id])
+    const lit = new Set()
+    for (const e of edges) {
+        if (e.source === id || e.target === id) {
+            nodes.add(e.source)
+            nodes.add(e.target)
+            lit.add(`${e.source}>${e.target}`)
+        }
+    }
+    return {nodes, edges: lit}
+}
+
 export function machineWord(building) {
     if (!building) return ""
     const key = building.key || ""

@@ -11,7 +11,7 @@
 import { registerRenderer } from "./render.js"
 import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
-import { buildFlowModel, layered, rankNodes } from "./flow-core.js"
+import { buildFlowModel, hoverSet, layered, rankNodes } from "./flow-core.js"
 import { RATE_LABEL } from "./table-core.js"
 
 // The last totals a solve produced, remembered even while the Graph view
@@ -203,8 +203,26 @@ function nodeMarkup(node) {
         selectNode(node.itemKey)
     })
     div.appendChild(body)
+    div.addEventListener("mouseenter", () => setHover(node.id))
+    div.addEventListener("mouseleave", () => setHover(null))
 
     return div
+}
+
+// Hovering a card lights it, the cards it is made from and goes to, and the
+// edges between them (flow-core's hoverSet); #flow-container.hovering dims
+// everything else. Independent of the click selection's "hot" edges.
+function setHover(id) {
+    let container = document.querySelector("#flow-container")
+    if (!container) return
+    let lit = id === null || !lastLayout ? null : hoverSet(lastLayout.edges, id)
+    container.classList.toggle("hovering", lit !== null)
+    document.querySelectorAll("#flow-nodes .node").forEach(el => {
+        el.classList.toggle("lit", lit !== null && lit.nodes.has(el.dataset.node))
+    })
+    document.querySelectorAll("#flow path.edge, #flow-nodes .elbl").forEach(el => {
+        el.classList.toggle("lit", lit !== null && lit.edges.has(`${el.dataset.from}>${el.dataset.to}`))
+    })
 }
 
 // The selected item's node(s) get their edges/labels marked "hot" -- there

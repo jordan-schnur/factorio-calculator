@@ -130,6 +130,12 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 #flow path.edge { stroke: #8a7040; fill: none; opacity: 0.9; }
 #flow path.edge.in { stroke: #4f8fc0; }
 #flow path.edge.hot { stroke: #f1be64; }
+/* flow.js's setHover: the hovered card's one-hop neighbourhood stays lit. */
+#flow-container.hovering .node:not(.lit) { opacity: 0.25; }
+#flow-container.hovering #flow path.edge:not(.lit) { opacity: 0.12; }
+#flow-container.hovering #flow path.edge.lit { stroke: #f1be64; opacity: 1; }
+#flow-container.hovering .elbl:not(.lit) { opacity: 0.2; }
+#flow-container.hovering .elbl.lit { display: block; color: #f1be64; }
 .lbl { color: #a8a8a8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
 /* header.js's renderAsmSeg needs the "Assemblers" label to carry .lbl (it
    checks previousElementSibling.classList.contains("lbl") to hide the label
