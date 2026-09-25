@@ -68,11 +68,12 @@ function sortedBuildings(buildings) {
 // differ -- e.g. a building at its group default, or a disabled recipe
 // that was already locked -- which made a text compare reload forever).
 // Order-insensitive over `buildings`' keys and `disabled_recipes`' entries,
-// since neither ordering is meaningful.
+// since neither ordering is meaningful. Deliberately blind to the save's
+// name and mtime: every autosave is a new file, and one that derives the
+// same settings must not rebuild the page (that closed the open row every
+// five minutes).
 export function signatureOf(fetched) {
     return JSON.stringify({
-        save: fetched.save && fetched.save.name,
-        mtime: fetched.save && fetched.save.mtime,
         belt: fetched.belt,
         buildings: sortedBuildings(fetched.buildings),
         mprod: fetched.mining_productivity,
