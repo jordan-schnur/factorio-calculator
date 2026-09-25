@@ -275,6 +275,10 @@ function buildSourceCol(item, row, totals, isTarget, isResource) {
         let exact = spec.getCount(row.recipe, row.recipeRate).toDecimal(2)
         let power = powerRepr(spec.getPowerUsage(row.recipe, row.recipeRate).power)
         children.push(mutedSpan(`${exact} machines exactly · ${power}`, "exact"))
+        if (spec.isFallbackBuilding(row.recipe)) {
+            let name = spec.getBuilding(row.recipe).name
+            children.push(mutedSpan(`No available machine makes this, so it uses ${name.toLowerCase()} (switched off in Settings → Machines).`, "fallback"))
+        }
     }
     return col("source", children)
 }

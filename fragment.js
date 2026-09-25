@@ -68,6 +68,9 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     if (buildings.length > 0) {
         settings += "buildings=" + buildings.join(",") + "&"
     }
+    if (spec.excludedBuildings.size > 0) {
+        settings += "nomach=" + [...spec.excludedBuildings].sort().join(",") + "&"
+    }
     if (spec.belt.key !== DEFAULT_BELT) {
         settings += "belt=" + spec.belt.key + "&"
     }

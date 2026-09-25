@@ -1,8 +1,9 @@
 // calc/savesettings-core.js — pure fragment/save bookkeeping for the
 // savesettings unit. No DOM, no fetch: savesettings.js wraps these with the
 // network call and the page's element ids.
+import { excludedMachines } from "./machines-core.js"
 
-export const FIELDS = ["belt", "buildings", "mprod", "planet", "recipes"]
+export const FIELDS = ["belt", "buildings", "machines", "mprod", "planet", "recipes"]
 
 // fragment.js's formatSettings() OMITS each of these keys when the spec is
 // at its engine default rather than writing the default out -- so merging
@@ -50,6 +51,18 @@ export function mergeFragment(settings, fetched, overrides) {
         }
         out.delete("enable")
     }
+    // `machines` maps onto `nomach`, the machines the page must not plan
+    // with, worked out for whichever planet the merged fragment selects (the
+    // save's, or the user's overridden one). Runs after `planet` above.
+    if (!overrides.has("machines") && fetched.machines) {
+        let planets = (out.get("planet") || DEFAULTS.planet).split(",")
+        let excluded = excludedMachines(fetched.machines, planets)
+        if (excluded.length === 0) {
+            out.delete("nomach")
+        } else {
+            out.set("nomach", excluded.join(","))
+        }
+    }
     return out
 }
 
@@ -79,6 +92,7 @@ export function signatureOf(fetched) {
         mprod: fetched.mining_productivity,
         planet: fetched.planet,
         disabled: [...(fetched.disabled_recipes || [])].sort(),
+        machines: fetched.machines || null,
     })
 }
 

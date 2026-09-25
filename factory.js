@@ -20,6 +20,7 @@ import { DISABLED_RECIPE_PREFIX } from "./recipe.js"
 import { renderAll } from "./render.js"
 import { solve } from "./solve.js"
 import { BuildTarget } from "./target.js"
+import { pickBuilding } from "./machines-core.js"
 
 const DEFAULT_ITEM_KEY = "advanced-circuit"
 
@@ -80,17 +81,9 @@ class BuildingGroup {
         }
         return this.buildings[this.buildings.length - 1]
     }
-    getBuilding(recipe) {
-        let b = null
-        for (let building of this.buildings) {
-            if (building.categories.has(recipe.category)) {
-                b = building
-                if (building === this.building || this.building.less(building)) {
-                    return building
-                }
-            }
-        }
-        return b
+    // {building, fallback} -- see machines-core.js's pickBuilding.
+    pick(recipe, excluded) {
+        return pickBuilding(this.buildings, this.building, recipe.category, excluded)
     }
 }
 
@@ -157,6 +150,9 @@ class FactorySpecification {
         // Which save the settings came from, and which of them the user has
         // since overridden by hand. Fragment keys save=, follow=, ov=.
         this.saveState = {save: null, follow: false, overrides: new Set()}
+        // Keys of machines the page must not plan with (fragment `nomach`):
+        // the save's default for the selected planet, or the user's picks.
+        this.excludedBuildings = new Set()
         // The item the "Where it goes" tab is open on. Fragment key item=.
         this.whereItem = null
 
@@ -492,8 +488,31 @@ class FactorySpecification {
         if (recipe.category === null || recipe.category === undefined) {
             return null
         } else {
-            return this.buildings.get(recipe.category).getBuilding(recipe)
+            return this.buildings.get(recipe.category).pick(recipe, this.excludedBuildings).building
         }
+    }
+    // True when every machine that can make `recipe` is excluded, so
+    // getBuilding fell back to one anyway.
+    isFallbackBuilding(recipe) {
+        if (recipe.category === null || recipe.category === undefined) {
+            return false
+        }
+        return this.buildings.get(recipe.category).pick(recipe, this.excludedBuildings).fallback
+    }
+    setExcludedBuildings(keys) {
+        this.excludedBuildings = new Set(keys)
+        for (let [recipe, moduleSpec] of this.spec) {
+            moduleSpec.setBuilding(this.getBuilding(recipe), this)
+        }
+    }
+    toggleExcludedBuilding(building) {
+        let keys = new Set(this.excludedBuildings)
+        if (keys.has(building.key)) {
+            keys.delete(building.key)
+        } else {
+            keys.add(building.key)
+        }
+        this.setExcludedBuildings(keys)
     }
     getBuildingGroup(building) {
         let cat = Array.from(building.categories)[0]

@@ -19,6 +19,7 @@ import { shortModules, moduleRows, moduleDropdown } from "./module.js"
 import { Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { markOverride, clearOverrides } from "./savesettings.js"
+import { excludedMachines } from "./machines-core.js"
 import { sorted } from "./sort.js"
 
 // Category keys (spec.buildings' Map keys, also the C5 payload's
@@ -400,6 +401,8 @@ function renderBuildings(settings) {
     for (let group of groupSet) {
         group.building = group.getDefault()
     }
+    let nomach = settings.get("nomach")
+    spec.setExcludedBuildings(nomach ? nomach.split(",") : [])
     if (settings.has("buildings")) {
         let buildingKeys = settings.get("buildings").split(",")
         for (let key of buildingKeys) {
@@ -434,6 +437,48 @@ function renderBuildings(settings) {
             .attr("title", b => b.name)
             .on("click", (event, b) => buildingHandler(b))
             .append(b => b.icon.make(28, false))
+    renderMachineAllow()
+}
+
+// Settings -> Machines -> Available: every machine in a multi-machine group
+// as an on/off slot. Off machines are never planned with (factory.js's
+// excludedBuildings); the save sets the default and a click overrides it.
+function renderMachineAllow() {
+    let machines = []
+    for (let group of new Set(spec.buildings.values())) {
+        if (group.buildings.length > 1) {
+            machines.push(...group.buildings)
+        }
+    }
+    machines = sorted(new Set(machines), b => b.name)
+    let div = d3.select("#machine_allow")
+    div.selectAll("*").remove()
+    div.style("display", "flex").style("flex-wrap", "wrap").style("gap", "4px")
+    div.selectAll("button.slot")
+        .data(machines)
+        .join("button")
+            .attr("type", "button")
+            .attr("class", b => "slot" + (spec.excludedBuildings.has(b.key) ? " off" : ""))
+            .attr("title", b => b.name + (spec.excludedBuildings.has(b.key) ? " (off)" : ""))
+            .on("click", (event, b) => {
+                spec.toggleExcludedBuilding(b)
+                markOverride("machines")
+                renderMachineAllow()
+                spec.updateSolution()
+            })
+            .append(b => b.icon.make(28, false))
+}
+
+// A planet switch re-derives the save's default for the new planet, unless
+// the user has set the machines by hand.
+function syncMachinesToPlanet() {
+    let fetched = spec.saveState.fetched
+    if (!fetched || !fetched.machines || spec.saveState.overrides.has("machines")) {
+        return
+    }
+    let planets = [...spec.selectedPlanets].map(p => p.key)
+    spec.setExcludedBuildings(excludedMachines(fetched.machines, planets))
+    renderMachineAllow()
 }
 
 // belt
@@ -762,6 +807,7 @@ function renderRecipes(settings) {
                         .text(dd => spec.selectedPlanets.has(dd) ? "✓" : "")
                     d3.selectAll("#recipe_toggles .toggle")
                         .classed("selected", d => !spec.disable.has(d))
+                    syncMachinesToPlanet()
                     markOverride("planet")
                     spec.updateSolution()
                 })
@@ -982,6 +1028,7 @@ function renderMachinesToggle() {
 const OVERRIDE_ANCHORS = [
     [() => document.getElementById("belt_selector"), "belt"],
     [() => document.getElementById("building_selector"), "buildings"],
+    [() => document.getElementById("machine_allow")?.parentElement, "machines"],
     [() => document.getElementById("mprod")?.parentElement, "mprod"],
     [() => document.getElementById("planet_setting_row"), "planet"],
     [() => document.getElementById("recipe_toggles")?.closest("details")?.querySelector(":scope > summary"), "recipes"],
