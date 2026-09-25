@@ -6,6 +6,7 @@
 // does not itself trigger a re-solve).
 import { spec } from "./factory.js"
 import { beltText } from "./flow-core.js"
+import { goesToRatio, needsRatio } from "./ratio-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { relevantRecipes, renderOptions } from "./source.js"
@@ -89,6 +90,40 @@ function drow(icon, name, badge, numEl) {
     return div
 }
 
+// Item rate one machine running `recipe` moves, given the recipe's total
+// `itemRate` of that item in this solution; null when the recipe has no
+// machine (so there is no ratio to state).
+function perMachine(totals, recipe, itemRate) {
+    if (spec.getBuilding(recipe) === null) {
+        return null
+    }
+    let count = spec.getCount(recipe, totals.rates.get(recipe) || zero)
+    return count.isZero() ? null : itemRate.div(count)
+}
+
+// {supplier, consumer, p, q} for `item` flowing from its own row's recipe
+// into `consumer`, with p/q consumer machines per supplier machine; null
+// when either side has no machine or the item is brought in.
+function machineRatio(totals, rows, item, consumer, consumedRate) {
+    let row = rows.find(r => r.item === item)
+    if (!row || !row.isReal) {
+        return null
+    }
+    let produced = (totals.producers.get(item) || new Map()).get(row.recipe) || row.itemRate
+    let perSupplier = perMachine(totals, row.recipe, produced)
+    let perConsumer = perMachine(totals, consumer, consumedRate)
+    if (perSupplier === null || perConsumer === null || perConsumer.isZero()) {
+        return null
+    }
+    let r = perSupplier.div(perConsumer)
+    return {
+        supplier: spec.getBuilding(row.recipe).name,
+        consumer: spec.getBuilding(consumer).name,
+        p: r.p.toJSNumber(),
+        q: r.q.toJSNumber(),
+    }
+}
+
 function col(className, children) {
     let div = document.createElement("div")
     div.className = `col ${className}`
@@ -154,7 +189,7 @@ function needBadge(rows, item) {
     return null
 }
 
-function buildNeedsCol(rows, row) {
+function buildNeedsCol(rows, row, totals) {
     let children = [lbl("Needs")]
     if (!row) {
         children.push(mutedSpan("Nothing needed."))
@@ -167,15 +202,21 @@ function buildNeedsCol(rows, row) {
         if (ingredients.length === 0) {
             children.push(mutedSpan("Nothing needed."))
         }
+        let consumed = totals.consumers
         for (let ing of ingredients) {
             let amount = ing.amount.mul(row.recipeRate)
             children.push(drow(ing.item.icon, ing.item.name, needBadge(rows, ing.item), numSpan(rateText(amount))))
+            let rate = (consumed.get(ing.item) || new Map()).get(row.recipe) || amount
+            let ratio = machineRatio(totals, rows, ing.item, row.recipe, rate)
+            if (ratio) {
+                children.push(mutedSpan(needsRatio(ratio.supplier, ratio.consumer, ratio.p, ratio.q), "ratio"))
+            }
         }
     }
     return col("needs", children)
 }
 
-function buildGoesToCol(item, totals, isTarget) {
+function buildGoesToCol(rows, item, totals, isTarget) {
     let children = [lbl("Goes to")]
     let totalRate = totals.items.get(item) || zero
     let consumers = [...(totals.consumers.get(item) || new Map())]
@@ -188,6 +229,10 @@ function buildGoesToCol(item, totals, isTarget) {
             let product = recipe.products[0].item
             let share = totalRate.isZero() ? zero : rate.div(totalRate)
             children.push(drow(product.icon, recipe.name, shareSpan(percentText(share)), numSpan(rateText(rate))))
+            let ratio = machineRatio(totals, rows, item, recipe, rate)
+            if (ratio) {
+                children.push(mutedSpan(goesToRatio(ratio.supplier, ratio.consumer, ratio.p, ratio.q), "ratio"))
+            }
         }
     }
     return col("goesto", children)
@@ -244,8 +289,8 @@ export function renderDetail(container, item, totals) {
     let isTarget = row ? row.isTarget : spec.buildTargets.some(t => t.item === item)
     let isResource = row ? row.isResource : false
 
-    container.appendChild(buildNeedsCol(rows, row))
-    container.appendChild(buildGoesToCol(item, totals, isTarget))
+    container.appendChild(buildNeedsCol(rows, row, totals))
+    container.appendChild(buildGoesToCol(rows, item, totals, isTarget))
     container.appendChild(buildSourceCol(item, row, totals, isTarget, isResource))
 }
 
