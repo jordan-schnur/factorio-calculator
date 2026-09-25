@@ -63,3 +63,25 @@ function withBlock(text, whole, p, q) {
     let b = whole ? null : block(p, q)
     return b === null ? text : `${text} · block ${b}`
 }
+
+// The hover card on a Needs/Goes to rate: how many belts the flow fills and
+// how many machines on each side it accounts for. `suppliers` (one per
+// recipe making the item) and `consumer` are {building, recipe, count,
+// total} -- `count` of the recipe's `total` machines that this one flow
+// keeps busy; `consumer` is null when that side has no machine.
+export function flowLines({ belts, beltName, fluid, suppliers, consumer }) {
+    let lines = [fluid ? "Fluid, by pipe" : `${ratioNumber(belts)} ${plural(beltName, belts)}`]
+    for (let supplier of suppliers) {
+        lines.push(`Made by ${machinesOf(supplier)}`)
+    }
+    if (consumer) {
+        lines.push(`Used by ${machinesOf(consumer)}`)
+    }
+    return lines
+}
+
+function machinesOf({ building, recipe, count, total }) {
+    let whole = ratioNumber(count) === ratioNumber(total)
+    let share = whole ? `${ratioNumber(total)}` : `${ratioNumber(count)} of the ${ratioNumber(total)}`
+    return `${share} ${plural(building, total)} on ${recipe}`
+}

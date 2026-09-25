@@ -7,12 +7,13 @@
 import { spec } from "./factory.js"
 import { beltText } from "./flow-core.js"
 import { recipesFor } from "./machines-core.js"
-import { goesToRatio, needsRatio } from "./ratio-core.js"
+import { flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { relevantRecipes, renderOptions } from "./source.js"
 import { RATE_LABEL } from "./table-core.js"
 import { buildRows, powerRepr } from "./table.js"
+import { Tooltip } from "./tooltip.js"
 
 const HUNDRED = Rational.from_float(100)
 
@@ -125,6 +126,59 @@ function machineRatio(totals, rows, item, consumer, consumedRate) {
     }
 }
 
+// {building, recipe, count, total} for `recipe`'s machines, `count` of the
+// `total` being the part that moves `share` of the recipe's output; null
+// when the recipe has no machine.
+function machinesOn(totals, recipe, share) {
+    let building = spec.getBuilding(recipe)
+    if (building === null) {
+        return null
+    }
+    let total = spec.getCount(recipe, totals.rates.get(recipe) || zero)
+    if (total.isZero()) {
+        return null
+    }
+    return { building: building.name, recipe: recipe.name, count: total.mul(share).toFloat(), total: total.toFloat() }
+}
+
+// Hovering the rate on a Needs/Goes to line: the belts `rate` of `item`
+// fills, the machines making it (every recipe that does, each its share of
+// the item's total output) and the `consumer` machines that use it.
+function flowTooltip(numEl, totals, rows, item, consumer, rate) {
+    let row = rows.find(r => r.item === item)
+    let suppliers = []
+    if (row && row.isReal) {
+        let producers = [...(totals.producers.get(item) || new Map())]
+        let produced = producers.reduce((sum, [, r]) => sum.add(r), zero)
+        if (!produced.isZero()) {
+            let share = rate.div(produced)
+            suppliers = producers.map(([recipe]) => machinesOn(totals, recipe, share)).filter(m => m !== null)
+        }
+    }
+    let lines = flowLines({
+        belts: spec.getBeltCount(rate).toFloat(),
+        beltName: spec.belt.name,
+        fluid: item.phase === "fluid",
+        suppliers,
+        consumer: machinesOn(totals, consumer, one),
+    })
+    numEl.classList.add("flow")
+    new Tooltip(numEl, () => {
+        let frame = document.createElement("div")
+        frame.className = "frame flow-card"
+        let head = document.createElement("h3")
+        head.textContent = `${numEl.textContent} ${item.name}`
+        frame.appendChild(head)
+        for (let line of lines) {
+            let div = document.createElement("div")
+            div.textContent = line
+            frame.appendChild(div)
+        }
+        return frame
+    })
+    return numEl
+}
+
 function col(className, children) {
     let div = document.createElement("div")
     div.className = `col ${className}`
@@ -206,8 +260,9 @@ function buildNeedsCol(rows, row, totals) {
         let consumed = totals.consumers
         for (let ing of ingredients) {
             let amount = ing.amount.mul(row.recipeRate)
-            children.push(drow(ing.item.icon, ing.item.name, needBadge(rows, ing.item), numSpan(rateText(amount))))
             let rate = (consumed.get(ing.item) || new Map()).get(row.recipe) || amount
+            let num = flowTooltip(numSpan(rateText(amount)), totals, rows, ing.item, row.recipe, rate)
+            children.push(drow(ing.item.icon, ing.item.name, needBadge(rows, ing.item), num))
             let ratio = machineRatio(totals, rows, ing.item, row.recipe, rate)
             if (ratio) {
                 children.push(mutedSpan(needsRatio(ratio.supplier, ratio.consumer, ratio.p, ratio.q), "ratio"))
@@ -229,7 +284,8 @@ function buildGoesToCol(rows, item, totals, isTarget) {
         for (let [recipe, rate] of consumers) {
             let product = recipe.products[0].item
             let share = totalRate.isZero() ? zero : rate.div(totalRate)
-            children.push(drow(product.icon, recipe.name, shareSpan(percentText(share)), numSpan(rateText(rate))))
+            let num = flowTooltip(numSpan(rateText(rate)), totals, rows, item, recipe, rate)
+            children.push(drow(product.icon, recipe.name, shareSpan(percentText(share)), num))
             let ratio = machineRatio(totals, rows, item, recipe, rate)
             if (ratio) {
                 children.push(mutedSpan(goesToRatio(ratio.supplier, ratio.consumer, ratio.p, ratio.q), "ratio"))
