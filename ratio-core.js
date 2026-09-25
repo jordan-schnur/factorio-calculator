@@ -85,3 +85,28 @@ function machinesOf({ building, recipe, count, total }) {
     let share = whole ? `${ratioNumber(total)}` : `${ratioNumber(count)} of the ${ratioNumber(total)}`
     return `${share} ${plural(building, total)} on ${recipe}`
 }
+
+// One place a table row's item goes, for the Need-column hover card: a
+// title and the machines line -- how many of the machines making the item
+// (`suppliers`, {building, count}, one per recipe) feed how many of the
+// `consumer`'s ({building, count}, or null for what you asked for itself).
+// `belts` is null for a fluid.
+export function destinationLines({ name, rate, percent, belts, beltName, suppliers, consumer }) {
+    let title = `${name} · ${rate} · ${percent}`
+    let parts = []
+    if (belts !== null) {
+        parts.push(`${ratioNumber(belts)} ${plural(beltName, belts)}`)
+    }
+    if (suppliers.length > 0) {
+        let from = suppliers.map(s => `${ratioNumber(s.count)} ${plural(s.building, s.count)}`).join(" + ")
+        let single = suppliers.length === 1 && ratioNumber(suppliers[0].count) === "1"
+        if (consumer) {
+            parts.push(`${from} ${single ? "feeds" : "feed"} ${ratioNumber(consumer.count)} ${plural(consumer.building, consumer.count)}`)
+        } else {
+            parts.push(from)
+        }
+    } else if (consumer) {
+        parts.push(`into ${ratioNumber(consumer.count)} ${plural(consumer.building, consumer.count)}`)
+    }
+    return { title, detail: parts.join(" · ") }
+}

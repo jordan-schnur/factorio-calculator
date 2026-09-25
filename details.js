@@ -7,7 +7,7 @@
 import { spec } from "./factory.js"
 import { beltText } from "./flow-core.js"
 import { recipesFor } from "./machines-core.js"
-import { flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
+import { destinationLines, flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { relevantRecipes, renderOptions } from "./source.js"
@@ -141,42 +141,112 @@ function machinesOn(totals, recipe, share) {
     return { building: building.name, recipe: recipe.name, count: total.mul(share).toFloat(), total: total.toFloat() }
 }
 
-// Hovering the rate on a Needs/Goes to line: the belts `rate` of `item`
-// fills, the machines making it (every recipe that does, each its share of
-// the item's total output) and the `consumer` machines that use it.
-function flowTooltip(numEl, totals, rows, item, consumer, rate) {
+// The machines making `rate` of `item`: every recipe that makes it, each
+// its share of the item's total output. Empty when the item's row is
+// brought in.
+function suppliersOf(totals, rows, item, rate) {
     let row = rows.find(r => r.item === item)
-    let suppliers = []
-    if (row && row.isReal) {
-        let producers = [...(totals.producers.get(item) || new Map())]
-        let produced = producers.reduce((sum, [, r]) => sum.add(r), zero)
-        if (!produced.isZero()) {
-            let share = rate.div(produced)
-            suppliers = producers.map(([recipe]) => machinesOn(totals, recipe, share)).filter(m => m !== null)
-        }
+    if (!row || !row.isReal) {
+        return []
     }
+    let producers = [...(totals.producers.get(item) || new Map())]
+    let produced = producers.reduce((sum, [, r]) => sum.add(r), zero)
+    if (produced.isZero()) {
+        return []
+    }
+    let share = rate.div(produced)
+    return producers.map(([recipe]) => machinesOn(totals, recipe, share)).filter(m => m !== null)
+}
+
+function cardFrame(heading) {
+    let frame = document.createElement("div")
+    frame.className = "frame flow-card"
+    let head = document.createElement("h3")
+    head.textContent = heading
+    frame.appendChild(head)
+    return frame
+}
+
+function cardLine(frame, text, className) {
+    let div = document.createElement("div")
+    if (className) {
+        div.className = className
+    }
+    div.textContent = text
+    frame.appendChild(div)
+}
+
+// Hovering the rate on a Needs/Goes to line: the belts `rate` of `item`
+// fills, the machines making it and the `consumer` machines that use it.
+function flowTooltip(numEl, totals, rows, item, consumer, rate) {
     let lines = flowLines({
         belts: spec.getBeltCount(rate).toFloat(),
         beltName: spec.belt.name,
         fluid: item.phase === "fluid",
-        suppliers,
+        suppliers: suppliersOf(totals, rows, item, rate),
         consumer: machinesOn(totals, consumer, one),
     })
     numEl.classList.add("flow")
     new Tooltip(numEl, () => {
-        let frame = document.createElement("div")
-        frame.className = "frame flow-card"
-        let head = document.createElement("h3")
-        head.textContent = `${numEl.textContent} ${item.name}`
-        frame.appendChild(head)
+        let frame = cardFrame(`${numEl.textContent} ${item.name}`)
         for (let line of lines) {
-            let div = document.createElement("div")
-            div.textContent = line
-            frame.appendChild(div)
+            cardLine(frame, line)
         }
         return frame
     })
     return numEl
+}
+
+// Hovering a table row's Need rate: the item's belts and what makes it,
+// then every place it goes with how many of those machines feed how many
+// of the next ones -- the whole Goes to column, worked out.
+export function itemTooltip(el, totals, rows, item) {
+    let total = totals.items.get(item) || zero
+    if (total.isZero()) {
+        return
+    }
+    let fluid = item.phase === "fluid"
+    let summary = flowLines({
+        belts: spec.getBeltCount(total).toFloat(),
+        beltName: spec.belt.name,
+        fluid,
+        suppliers: suppliersOf(totals, rows, item, total),
+        consumer: null,
+    })
+    let flows = [...(totals.consumers.get(item) || new Map())]
+        .filter(([recipe]) => recipe.isReal())
+        .sort((a, b) => b[1].toFloat() - a[1].toFloat())
+        .map(([recipe, rate]) => ({ name: recipe.name, rate, consumer: machinesOn(totals, recipe, one) }))
+    let left = flows.reduce((sum, f) => sum.sub(f.rate), total)
+    if (spec.buildTargets.some(t => t.item === item) && zero.less(left)) {
+        flows.push({ name: "What you asked for", rate: left, consumer: null })
+    }
+    let destinations = flows.map(f => destinationLines({
+        name: f.name,
+        rate: rateText(f.rate),
+        percent: percentText(f.rate.div(total)),
+        belts: fluid ? null : spec.getBeltCount(f.rate).toFloat(),
+        beltName: spec.belt.name,
+        suppliers: suppliersOf(totals, rows, item, f.rate).map(m => ({ building: m.building, count: m.count })),
+        consumer: f.consumer ? { building: f.consumer.building, count: f.consumer.count } : null,
+    }))
+    el.classList.add("flow")
+    new Tooltip(el, () => {
+        let frame = cardFrame(`${rateText(total)} ${item.name}`)
+        for (let line of summary) {
+            cardLine(frame, line)
+        }
+        if (destinations.length > 0) {
+            cardLine(frame, "Goes to", "lbl")
+        }
+        for (let d of destinations) {
+            cardLine(frame, d.title, "dest")
+            if (d.detail) {
+                cardLine(frame, d.detail, "muted dest-detail")
+            }
+        }
+        return frame
+    })
 }
 
 function col(className, children) {

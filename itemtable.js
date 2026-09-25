@@ -7,7 +7,7 @@ import { beltText } from "./flow-core.js"
 import { registerRenderer } from "./render.js"
 import { buildRows, buildingCount } from "./table.js"
 import { groupForTable, RATE_LABEL } from "./table-core.js"
-import { renderDetail } from "./details.js"
+import { itemTooltip, renderDetail } from "./details.js"
 
 // Re-rendered off calc:select rather than a fresh solve, so the graph
 // selecting an item (or this table's own row click) can move the open row
@@ -98,7 +98,7 @@ function itemCell(row) {
     return cell
 }
 
-function needCell(row) {
+function needCell(row, totals, rows) {
     const cell = document.createElement("span")
     cell.className = "need num"
     cell.appendChild(document.createTextNode(rateText(row.itemRate)))
@@ -106,6 +106,7 @@ function needCell(row) {
     belts.className = "belts"
     belts.textContent = row.item.phase === "fluid" ? "pipe" : beltText(spec.getBeltCount(row.itemRate).toFloat())
     cell.appendChild(belts)
+    itemTooltip(cell, totals, rows, row.item)
     return cell
 }
 
@@ -140,7 +141,7 @@ function toggleOpen(key, open) {
     document.dispatchEvent(new CustomEvent("calc:select", { detail: { item: open ? null : key } }))
 }
 
-function renderRowButton(row, totals) {
+function renderRowButton(row, totals, rows) {
     const key = row.item.key
     const open = spec.whereItem === key
     const btn = document.createElement("button")
@@ -148,7 +149,7 @@ function renderRowButton(row, totals) {
     btn.className = "lrow" + (open ? " open" : "") + (!row.isReal ? " dim" : "")
     btn.dataset.item = key
     btn.appendChild(itemCell(row))
-    btn.appendChild(needCell(row))
+    btn.appendChild(needCell(row, totals, rows))
     btn.appendChild(machinesCell(row))
     const chev = document.createElement("span")
     chev.className = "chev"
@@ -195,7 +196,7 @@ function renderTable(_spec, totals) {
         }
         container.appendChild(sectHeader(group))
         for (const row of group.rows) {
-            const { btn, open } = renderRowButton(row, totals)
+            const { btn, open } = renderRowButton(row, totals, rows)
             container.appendChild(btn)
             if (open) {
                 const detail = document.createElement("div")
