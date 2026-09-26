@@ -17,6 +17,8 @@ export const DEFAULT_RATE = "m"
 export const DEFAULT_RATE_PRECISION = 1
 export const DEFAULT_COUNT_PRECISION = 1
 export const DEFAULT_FORMAT = "decimal"
+// How a graph line's belt count reads: "1.33 belts" or "1⅓ belts" (bf=f).
+export const DEFAULT_BELT_FORMAT = "decimal"
 
 let seconds = one
 let minutes = Rational.from_float(60)

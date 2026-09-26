@@ -69,6 +69,11 @@ export function changeFormat(event) {
     spec.display()
 }
 
+export function changeBeltFormat(event) {
+    spec.format.beltFormat = event.target.value
+    spec.setHash()
+}
+
 export function changeMprod(event) {
     spec.miningProd = Rational.from_string(event.target.value).div(Rational.from_float(100))
     spec.updateSolution()

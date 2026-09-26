@@ -110,3 +110,44 @@ export function destinationLines({ name, rate, percent, belts, beltName, supplie
     }
     return { title, detail: parts.join(" · ") }
 }
+
+// Belt counts the way the Display setting asks: "decimal" ("1.33 belts")
+// or "fraction" ("1⅓ belts"), the fraction snapping to the nearest quarter
+// or third and falling back to decimals when neither is close.
+const FRACTIONS = [[1 / 4, "¼"], [1 / 3, "⅓"], [1 / 2, "½"], [2 / 3, "⅔"], [3 / 4, "¾"]]
+
+export function beltWords(belts, format) {
+    if (format === "fraction") {
+        let whole = Math.floor(belts)
+        let rest = belts - whole
+        let text = null
+        if (rest < 0.02) {
+            text = `${whole}`
+        } else if (rest > 0.98) {
+            text = `${whole + 1}`
+        } else {
+            let near = FRACTIONS.find(([f]) => Math.abs(rest - f) < 0.02)
+            if (near) {
+                text = whole === 0 ? near[1] : `${whole}${near[1]}`
+            }
+        }
+        if (text !== null && text !== "0") {
+            return `${text} ${Math.round(belts * 100) / 100 <= 1 ? "belt" : "belts"}`
+        }
+    }
+    let n = ratioNumber(belts)
+    return `${n} ${n === "1" ? "belt" : "belts"}`
+}
+
+// The two cards at the ends of a hovered graph line: how many of the
+// sending recipe's machines this line takes, and how many of the receiving
+// recipe's machines it feeds. `count` of `total` machines, plain numbers.
+export function lineEnd(count, total, verb) {
+    let n = ratioNumber(count)
+    let t = ratioNumber(total)
+    let [one, many] = verb === "send" ? ["sends this", "send this"] : ["uses it", "use it"]
+    if (n === t) {
+        return t === "1" ? `the only one ${one}` : `all ${t} ${many}`
+    }
+    return `${n} of ${t} ${many}`
+}

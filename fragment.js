@@ -11,7 +11,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
-import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT } from "./align.js"
+import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, DEFAULT_BELT_FORMAT } from "./align.js"
 import { DEFAULT_TAB, currentTab } from "./events.js"
 import { spec, DEFAULT_BELT, DEFAULT_FUEL } from "./factory.js"
 import { formatRecipeMachines } from "./machines-core.js"
@@ -53,6 +53,9 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     }
     if (spec.format.displayFormat !== DEFAULT_FORMAT) {
         settings += "vf=" + spec.format.displayFormat[0] + "&"
+    }
+    if (spec.format.beltFormat && spec.format.beltFormat !== DEFAULT_BELT_FORMAT) {
+        settings += "bf=f&"
     }
     if (!spec.miningProd.isZero()) {
         let hundred = Rational.from_float(100)

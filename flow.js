@@ -13,7 +13,8 @@ import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
 import { buildFlowModel, hoverSet, layered, rankNodes } from "./flow-core.js"
 import { RATE_LABEL } from "./table-core.js"
-import { linkTooltip, recipeTooltip } from "./details.js"
+import { linkMachines } from "./details.js"
+import { beltWords, lineEnd } from "./ratio-core.js"
 
 // The last totals a solve produced, remembered even while the Graph view
 // isn't showing (view=table) so switching to it via calc:view can draw
@@ -194,10 +195,6 @@ function nodeMarkup(node) {
     // graph card's rate isn't click-to-paste.
     rateSpan.className = "rate num"
     rateSpan.textContent = `${rateText}${RATE_LABEL[spec.format.rateName] || "/min"}`
-    // Hovering the rate: where each product goes, in machines (details.js).
-    if (lastDrawnTotals && (recipe || item)) {
-        recipeTooltip(rateSpan, lastDrawnTotals, recipe || null, item)
-    }
     right.appendChild(rateSpan)
     body.appendChild(right)
 
@@ -218,9 +215,12 @@ function nodeMarkup(node) {
 // edges between them (flow-core's hoverSet); #flow-container.hovering dims
 // everything else. Independent of the click selection's "hot" edges.
 function setHover(id) {
+    applyLit(id === null || !lastLayout ? null : hoverSet(lastLayout.edges, id))
+}
+
+function applyLit(lit) {
     let container = document.querySelector("#flow-container")
     if (!container) return
-    let lit = id === null || !lastLayout ? null : hoverSet(lastLayout.edges, id)
     container.classList.toggle("hovering", lit !== null)
     document.querySelectorAll("#flow-nodes .node").forEach(el => {
         el.classList.toggle("lit", lit !== null && lit.nodes.has(el.dataset.node))
@@ -228,6 +228,80 @@ function setHover(id) {
     document.querySelectorAll("#flow path.edge, #flow-nodes .elbl").forEach(el => {
         el.classList.toggle("lit", lit !== null && lit.edges.has(`${el.dataset.from}>${el.dataset.to}`))
     })
+}
+
+// Hovering one line (its path or its label) lights just that line and its
+// two cards, and answers on them instead of in a pop-up: the label turns
+// into item icon, rate, belt icon and belts (spec.format.beltFormat), the
+// sending card says how many of its machines this line takes and the
+// receiving card how many of its machines it feeds. `restoreLine` undoes
+// every swap.
+let restoreLine = []
+
+function setLineHover(edge) {
+    for (let undo of restoreLine) undo()
+    restoreLine = []
+    if (edge === null) {
+        applyLit(null)
+        return
+    }
+    applyLit({nodes: new Set([edge.source, edge.target]), edges: new Set([`${edge.source}>${edge.target}`])})
+    let item = spec.items.get(edge.item)
+    let totals = lastDrawnTotals
+    if (!item || !totals) return
+    let rate = edge.rateExact ?? Rational.from_float(edge.rate)
+    let label = [...document.querySelectorAll("#flow-nodes .elbl")].find(l =>
+        l.dataset.from === edge.source && l.dataset.to === edge.target && l.dataset.item === edge.item)
+    if (label) swapChildren(label, lineChip(item, rate), "chip")
+    let from = edge.source.startsWith("in:") ? null : spec.recipes.get(edge.source) || null
+    let to = spec.recipes.get(edge.target) || null
+    if (!to) return
+    let {supplier, consumer} = linkMachines(totals, item, from, to, rate)
+    if (supplier) answerOnCard(edge.source, from, supplier, "send")
+    if (consumer) answerOnCard(edge.target, to, consumer, "use")
+}
+
+function swapChildren(el, children, cls) {
+    let old = [...el.childNodes]
+    el.replaceChildren(...children)
+    el.classList.add(cls)
+    restoreLine.push(() => {
+        el.replaceChildren(...old)
+        el.classList.remove(cls)
+    })
+}
+
+function lineChip(item, rate) {
+    let text = t => {
+        let span = document.createElement("span")
+        span.textContent = t
+        return span
+    }
+    let sep = text("|")
+    sep.className = "sep"
+    let parts = [item.icon.make(18, true), text(`${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`), sep]
+    if (item.phase === "fluid") {
+        let pipe = spec.items.get("pipe")
+        if (pipe) parts.push(pipe.icon.make(18, true))
+        parts.push(text("pipe"))
+    } else {
+        parts.push(spec.belt.icon.make(18, true))
+        parts.push(text(beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)))
+    }
+    return parts
+}
+
+function answerOnCard(nodeId, recipe, machines, verb) {
+    let node = [...document.querySelectorAll("#flow-nodes .node")].find(n => n.dataset.node === nodeId)
+    let sub = node && node.querySelector(".sub")
+    if (!sub) return
+    let words = document.createElement("span")
+    // Out of the whole machines the card itself shows ("12 × ..."), not the
+    // exact 11.43, so the two numbers on one card agree.
+    words.textContent = lineEnd(machines.count, Math.ceil(machines.total - 1e-9), verb)
+    swapChildren(sub, [spec.getBuilding(recipe).icon.make(16, true), words], "answer")
+    node.classList.add("answering")
+    restoreLine.push(() => node.classList.remove("answering"))
 }
 
 // The selected item's node(s) get their edges/labels marked "hot" -- there
@@ -367,6 +441,18 @@ function renderEdges(laidOut) {
             .attr("data-from", d => d.source)
             .attr("data-to", d => d.target)
             .attr("stroke-width", d => d.width)
+    // A wide invisible twin per edge, so a thin line is easy to hover.
+    restoreLine = []
+    viewport.selectAll("path.hit")
+        .data(laidOut.edges)
+        .join("path")
+            .attr("class", "hit")
+            .attr("d", d => d.d)
+            .attr("data-from", d => d.source)
+            .attr("data-to", d => d.target)
+            .attr("data-item", d => d.item)
+            .on("mouseenter", (_event, d) => setLineHover(d))
+            .on("mouseleave", () => setLineHover(null))
 
     // Edge rate labels are plain HTML (like the node cards) rather than SVG
     // <text>, positioned at the edge's own midpoint (lx/ly, from layered()).
@@ -385,13 +471,9 @@ function renderEdges(laidOut) {
         label.dataset.to = edge.target
         let exact = edge.rateExact ?? Rational.from_float(edge.rate)
         label.textContent = `${spec.format.rate(exact)}${RATE_LABEL[spec.format.rateName] || "/min"}`
-        // Hovering the label: this link's belts and machines at each end.
-        let item = spec.items.get(edge.item)
-        let to = spec.recipes.get(edge.target)
-        if (lastDrawnTotals && item && to) {
-            let from = edge.source.startsWith("in:") ? null : spec.recipes.get(edge.source) || null
-            linkTooltip(label, lastDrawnTotals, item, from, to, exact)
-        }
+        label.dataset.item = edge.item
+        label.addEventListener("mouseenter", () => setLineHover(edge))
+        label.addEventListener("mouseleave", () => setLineHover(null))
         nodesLayer.appendChild(label)
     }
 }

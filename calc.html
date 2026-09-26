@@ -24,10 +24,10 @@
         })
     </script>
     <script type="module">
-        import { changeRatePrecision, changeCountPrecision, changeFormat, changeMprod, changeTitle } from "./events.js"
+        import { changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeMprod, changeTitle } from "./events.js"
         import { init } from "./init.js"
         // Module scripts are deferred, so this runs before body's onload.
-        window.handlers = { init, changeRatePrecision, changeCountPrecision, changeFormat, changeMprod, changeTitle }
+        window.handlers = { init, changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeMprod, changeTitle }
     </script>
 </head>
 
@@ -132,6 +132,11 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
         <div class="kv"><span class="muted" style="width: 90px;">Values</span><form id="value_format">
             <input id="decimal_format" type="radio" name="format" value="decimal" checked onchange="handlers.changeFormat(event)"><label for="decimal_format">Decimals</label>
             <input id="rational_format" type="radio" name="format" value="rational" onchange="handlers.changeFormat(event)"><label for="rational_format">Rationals</label>
+        </form></div>
+        <div class="kv"><span class="muted" style="width: 90px;">Belts</span><form id="belt_format">
+            <input id="decimal_belts" type="radio" name="beltformat" value="decimal" checked onchange="handlers.changeBeltFormat(event)"><label for="decimal_belts">1.33 belts</label>
+            <input id="fraction_belts" type="radio" name="beltformat" value="fraction" onchange="handlers.changeBeltFormat(event)"><label for="fraction_belts">1⅓ belts</label>
+            <span class="muted">on a hovered graph line</span>
         </form></div>
       </div>
 

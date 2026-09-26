@@ -11,7 +11,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
-import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, longRateNames } from "./align.js"
+import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, DEFAULT_BELT_FORMAT, longRateNames } from "./align.js"
 import { spec, DEFAULT_PLANET, DEFAULT_BELT, DEFAULT_FUEL, buildingSort } from "./factory.js"
 import { getRecipeGroups } from "./groups.js"
 import { changeMod } from "./init.js"
@@ -344,6 +344,14 @@ function renderValueFormat(settings) {
 }
 
 // mining productivity
+
+function renderBeltFormat(settings) {
+    spec.format.beltFormat = settings.get("bf") === "f" ? "fraction" : DEFAULT_BELT_FORMAT
+    let input = document.getElementById(spec.format.beltFormat + "_belts")
+    if (input) {
+        input.checked = true
+    }
+}
 
 function renderMiningProd(settings) {
     let mprod = "0"
@@ -1107,6 +1115,7 @@ export function renderSettings(settings) {
     renderRateOptions(settings)
     renderPrecisions(settings)
     renderValueFormat(settings)
+    renderBeltFormat(settings)
     renderMiningProd(settings)
     renderBuildings(settings)
     renderBelts(settings)
