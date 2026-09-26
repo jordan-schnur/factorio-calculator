@@ -352,3 +352,31 @@ export function beltText(belts) {
     if (belts <= 1) return "1 belt"
     return `${Math.ceil(belts * 10) / 10} belts`
 }
+
+// A selected card's line chips, stacked so none overlap: chips in the same
+// column gap (same x, to the pixel) are sorted by y and each pushed below
+// the one above with `gap` px between, then the whole stack is shifted back
+// so it stays centred on where the chips wanted to be. labels: [{id, x, y,
+// h}] with y the chip's centre; returns Map id -> new centre y.
+export function stackLabels(labels, gap = 4) {
+    const out = new Map()
+    const groups = new Map()
+    for (const l of labels) {
+        const k = Math.round(l.x)
+        if (!groups.has(k)) groups.set(k, [])
+        groups.get(k).push(l)
+    }
+    for (const group of groups.values()) {
+        group.sort((a, b) => a.y - b.y)
+        const ys = []
+        let bottom = -Infinity
+        for (const l of group) {
+            const y = Math.max(l.y, bottom + gap + l.h / 2)
+            ys.push(y)
+            bottom = y + l.h / 2
+        }
+        const shift = group.reduce((s, l, i) => s + (ys[i] - l.y), 0) / group.length
+        group.forEach((l, i) => out.set(l.id, ys[i] - shift))
+    }
+    return out
+}

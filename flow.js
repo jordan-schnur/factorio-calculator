@@ -11,7 +11,7 @@
 import { registerRenderer } from "./render.js"
 import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
-import { buildFlowModel, hoverSet, layered, rankNodes } from "./flow-core.js"
+import { buildFlowModel, hoverSet, layered, rankNodes, stackLabels } from "./flow-core.js"
 import { RATE_LABEL } from "./table-core.js"
 import { linkMachines } from "./details.js"
 import { beltWords, lineEnd } from "./ratio-core.js"
@@ -205,10 +205,47 @@ function nodeMarkup(node) {
         selectNode(node.itemKey)
     })
     div.appendChild(body)
-    div.addEventListener("mouseenter", () => setHover(node.id))
-    div.addEventListener("mouseleave", () => setHover(null))
+    div.addEventListener("mouseenter", () => hoverIntent(() => showCardHover(node.id)))
+    div.addEventListener("mouseleave", () => hoverIntent(null))
 
     return div
+}
+
+// Hover waits before it shows and before it clears, so skimming the mouse
+// across the graph doesn't flicker every card and line it crosses: a first
+// hover shows after HOVER_IN ms, moving on to another card or line switches
+// after HOVER_SWITCH, and leaving clears after HOVER_OUT unless something
+// else is entered first.
+const HOVER_IN = 250
+const HOVER_SWITCH = 120
+const HOVER_OUT = 150
+let hoverTimer = null
+let hoverShowing = false
+
+function hoverIntent(show) {
+    clearTimeout(hoverTimer)
+    let delay = show === null ? HOVER_OUT : hoverShowing ? HOVER_SWITCH : HOVER_IN
+    hoverTimer = setTimeout(() => {
+        hoverTimer = null
+        if (show === null) {
+            setLineHover(null)
+            setHover(null)
+            hoverShowing = false
+        } else {
+            show()
+            hoverShowing = true
+        }
+    }, delay)
+}
+
+function showCardHover(id) {
+    setLineHover(null)
+    setHover(id)
+}
+
+function showLineHover(edge) {
+    setLineHover(null)
+    setLineHover(edge)
 }
 
 // Hovering a card lights it, the cards it is made from and goes to, and the
@@ -250,9 +287,8 @@ function setLineHover(edge) {
     let totals = lastDrawnTotals
     if (!item || !totals) return
     let rate = edge.rateExact ?? Rational.from_float(edge.rate)
-    let label = [...document.querySelectorAll("#flow-nodes .elbl")].find(l =>
-        l.dataset.from === edge.source && l.dataset.to === edge.target && l.dataset.item === edge.item)
-    if (label) swapChildren(label, lineChip(item, rate), "chip")
+    let label = findLabel(edge)
+    if (label && !label.classList.contains("pinned")) swapChildren(label, lineChip(item, rate), "chip")
     let from = edge.source.startsWith("in:") ? null : spec.recipes.get(edge.source) || null
     let to = spec.recipes.get(edge.target) || null
     if (!to) return
@@ -261,47 +297,99 @@ function setLineHover(edge) {
     if (consumer) answerOnCard(edge.target, to, consumer, "use")
 }
 
-function swapChildren(el, children, cls) {
+function swapChildren(el, children, cls, undo = restoreLine) {
     let old = [...el.childNodes]
+    let had = el.classList.contains(cls)
     el.replaceChildren(...children)
     el.classList.add(cls)
-    restoreLine.push(() => {
+    if (undo) undo.push(() => {
         el.replaceChildren(...old)
-        el.classList.remove(cls)
+        el.classList.toggle(cls, had)
     })
 }
 
+function textSpan(t, className) {
+    let span = document.createElement("span")
+    span.textContent = t
+    if (className) span.className = className
+    return span
+}
+
 function lineChip(item, rate) {
-    let text = t => {
-        let span = document.createElement("span")
-        span.textContent = t
-        return span
-    }
-    let sep = text("|")
-    sep.className = "sep"
-    let parts = [item.icon.make(18, true), text(`${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`), sep]
+    let parts = [item.icon.make(18, true), textSpan(`${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`), textSpan("|", "sep")]
     if (item.phase === "fluid") {
         let pipe = spec.items.get("pipe")
         if (pipe) parts.push(pipe.icon.make(18, true))
-        parts.push(text("pipe"))
+        parts.push(textSpan("pipe"))
     } else {
         parts.push(spec.belt.icon.make(18, true))
-        parts.push(text(beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)))
+        parts.push(textSpan(beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)))
     }
     return parts
 }
 
-function answerOnCard(nodeId, recipe, machines, verb) {
+// "32 of 56 send this" out of the whole machines the card itself shows
+// ("56 × ..."), not the exact 55.8, so the two numbers on one card agree.
+function machineWords(machines, verb) {
+    return lineEnd(machines.count, Math.ceil(machines.total - 1e-9), verb)
+}
+
+function answerOnCard(nodeId, recipe, machines, verb, undo = restoreLine) {
     let node = [...document.querySelectorAll("#flow-nodes .node")].find(n => n.dataset.node === nodeId)
     let sub = node && node.querySelector(".sub")
     if (!sub) return
-    let words = document.createElement("span")
-    // Out of the whole machines the card itself shows ("12 × ..."), not the
-    // exact 11.43, so the two numbers on one card agree.
-    words.textContent = lineEnd(machines.count, Math.ceil(machines.total - 1e-9), verb)
-    swapChildren(sub, [spec.getBuilding(recipe).icon.make(16, true), words], "answer")
-    node.classList.add("answering")
-    restoreLine.push(() => node.classList.remove("answering"))
+    swapChildren(sub, [spec.getBuilding(recipe).icon.make(16, true), textSpan(machineWords(machines, verb))], "answer", undo)
+    if (!node.classList.contains("answering")) {
+        node.classList.add("answering")
+        if (undo) undo.push(() => node.classList.remove("answering"))
+    }
+}
+
+function findLabel(edge) {
+    return [...document.querySelectorAll("#flow-nodes .elbl")].find(l =>
+        l.dataset.from === edge.source && l.dataset.to === edge.target && l.dataset.item === edge.item)
+}
+
+// A clicked card answers on every one of its lines at once, for as long as
+// it stays selected: each line's label becomes the chip (item, rate, belts)
+// plus how many of the selected card's machines that line takes, and the
+// card at the other end says how many of its machines it feeds or is fed
+// by. Chips in the same column gap are stacked so none overlap
+// (stackLabels); returns the widest chip, so draw() can widen the gaps
+// between columns when one doesn't fit.
+function renderSelectionChips() {
+    let item = spec.whereItem
+    let totals = lastDrawnTotals
+    if (item === null || !lastLayout || !totals) return 0
+    let selected = new Set(lastLayout.nodes.filter(n => n.itemKey === item).map(n => n.id))
+    let placed = []
+    for (let edge of lastLayout.edges) {
+        let outgoing = selected.has(edge.source)
+        if (!outgoing && !selected.has(edge.target)) continue
+        let label = findLabel(edge)
+        let lineItem = spec.items.get(edge.item)
+        let to = spec.recipes.get(edge.target) || null
+        if (!label || !lineItem || !to) continue
+        let rate = edge.rateExact ?? Rational.from_float(edge.rate)
+        let from = edge.source.startsWith("in:") ? null : spec.recipes.get(edge.source) || null
+        let {supplier, consumer} = linkMachines(totals, lineItem, from, to, rate)
+        let chip = lineChip(lineItem, rate)
+        let mine = outgoing ? supplier : consumer
+        let mineRecipe = outgoing ? from : to
+        if (mine) {
+            chip.push(textSpan("|", "sep"), spec.getBuilding(mineRecipe).icon.make(18, true), textSpan(machineWords(mine, outgoing ? "send" : "use")))
+        }
+        swapChildren(label, chip, "chip", null)
+        label.classList.add("pinned")
+        let theirs = outgoing ? consumer : supplier
+        if (theirs) {
+            answerOnCard(outgoing ? edge.target : edge.source, outgoing ? to : from, theirs, outgoing ? "use" : "send", null)
+        }
+        placed.push({el: label, x: edge.lx, y: edge.ly, w: label.offsetWidth, h: label.offsetHeight})
+    }
+    let ys = stackLabels(placed.map((p, id) => ({id, x: p.x, y: p.y, h: p.h})), 6)
+    placed.forEach((p, id) => { p.el.style.top = ys.get(id) + "px" })
+    return placed.reduce((w, p) => Math.max(w, p.w), 0)
 }
 
 // The selected item's node(s) get their edges/labels marked "hot" -- there
@@ -451,8 +539,8 @@ function renderEdges(laidOut) {
             .attr("data-from", d => d.source)
             .attr("data-to", d => d.target)
             .attr("data-item", d => d.item)
-            .on("mouseenter", (_event, d) => setLineHover(d))
-            .on("mouseleave", () => setLineHover(null))
+            .on("mouseenter", (_event, d) => hoverIntent(() => showLineHover(d)))
+            .on("mouseleave", () => hoverIntent(null))
 
     // Edge rate labels are plain HTML (like the node cards) rather than SVG
     // <text>, positioned at the edge's own midpoint (lx/ly, from layered()).
@@ -472,11 +560,16 @@ function renderEdges(laidOut) {
         let exact = edge.rateExact ?? Rational.from_float(edge.rate)
         label.textContent = `${spec.format.rate(exact)}${RATE_LABEL[spec.format.rateName] || "/min"}`
         label.dataset.item = edge.item
-        label.addEventListener("mouseenter", () => setLineHover(edge))
-        label.addEventListener("mouseleave", () => setLineHover(null))
+        label.addEventListener("mouseenter", () => hoverIntent(() => showLineHover(edge)))
+        label.addEventListener("mouseleave", () => hoverIntent(null))
         nodesLayer.appendChild(label)
     }
 }
+
+// flow-core's default gap between columns, and the room a selection chip
+// needs either side of it before the gaps widen.
+const BASE_COL_GAP = 96
+const CHIP_MARGIN = 32
 
 // The full draw pass, called whenever the Graph view needs a picture: on a
 // fresh solve while it's showing, and once when calc:view switches to it
@@ -507,18 +600,27 @@ function draw(totals) {
     // writes onto each card, so a mismatch here would leave .node's CSS
     // size dead.
     let ranks = rankNodes(model).rank
-    let laidOut = layered(model, {nodeWidth: 210, nodeHeight: 58, ranks})
-    lastLayout = laidOut
-
     ensureZoom()
-    renderColumns(laidOut)
-    renderNodes(laidOut)
-    renderEdges(laidOut)
-    // Node markup already sets .sel from spec.whereItem, but the edges it
-    // implies (e.g. a selection carried in from the page's own fragment on
-    // the very first draw) need the same pass the details card's open/close
-    // uses.
-    refreshEdgeHot()
+    // A selected card's chips are wider than a plain rate label; when the
+    // widest doesn't fit the gap between columns, lay out again with gaps
+    // wide enough for it (the graph spreads out; see keepAnchor()).
+    let colGap = BASE_COL_GAP
+    let laidOut = null
+    for (let pass = 0; pass < 2; pass++) {
+        laidOut = layered(model, {nodeWidth: 210, nodeHeight: 58, ranks, colGap})
+        lastLayout = laidOut
+        renderColumns(laidOut)
+        renderNodes(laidOut)
+        renderEdges(laidOut)
+        // Node markup already sets .sel from spec.whereItem, but the edges it
+        // implies (e.g. a selection carried in from the page's own fragment on
+        // the very first draw) need the same pass the details card's open/close
+        // uses.
+        refreshEdgeHot()
+        let widest = renderSelectionChips()
+        if (widest + CHIP_MARGIN <= colGap) break
+        colGap = Math.ceil(widest + CHIP_MARGIN)
+    }
 
     let idsKey = laidOut.nodes.map(n => n.id).sort().join(",")
     if (idsKey !== lastNodeIdsKey) {
@@ -560,6 +662,63 @@ function renderFlow(_spec, totals) {
     draw(totals)
 }
 
+// Selecting (or closing) a card redraws the graph, since its chips can
+// widen the column gaps; the card keeps its place on screen so the graph
+// spreads around it instead of jumping under the mouse.
+let lastSelected = null
+
+function redrawForSelection() {
+    let anchorItem = spec.whereItem ?? lastSelected
+    lastSelected = spec.whereItem
+    if (spec.view !== "graph" || !lastDrawnTotals || !lastLayout) {
+        updateSelectionClasses()
+        return
+    }
+    let before = lastLayout.nodes.find(n => n.itemKey === anchorItem)
+    draw(lastDrawnTotals)
+    if (before) keepAnchor(before)
+    // After #graph-side has opened (details.js renders off the same event).
+    if (spec.whereItem !== null) setTimeout(bringSelectionIntoView, 0)
+}
+
+// Pans (never zooms) the least amount that shows the selected card and
+// every card it connects to, clear of the details panel on the right; a
+// neighbourhood too wide for the view is lined up on its left edge.
+function bringSelectionIntoView() {
+    if (!lastLayout || zoomBehavior === null || spec.whereItem === null) return
+    let ids = new Set()
+    for (let n of lastLayout.nodes) {
+        if (n.itemKey !== spec.whereItem) continue
+        for (let id of hoverSet(lastLayout.edges, n.id).nodes) ids.add(id)
+    }
+    let nodes = lastLayout.nodes.filter(n => ids.has(n.id))
+    if (nodes.length === 0) return
+    let container = document.querySelector("#flow-container")
+    let {width, height} = containerSize()
+    let side = document.querySelector("#graph-side")
+    let right = width - (side && !side.hidden ? side.offsetWidth : 0)
+    let t = d3.zoomTransform(container)
+    let pad = 24
+    let shift = (lo, hi, min, max) => {
+        if (hi - lo > max - min - 2 * pad || lo < min + pad) return min + pad - lo
+        if (hi > max - pad) return max - pad - hi
+        return 0
+    }
+    let dx = shift(Math.min(...nodes.map(n => n.x)) * t.k + t.x, Math.max(...nodes.map(n => n.x + n.w)) * t.k + t.x, 0, right)
+    let dy = shift(Math.min(...nodes.map(n => n.y)) * t.k + t.y, Math.max(...nodes.map(n => n.y + n.h)) * t.k + t.y, 0, height)
+    if (dx === 0 && dy === 0) return
+    d3.select(container).call(zoomBehavior.translateBy, dx / t.k, dy / t.k)
+}
+
+function keepAnchor(before) {
+    let after = lastLayout && lastLayout.nodes.find(n => n.id === before.id)
+    if (!after || zoomBehavior === null || needsFit) return
+    let dx = before.x - after.x
+    let dy = before.y - after.y
+    if (dx === 0 && dy === 0) return
+    d3.select("#flow-container").call(zoomBehavior.translateBy, dx, dy)
+}
+
 function updateSelectionClasses() {
     let sel = spec.whereItem
     document.querySelectorAll("#flow-nodes .node").forEach(el => {
@@ -571,7 +730,7 @@ function updateSelectionClasses() {
 export function initFlow() {
     registerRenderer(renderFlow)
 
-    document.addEventListener("calc:select", updateSelectionClasses)
+    document.addEventListener("calc:select", redrawForSelection)
 
     // The container is hidden (0-size) until the view actually switches to
     // Graph, so a solve that happened while on Table couldn't have fitted
