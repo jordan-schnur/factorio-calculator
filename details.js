@@ -7,7 +7,7 @@
 import { spec } from "./factory.js"
 import { beltText } from "./flow-core.js"
 import { recipesFor } from "./machines-core.js"
-import { destinationLines, flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
+import { destinationLines, flowLines, goesToRatio, needsRatio, plural, ratioNumber } from "./ratio-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { relevantRecipes, renderOptions } from "./source.js"
@@ -243,6 +243,114 @@ export function itemTooltip(el, totals, rows, item) {
             cardLine(frame, d.title, "dest")
             if (d.detail) {
                 cardLine(frame, d.detail, "muted dest-detail")
+            }
+        }
+        return frame
+    })
+}
+
+// The machines on each side of `rate` of `item` flowing from recipe `from`
+// (null: brought in) into recipe `to`: `from`'s share of its own output of
+// the item, and `to`'s share of its own intake of it.
+function linkMachines(totals, item, from, to, rate) {
+    let made = from === null ? null : (totals.producers.get(item) || new Map()).get(from)
+    let used = (totals.consumers.get(item) || new Map()).get(to)
+    return {
+        supplier: made && !made.isZero() ? machinesOn(totals, from, rate.div(made)) : null,
+        consumer: used && !used.isZero() ? machinesOn(totals, to, rate.div(used)) : null,
+    }
+}
+
+// Hovering a graph edge's rate: that one link's belts, and how many machines
+// at each end it keeps busy.
+export function linkTooltip(el, totals, item, from, to, rate) {
+    let { supplier, consumer } = linkMachines(totals, item, from, to, rate)
+    let lines = flowLines({
+        belts: spec.getBeltCount(rate).toFloat(),
+        beltName: spec.belt.name,
+        fluid: item.phase === "fluid",
+        suppliers: supplier ? [supplier] : [],
+        consumer,
+    })
+    el.classList.add("flow")
+    new Tooltip(el, () => {
+        let frame = cardFrame(`${rateText(rate)} ${item.name}`)
+        for (let line of lines) {
+            cardLine(frame, line)
+        }
+        return frame
+    })
+}
+
+// Hovering a graph card's rate: for every product of `recipe` (coal
+// liquefaction's three oils, say), each place it goes and how many of this
+// recipe's machines feed how many of the next ones. `from` null is a
+// brought-in item's card, `item` its item.
+export function recipeTooltip(el, totals, recipe, item) {
+    let products = recipe === null ? [item] : recipe.products.map(p => p.item)
+    let sections = []
+    for (let product of products) {
+        let links = totals.proportionate.filter(l =>
+            l.item === product && l.to.key !== undefined && l.to.isReal() &&
+            (recipe === null ? (l.from === null || (l.from.isDisable && l.from.isDisable())) : l.from === recipe))
+        let merged = new Map()
+        for (let l of links) {
+            merged.set(l.to, (merged.get(l.to) || zero).add(l.rate))
+        }
+        let made = recipe === null
+            ? totals.items.get(product) || zero
+            : (totals.producers.get(product) || new Map()).get(recipe) || zero
+        if (made.isZero()) {
+            continue
+        }
+        let fluid = product.phase === "fluid"
+        let destinations = [...merged]
+            .sort((a, b) => b[1].toFloat() - a[1].toFloat())
+            .map(([to, rate]) => {
+                let { supplier, consumer } = linkMachines(totals, product, recipe, to, rate)
+                return destinationLines({
+                    name: to.name,
+                    rate: rateText(rate),
+                    percent: percentText(rate.div(made)),
+                    belts: fluid ? null : spec.getBeltCount(rate).toFloat(),
+                    beltName: spec.belt.name,
+                    suppliers: supplier ? [{ building: supplier.building, count: supplier.count }] : [],
+                    consumer: consumer ? { building: consumer.building, count: consumer.count } : null,
+                })
+            })
+        let left = [...merged.values()].reduce((sum, r) => sum.sub(r), made)
+        if (spec.buildTargets.some(t => t.item === product) && zero.less(left)) {
+            let supplier = recipe === null ? null : machinesOn(totals, recipe, left.div(made))
+            destinations.push(destinationLines({
+                name: "What you asked for",
+                rate: rateText(left),
+                percent: percentText(left.div(made)),
+                belts: fluid ? null : spec.getBeltCount(left).toFloat(),
+                beltName: spec.belt.name,
+                suppliers: supplier ? [{ building: supplier.building, count: supplier.count }] : [],
+                consumer: null,
+            }))
+        }
+        let belts = fluid ? "by pipe" : `${ratioNumber(spec.getBeltCount(made).toFloat())} ${plural(spec.belt.name, spec.getBeltCount(made).toFloat())}`
+        sections.push({ head: `${product.name} · ${rateText(made)} · ${belts}`, destinations })
+    }
+    if (sections.length === 0) {
+        return
+    }
+    let machines = recipe === null ? null : machinesOn(totals, recipe, one)
+    el.classList.add("flow")
+    new Tooltip(el, () => {
+        let frame = cardFrame(recipe === null ? `${item.name}, brought in` : recipe.name)
+        if (machines) {
+            cardLine(frame, `${ratioNumber(machines.total)} ${plural(machines.building, machines.total)}`)
+        }
+        for (let section of sections) {
+            cardLine(frame, section.head, "lbl")
+            for (let d of section.destinations) {
+                cardLine(frame, d.title, "dest")
+                if (d.detail) {
+                    cardLine(frame, d.detail, "muted dest-detail")
+                }
             }
         }
         return frame

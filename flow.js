@@ -13,6 +13,7 @@ import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
 import { buildFlowModel, hoverSet, layered, rankNodes } from "./flow-core.js"
 import { RATE_LABEL } from "./table-core.js"
+import { linkTooltip, recipeTooltip } from "./details.js"
 
 // The last totals a solve produced, remembered even while the Graph view
 // isn't showing (view=table) so switching to it via calc:view can draw
@@ -193,6 +194,10 @@ function nodeMarkup(node) {
     // graph card's rate isn't click-to-paste.
     rateSpan.className = "rate num"
     rateSpan.textContent = `${rateText}${RATE_LABEL[spec.format.rateName] || "/min"}`
+    // Hovering the rate: where each product goes, in machines (details.js).
+    if (lastDrawnTotals && (recipe || item)) {
+        recipeTooltip(rateSpan, lastDrawnTotals, recipe || null, item)
+    }
     right.appendChild(rateSpan)
     body.appendChild(right)
 
@@ -380,6 +385,13 @@ function renderEdges(laidOut) {
         label.dataset.to = edge.target
         let exact = edge.rateExact ?? Rational.from_float(edge.rate)
         label.textContent = `${spec.format.rate(exact)}${RATE_LABEL[spec.format.rateName] || "/min"}`
+        // Hovering the label: this link's belts and machines at each end.
+        let item = spec.items.get(edge.item)
+        let to = spec.recipes.get(edge.target)
+        if (lastDrawnTotals && item && to) {
+            let from = edge.source.startsWith("in:") ? null : spec.recipes.get(edge.source) || null
+            linkTooltip(label, lastDrawnTotals, item, from, to, exact)
+        }
         nodesLayer.appendChild(label)
     }
 }

@@ -183,6 +183,8 @@ div.tooltip .flow-card .lbl { display: block; margin-top: 6px; }
 div.tooltip .flow-card .dest { margin-top: 4px; }
 div.tooltip .flow-card .dest-detail { font-size: 12px; padding-left: 10px; }
 .lrow .need.flow { cursor: help; }
+.elbl.flow { pointer-events: auto; cursor: help; }
+.node .rate.flow { cursor: help; text-decoration: underline dotted; text-underline-offset: 3px; }
 .opt { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; background: #2a2a2a; border: none; color: #ffe6c0; font-family: inherit; font-size: 13px; cursor: pointer; text-align: left; box-shadow: inset 0 0 0 1px #1a1a1a; min-height: 44px; box-sizing: border-box; }
 .opt:hover { background: #3a3a3a; }
 .opt.cur { background: #3a3323; box-shadow: inset 0 0 0 1px #f1be64; }
