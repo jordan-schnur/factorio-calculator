@@ -229,6 +229,7 @@ function hoverIntent(show) {
         hoverTimer = null
         if (show === null) {
             setLineHover(null)
+            clearCardHover()
             setHover(null)
             hoverShowing = false
         } else {
@@ -238,13 +239,37 @@ function hoverIntent(show) {
     }, delay)
 }
 
+// Hovering a card previews what clicking it shows: the chip on every one
+// of its lines (renderSelectionChips), laid out again with the hovered card
+// held in place. The column gaps only ever widen (stickyGap), so moving
+// from card to card doesn't shuffle the graph back and forth.
+let hoverCard = null
+
 function showCardHover(id) {
     setLineHover(null)
+    if (hoverCard !== id) {
+        hoverCard = id
+        redrawKeeping(id)
+    }
     setHover(id)
+}
+
+function clearCardHover() {
+    if (hoverCard === null) return
+    hoverCard = null
+    if (lastDrawnTotals && spec.view === "graph") draw(lastDrawnTotals)
+}
+
+function redrawKeeping(id) {
+    if (!lastDrawnTotals || !lastLayout || spec.view !== "graph") return
+    let before = lastLayout.nodes.find(n => n.id === id)
+    draw(lastDrawnTotals)
+    if (before) keepAnchor(before)
 }
 
 function showLineHover(edge) {
     setLineHover(null)
+    clearCardHover()
     setLineHover(edge)
 }
 
@@ -360,8 +385,10 @@ function findLabel(edge) {
 function renderSelectionChips() {
     let item = spec.whereItem
     let totals = lastDrawnTotals
-    if (item === null || !lastLayout || !totals) return 0
-    let selected = new Set(lastLayout.nodes.filter(n => n.itemKey === item).map(n => n.id))
+    if (!lastLayout || !totals) return 0
+    let selected = new Set(lastLayout.nodes.filter(n => item !== null && n.itemKey === item).map(n => n.id))
+    if (hoverCard !== null) selected.add(hoverCard)
+    if (selected.size === 0) return 0
     let placed = []
     for (let edge of lastLayout.edges) {
         let outgoing = selected.has(edge.source)
@@ -382,7 +409,9 @@ function renderSelectionChips() {
         swapChildren(label, chip, "chip", null)
         label.classList.add("pinned")
         let theirs = outgoing ? consumer : supplier
-        if (theirs) {
+        // A line between two focused cards (the selection and the hovered
+        // card) keeps the chip; the far card's line isn't swapped twice.
+        if (theirs && !selected.has(outgoing ? edge.target : edge.source)) {
             answerOnCard(outgoing ? edge.target : edge.source, outgoing ? to : from, theirs, outgoing ? "use" : "send", null)
         }
         placed.push({el: label, x: edge.lx, y: edge.ly, w: label.offsetWidth, h: label.offsetHeight})
@@ -570,6 +599,9 @@ function renderEdges(laidOut) {
 // needs either side of it before the gaps widen.
 const BASE_COL_GAP = 96
 const CHIP_MARGIN = 32
+// The widest gap any chip has needed since the last solve; kept so the
+// graph widens once instead of breathing on every hover.
+let stickyGap = BASE_COL_GAP
 
 // The full draw pass, called whenever the Graph view needs a picture: on a
 // fresh solve while it's showing, and once when calc:view switches to it
@@ -604,7 +636,7 @@ function draw(totals) {
     // A selected card's chips are wider than a plain rate label; when the
     // widest doesn't fit the gap between columns, lay out again with gaps
     // wide enough for it (the graph spreads out; see keepAnchor()).
-    let colGap = BASE_COL_GAP
+    let colGap = stickyGap
     let laidOut = null
     for (let pass = 0; pass < 2; pass++) {
         laidOut = layered(model, {nodeWidth: 210, nodeHeight: 58, ranks, colGap})
@@ -620,6 +652,7 @@ function draw(totals) {
         let widest = renderSelectionChips()
         if (widest + CHIP_MARGIN <= colGap) break
         colGap = Math.ceil(widest + CHIP_MARGIN)
+        stickyGap = colGap
     }
 
     let idsKey = laidOut.nodes.map(n => n.id).sort().join(",")
@@ -659,6 +692,10 @@ function renderFlow(_spec, totals) {
     lastTotals = totals
     if (spec.view !== "graph") return
     if (spec.buildTargets.length !== 0 && totals === lastDrawnTotals && renderKey() === lastDrawnKey) return
+    if (totals !== lastDrawnTotals) {
+        stickyGap = BASE_COL_GAP
+        hoverCard = null
+    }
     draw(totals)
 }
 
