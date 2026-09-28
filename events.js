@@ -73,6 +73,7 @@ export function changeFormat(event) {
 export function changeBeltFormat(event) {
     spec.format.beltFormat = event.target.value
     spec.setHash()
+    spec.display()
 }
 
 export function changeColorblind(event) {

@@ -69,8 +69,8 @@ function withBlock(text, whole, p, q) {
 // recipe making the item) and `consumer` are {building, recipe, count,
 // total} -- `count` of the recipe's `total` machines that this one flow
 // keeps busy; `consumer` is null when that side has no machine.
-export function flowLines({ belts, beltName, fluid, suppliers, consumer }) {
-    let lines = [fluid ? "Fluid, by pipe" : `${ratioNumber(belts)} ${plural(beltName, belts)}`]
+export function flowLines({ belts, beltName, fluid, suppliers, consumer, beltFormat }) {
+    let lines = [fluid ? "Fluid, by pipe" : namedBelts(belts, beltName, beltFormat)]
     for (let supplier of suppliers) {
         lines.push(`Made by ${machinesOf(supplier)}`)
     }
@@ -78,6 +78,13 @@ export function flowLines({ belts, beltName, fluid, suppliers, consumer }) {
         lines.push(`Used by ${machinesOf(consumer)}`)
     }
     return lines
+}
+
+// "1/3 transport belt", "1 1/3 transport belts": beltAmount with the belt's
+// own name as the noun.
+function namedBelts(belts, beltName, format) {
+    let { text, many } = beltAmount(belts, format)
+    return `${text} ${plural(beltName, many ? 2 : 1)}`
 }
 
 function machinesOf({ building, recipe, count, total }) {
@@ -91,11 +98,11 @@ function machinesOf({ building, recipe, count, total }) {
 // (`suppliers`, {building, count}, one per recipe) feed how many of the
 // `consumer`'s ({building, count}, or null for what you asked for itself).
 // `belts` is null for a fluid.
-export function destinationLines({ name, rate, percent, belts, beltName, suppliers, consumer }) {
+export function destinationLines({ name, rate, percent, belts, beltName, suppliers, consumer, beltFormat }) {
     let title = `${name} · ${rate} · ${percent}`
     let parts = []
     if (belts !== null) {
-        parts.push(`${ratioNumber(belts)} ${plural(beltName, belts)}`)
+        parts.push(namedBelts(belts, beltName, beltFormat))
     }
     if (suppliers.length > 0) {
         let from = suppliers.map(s => `${ratioNumber(s.count)} ${plural(s.building, s.count)}`).join(" + ")
@@ -111,32 +118,53 @@ export function destinationLines({ name, rate, percent, belts, beltName, supplie
     return { title, detail: parts.join(" · ") }
 }
 
-// Belt counts the way the Display setting asks: "decimal" ("1.33 belts")
-// or "fraction" ("1⅓ belts"), the fraction snapping to the nearest quarter
-// or third and falling back to decimals when neither is close.
-const FRACTIONS = [[1 / 4, "¼"], [1 / 3, "⅓"], [1 / 2, "½"], [2 / 3, "⅔"], [3 / 4, "¾"]]
+// Belt counts the way the Display setting asks: "fraction" (the default)
+// reads "1/3 belt", "2/3 belt", "1 1/3 belts", "1/15 belt"; "decimal" reads
+// "0.33 belts". A fraction is a unit fraction 1/x when one is within 4%,
+// else the simplest n/d within 0.01 of it (a denominator people count in:
+// no sevenths or elevenths), else decimals.
+const FRIENDLY_DENOMINATORS = [2, 3, 4, 5, 6, 8, 9, 10, 12]
 
-export function beltWords(belts, format) {
-    if (format === "fraction") {
+function beltFraction(rest) {
+    let x = Math.round(1 / rest)
+    if (x >= 2 && Math.abs(1 / x - rest) <= rest * 0.04) {
+        return `1/${x}`
+    }
+    for (let d of FRIENDLY_DENOMINATORS) {
+        let n = Math.round(rest * d)
+        if (n >= 1 && n < d && Math.abs(n / d - rest) <= 0.01) {
+            return `${n}/${d}`
+        }
+    }
+    return null
+}
+
+// {text, many}: the number as the setting writes it, and whether it is
+// more than one belt (so the noun is plural).
+export function beltAmount(belts, format) {
+    if (format !== "decimal" && belts > 0) {
         let whole = Math.floor(belts)
         let rest = belts - whole
         let text = null
-        if (rest < 0.02) {
-            text = `${whole}`
-        } else if (rest > 0.98) {
+        if (rest < 0.01) {
+            text = whole > 0 ? `${whole}` : beltFraction(belts)
+        } else if (rest > 0.99) {
             text = `${whole + 1}`
         } else {
-            let near = FRACTIONS.find(([f]) => Math.abs(rest - f) < 0.02)
-            if (near) {
-                text = whole === 0 ? near[1] : `${whole}${near[1]}`
-            }
+            let f = beltFraction(rest)
+            if (f) text = whole > 0 ? `${whole} ${f}` : f
         }
-        if (text !== null && text !== "0") {
-            return `${text} ${Math.round(belts * 100) / 100 <= 1 ? "belt" : "belts"}`
+        if (text !== null) {
+            return { text, many: belts > 1.01 }
         }
     }
-    let n = ratioNumber(belts)
-    return `${n} ${n === "1" ? "belt" : "belts"}`
+    let text = ratioNumber(belts)
+    return { text, many: text !== "1" }
+}
+
+export function beltWords(belts, format) {
+    let { text, many } = beltAmount(belts, format)
+    return `${text} ${many ? "belts" : "belt"}`
 }
 
 // The two cards at the ends of a hovered graph line: how many of the

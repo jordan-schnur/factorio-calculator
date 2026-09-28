@@ -5,9 +5,8 @@
 // graph view's side card (`#graph-side`, built here since selecting a node
 // does not itself trigger a re-solve).
 import { spec } from "./factory.js"
-import { beltText } from "./flow-core.js"
 import { recipesFor } from "./machines-core.js"
-import { destinationLines, flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
+import { beltWords, destinationLines, flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { relevantRecipes, renderOptions } from "./source.js"
@@ -182,6 +181,7 @@ function flowTooltip(numEl, totals, rows, item, consumer, rate) {
     let lines = flowLines({
         belts: spec.getBeltCount(rate).toFloat(),
         beltName: spec.belt.name,
+        beltFormat: spec.format.beltFormat,
         fluid: item.phase === "fluid",
         suppliers: suppliersOf(totals, rows, item, rate),
         consumer: machinesOn(totals, consumer, one),
@@ -209,6 +209,7 @@ export function itemTooltip(el, totals, rows, item) {
     let summary = flowLines({
         belts: spec.getBeltCount(total).toFloat(),
         beltName: spec.belt.name,
+        beltFormat: spec.format.beltFormat,
         fluid,
         suppliers: suppliersOf(totals, rows, item, total),
         consumer: null,
@@ -227,6 +228,7 @@ export function itemTooltip(el, totals, rows, item) {
         percent: percentText(f.rate.div(total)),
         belts: fluid ? null : spec.getBeltCount(f.rate).toFloat(),
         beltName: spec.belt.name,
+        beltFormat: spec.format.beltFormat,
         suppliers: suppliersOf(totals, rows, item, f.rate).map(m => ({ building: m.building, count: m.count })),
         consumer: f.consumer ? { building: f.consumer.building, count: f.consumer.count } : null,
     }))
@@ -289,7 +291,7 @@ function buildHead(item, rate, size) {
     grow.appendChild(document.createElement("br"))
     let subtitle = document.createElement("span")
     subtitle.className = "muted num"
-    let beltPart = item.phase === "fluid" ? "pipe" : beltText(spec.getBeltCount(rate).toFloat())
+    let beltPart = item.phase === "fluid" ? "pipe" : beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)
     subtitle.textContent = `${rateText(rate)} · ${beltPart}`
     grow.appendChild(subtitle)
     head.appendChild(grow)

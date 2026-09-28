@@ -3,7 +3,7 @@
 // or pipe in, replacing the old Ledger side panel. A row expands into a
 // detail panel (calc/details.js) in place instead of opening a side card.
 import { spec } from "./factory.js"
-import { beltText } from "./flow-core.js"
+import { beltWords } from "./ratio-core.js"
 import { registerRenderer } from "./render.js"
 import { buildRows, buildingCount } from "./table.js"
 import { groupForTable, RATE_LABEL } from "./table-core.js"
@@ -104,7 +104,7 @@ function needCell(row, totals, rows) {
     cell.appendChild(document.createTextNode(rateText(row.itemRate)))
     const belts = document.createElement("span")
     belts.className = "belts"
-    belts.textContent = row.item.phase === "fluid" ? "pipe" : beltText(spec.getBeltCount(row.itemRate).toFloat())
+    belts.textContent = row.item.phase === "fluid" ? "pipe" : beltWords(spec.getBeltCount(row.itemRate).toFloat(), spec.format.beltFormat)
     cell.appendChild(belts)
     itemTooltip(cell, totals, rows, row.item)
     return cell

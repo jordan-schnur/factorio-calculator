@@ -346,7 +346,7 @@ function renderValueFormat(settings) {
 // mining productivity
 
 function renderBeltFormat(settings) {
-    spec.format.beltFormat = settings.get("bf") === "f" ? "fraction" : DEFAULT_BELT_FORMAT
+    spec.format.beltFormat = settings.get("bf") === "d" ? "decimal" : DEFAULT_BELT_FORMAT
     let input = document.getElementById(spec.format.beltFormat + "_belts")
     if (input) {
         input.checked = true

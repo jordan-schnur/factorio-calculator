@@ -55,7 +55,7 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
         settings += "vf=" + spec.format.displayFormat[0] + "&"
     }
     if (spec.format.beltFormat && spec.format.beltFormat !== DEFAULT_BELT_FORMAT) {
-        settings += "bf=f&"
+        settings += "bf=d&"
     }
     if (!spec.miningProd.isZero()) {
         let hundred = Rational.from_float(100)

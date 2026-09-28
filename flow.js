@@ -43,7 +43,8 @@ let needsFit = true
 let isFitted = true
 
 function renderKey() {
-    return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}`
+    // beltFormat too: chipGap measures chips with their belt wording
+    return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}:${spec.format.beltFormat}`
 }
 
 function itemKeyFor(node) {
