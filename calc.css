@@ -307,6 +307,8 @@ img.icon[data-tier] {
     background-position: var(--sprite-pos);
     background-repeat: no-repeat;
 }
+.tier-word { display: none; }
+html.colorblind .tier-word, .cb-probe .tier-word { display: inline; font-weight: 700; color: #ffffff; background: #000000; padding: 0 3px; font-size: 0.9em; }
 html.colorblind img.icon[data-tier] {
     background-image: var(--tier-badge), var(--sprite);
     background-size: 100% 100%, var(--sprite-size);

@@ -15,6 +15,7 @@ import { buildFlowModel, dashArray, hoverSet, itemStyles, layered, lineStyle, ra
 import { RATE_LABEL } from "./table-core.js"
 import { linkMachines } from "./details.js"
 import { beltWords, lineEnd } from "./ratio-core.js"
+import { tierWord } from "./colorblind.js"
 
 // The last totals a solve produced, remembered even while the Graph view
 // isn't showing (view=table) so switching to it via calc:view can draw
@@ -338,19 +339,27 @@ function textSpan(t, className) {
 function lineChip(item, rate, machines = null) {
     let row = document.createElement("div")
     row.className = "chip-row"
-    row.append(item.icon.make(18, true), textSpan(`${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`), textSpan("|", "sep"))
+    row.append(...withWord(item, item.icon.make(18, true)), textSpan(`${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`), textSpan("|", "sep"))
     if (item.phase === "fluid") {
         let pipe = spec.items.get("pipe")
         if (pipe) row.append(pipe.icon.make(18, true))
         row.append(textSpan("pipe"))
     } else {
-        row.append(spec.belt.icon.make(18, true), textSpan(beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)))
+        row.append(...withWord(spec.belt, spec.belt.icon.make(18, true)), textSpan(beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)))
     }
     if (machines === null) return [row]
     let second = document.createElement("div")
     second.className = "chip-row machines"
     second.append(spec.getBuilding(machines.recipe).icon.make(18, true), textSpan(machines.words))
     return [row, second]
+}
+
+// An icon followed by its colour word in colour-blind mode (belts,
+// splitters, inserters), since at graph zoom the icon's own badge is too
+// small to read.
+function withWord(obj, icon) {
+    let word = tierWord(obj)
+    return word ? [icon, word] : [icon]
 }
 
 // "32 of 56 send this" out of the whole machines the card itself shows
@@ -437,6 +446,9 @@ function chipGap(edges) {
     // On <body>, not in #flow-nodes: zoomed out, #flow-nodes.small hides
     // every label that isn't hot, and a hidden chip measures 0 wide.
     let probe = document.createElement("div")
+    // cb-probe: measured with the colour-blind words showing, so turning
+    // the mode on later never makes a chip outgrow its gap.
+    probe.className = "cb-probe"
     probe.style.cssText = "position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none;"
     document.body.appendChild(probe)
     let widest = 0
@@ -636,7 +648,7 @@ function renderEdges(laidOut) {
         label.style.borderColor = color
         label.append(lineSwatch(color, dash))
         let item = spec.items.get(edge.item)
-        if (item) label.append(item.icon.make(14, true))
+        if (item) label.append(...withWord(item, item.icon.make(14, true)))
         label.append(textSpan(`${spec.format.rate(exact)}${RATE_LABEL[spec.format.rateName] || "/min"}`))
         label.dataset.item = edge.item
         label.addEventListener("mouseenter", () => hoverIntent(() => showLineHover(edge)))
