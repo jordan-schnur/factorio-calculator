@@ -218,10 +218,17 @@ function nodeMarkup(node) {
 // after HOVER_SWITCH, and leaving clears after HOVER_OUT unless something
 // else is entered first.
 const HOVER_IN = 250
-const HOVER_SWITCH = 120
-const HOVER_OUT = 150
+const HOVER_SWITCH = 250
+const HOVER_OUT = 300
 let hoverTimer = null
 let hoverShowing = false
+
+// Moving onto a chip that's showing keeps whatever it belongs to: the
+// pending clear (from leaving the card or line) or switch (from crossing
+// another line on the way) is cancelled.
+function hoverKeep() {
+    if (hoverShowing) clearTimeout(hoverTimer)
+}
 
 function hoverIntent(show) {
     clearTimeout(hoverTimer)
@@ -283,6 +290,7 @@ function applyLit(lit) {
     document.querySelectorAll("#flow path.edge, #flow-nodes .elbl").forEach(el => {
         el.classList.toggle("lit", lit !== null && lit.edges.has(`${el.dataset.from}>${el.dataset.to}`))
     })
+    restack()
 }
 
 // Hovering one line (its path or its label) lights just that line and its
@@ -294,8 +302,10 @@ function applyLit(lit) {
 let restoreLine = []
 
 function setLineHover(edge) {
+    let had = restoreLine.length > 0
     for (let undo of restoreLine) undo()
     restoreLine = []
+    if (had) restack()
     if (edge === null) {
         applyLit(null)
         return
@@ -306,7 +316,10 @@ function setLineHover(edge) {
     if (!item || !totals) return
     let rate = edge.rateExact ?? Rational.from_float(edge.rate)
     let label = findLabel(edge)
-    if (label && !label.classList.contains("pinned")) swapChildren(label, lineChip(item, rate), "chip")
+    if (label && !label.classList.contains("pinned")) {
+        swapChildren(label, lineChip(item, rate), "chip")
+        restack()
+    }
     let from = edge.source.startsWith("in:") ? null : spec.recipes.get(edge.source) || null
     let to = spec.recipes.get(edge.target) || null
     if (!to) return
@@ -403,8 +416,10 @@ function lineMachines(edge) {
 }
 
 function applyFocus() {
+    let had = focusUndo.length > 0
     for (let undo of focusUndo.reverse()) undo()
     focusUndo = []
+    if (had) restack()
     if (!lastLayout) return
     let item = spec.whereItem
     let focused = new Set(lastLayout.nodes.filter(n => item !== null && n.itemKey === item).map(n => n.id))
@@ -420,22 +435,32 @@ function applyFocus() {
         let mine = outgoing ? line.supplier : line.consumer
         let machines = mine ? {recipe: outgoing ? line.from : line.to, words: machineWords(mine, outgoing ? "send" : "use")} : null
         swapChildren(label, lineChip(line.item, line.rate, machines), "chip", focusUndo)
-        let top = label.style.top
         label.classList.add("pinned")
-        focusUndo.push(() => {
-            label.classList.remove("pinned")
-            label.style.top = top
-        })
+        focusUndo.push(() => label.classList.remove("pinned"))
         let theirs = outgoing ? line.consumer : line.supplier
         // A line between two focused cards keeps its chip; the far card's
         // machine line isn't swapped twice.
         if (theirs && !focused.has(outgoing ? edge.target : edge.source)) {
             answerOnCard(outgoing ? edge.target : edge.source, outgoing ? line.to : line.from, theirs, outgoing ? "use" : "send", focusUndo)
         }
-        placed.push({el: label, x: edge.lx, y: edge.ly, h: label.offsetHeight})
     }
-    let ys = stackLabels(placed.map((p, id) => ({id, x: p.x, y: p.y, h: p.h})), 6)
-    placed.forEach((p, id) => { p.el.style.top = ys.get(id) + "px" })
+    restack()
+}
+
+// Every label in a column gap stacked so none overlap (flow-core's
+// stackLabels), each as near its own line as the others allow: a gap that
+// many lines leave from (iron plate, gears) would otherwise pile its rates
+// on top of one another. Rerun whenever a label turns into a chip or back,
+// since chips are taller. A label hidden while zoomed out measures 0, so
+// it's counted at a plain label's height.
+function restack() {
+    // While hovering only the lit labels show (calc.css hides the rest), so
+    // only they are stacked, close together; the rest keep their places
+    // until the hover ends and this runs again for all of them.
+    let hovering = document.querySelector("#flow-container")?.classList.contains("hovering")
+    let labels = [...document.querySelectorAll("#flow-nodes .elbl")].filter(el => !hovering || el.classList.contains("lit"))
+    let ys = stackLabels(labels.map((el, id) => ({id, x: Number(el.dataset.lx), y: Number(el.dataset.ly), h: el.offsetHeight || PLAIN_LABEL_H})), 3)
+    labels.forEach((el, id) => { el.style.top = ys.get(id) + "px" })
 }
 
 // The gap between columns that fits the widest chip any line of this plan
@@ -641,6 +666,8 @@ function renderEdges(laidOut) {
         label.className = "elbl num"
         label.style.left = edge.lx + "px"
         label.style.top = edge.ly + "px"
+        label.dataset.lx = edge.lx
+        label.dataset.ly = edge.ly
         label.dataset.from = edge.source
         label.dataset.to = edge.target
         let exact = edge.rateExact ?? Rational.from_float(edge.rate)
@@ -651,7 +678,10 @@ function renderEdges(laidOut) {
         if (item) label.append(...withWord(item, item.icon.make(14, true)))
         label.append(textSpan(`${spec.format.rate(exact)}${RATE_LABEL[spec.format.rateName] || "/min"}`))
         label.dataset.item = edge.item
-        label.addEventListener("mouseenter", () => hoverIntent(() => showLineHover(edge)))
+        label.addEventListener("mouseenter", () => {
+            if (label.classList.contains("chip")) hoverKeep()
+            else hoverIntent(() => showLineHover(edge))
+        })
         label.addEventListener("mouseleave", () => hoverIntent(null))
         nodesLayer.appendChild(label)
     }
@@ -679,6 +709,7 @@ function lineSwatch(color, dash) {
 // either side of it (see chipGap()).
 const BASE_COL_GAP = 96
 const CHIP_MARGIN = 32
+const PLAIN_LABEL_H = 18
 
 // The full draw pass, called whenever the Graph view needs a picture: on a
 // fresh solve while it's showing, and once when calc:view switches to it
@@ -723,6 +754,7 @@ function draw(totals) {
     // the very first draw) need the same pass the details card's open/close
     // uses.
     refreshEdgeHot()
+    restack()
     applyFocus()
 
     let idsKey = laidOut.nodes.map(n => n.id).sort().join(",")
