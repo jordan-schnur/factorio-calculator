@@ -14,6 +14,7 @@ limitations under the License.*/
 
 import { spec } from "./factory.js"
 import { Tooltip } from "./tooltip.js"
+import { badgeUrl, tierOf } from "./colorblind-core.js"
 
 export const PX_WIDTH = 32
 export const PX_HEIGHT = 32
@@ -57,16 +58,33 @@ export class Icon {
         let y = -this.obj.icon_row * PX_HEIGHT
         let img = d3.select(makeEmptyIcon(size))
             .classed("icon", true)
-            .style("background", "url(images/sprite-sheet-" + sheetHash + ".png)")
+        let sheet = "url(images/sprite-sheet-" + sheetHash + ".png)"
+        let sheetSize = null
         if (size !== 32) {
             let ratio = size / 32
             x *= ratio
             y *= ratio
             let width = sheetWidth * ratio
             let height = sheetHeight * ratio
-            img.style("background-size", `${width}px ${height}px`)
+            sheetSize = `${width}px ${height}px`
         }
-        img.style("background-position", `${x}px ${y}px`)
+        // A belt-family or inserter icon hands its sprite to calc.css as
+        // variables instead of inline background, so html.colorblind can
+        // layer its colour word over it (colorblind-core.js).
+        let tier = tierOf(this.obj.key)
+        if (tier) {
+            img.attr("data-tier", tier)
+                .style("--sprite", sheet)
+                .style("--sprite-size", sheetSize || "auto")
+                .style("--sprite-pos", `${x}px ${y}px`)
+                .style("--tier-badge", badgeUrl(tier, size !== null && size !== undefined && size < 24))
+        } else {
+            img.style("background", sheet)
+            if (sheetSize) {
+                img.style("background-size", sheetSize)
+            }
+            img.style("background-position", `${x}px ${y}px`)
+        }
         if (!suppressTooltip && this.obj.renderTooltip) {
             let self = this
             new Tooltip(img.node(), () => self.obj.renderTooltip(), target)

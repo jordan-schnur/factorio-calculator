@@ -14,6 +14,7 @@ limitations under the License.*/
 import { spec } from "./factory.js"
 import { Rational } from "./rational.js"
 import { setTitle } from "./settings.js"
+import { setColorblind } from "./colorblind.js"
 
 // tab events
 //
@@ -72,6 +73,10 @@ export function changeFormat(event) {
 export function changeBeltFormat(event) {
     spec.format.beltFormat = event.target.value
     spec.setHash()
+}
+
+export function changeColorblind(event) {
+    setColorblind(event.target.checked)
 }
 
 export function changeMprod(event) {
