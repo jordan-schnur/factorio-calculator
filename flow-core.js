@@ -380,3 +380,36 @@ export function stackLabels(labels, gap = 4) {
     }
     return out
 }
+
+// One look per item for the graph's lines, so they can be told apart at a
+// glance and without relying on colour alone: seven colour-blind-safe
+// colours (Okabe-Ito, lifted for the dark canvas) crossed with six dash
+// patterns. 7 and 6 share no factor, so the first 42 items all differ and
+// neighbouring indices differ in both colour and pattern. Dash lengths are
+// in units of the line's own width (a 0 dash with round caps is a dot).
+const LINE_COLORS = ["#e69f00", "#56b4e9", "#2fbf8f", "#f0e442", "#cc79a7", "#ff8a4c", "#d8c7a6"]
+const LINE_DASHES = [null, [4, 2.5], [0, 2.2], [6, 2, 0, 2], [10, 3], [5, 2, 0, 2, 0, 2]]
+
+export function lineStyle(index) {
+    return {color: LINE_COLORS[index % LINE_COLORS.length], dash: LINE_DASHES[index % LINE_DASHES.length]}
+}
+
+// SVG stroke-dasharray for `dash` on a line `width` px wide; null is solid.
+export function dashArray(dash, width) {
+    if (!dash) return null
+    const unit = Math.max(2, width)
+    return dash.map(v => Math.round(v * unit * 10) / 10).join(" ")
+}
+
+// Item key -> style index, numbering items in the order their first line
+// leaves its card, left to right then top to bottom, so lines that start
+// side by side get neighbouring (so fully different) styles. `edges` are
+// layered()'s, with `points`.
+export function itemStyles(edges) {
+    const order = [...edges].sort((a, b) => a.points[0][0] - b.points[0][0] || a.points[0][1] - b.points[0][1])
+    const out = new Map()
+    for (const e of order) {
+        if (!out.has(e.item)) out.set(e.item, out.size)
+    }
+    return out
+}

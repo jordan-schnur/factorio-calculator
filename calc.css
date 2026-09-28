@@ -123,10 +123,11 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 .node.in.sel { box-shadow: inset 0 0 0 2px #f1be64, 0 2px 5px rgba(0,0,0,0.6); }
 .node.tgt { box-shadow: inset 0 0 0 1px #e39827, 0 2px 5px rgba(0,0,0,0.6); }
 .badge.locked { background: #5a3a2a; color: #ffd9c0; font-size: 10px; padding: 0 5px; vertical-align: 1px; text-transform: none; letter-spacing: 0; }
-.elbl { position: absolute; transform: translate(-50%, -50%); font-size: 11px; background: #1f1f1f; color: #d8c7a6; padding: 0 5px; cursor: help; }
+.elbl { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 4px; font-size: 11px; background: #1f1f1f; color: #d8c7a6; padding: 1px 5px; border: 1px solid #3a3a3a; white-space: nowrap; cursor: help; }
+.elbl .swatch { flex-shrink: 0; }
 /* Zoomed out below 0.6, only labels on a hot (hovered/selected) edge stay visible. */
 #flow-nodes.small .elbl:not(.hot) { display: none; }
-.elbl.hot { color: #f1be64; border: 1px solid #5a4a2a; }
+.elbl.hot { color: #f1be64; }
 .node .mid { flex: 1; min-width: 0; text-align: left; overflow: hidden; }
 .node .name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14px; font-weight: 700; white-space: normal; line-height: 1.1; overflow: hidden; }
 .node .sub { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #d8c7a6; white-space: nowrap; overflow: hidden; }
@@ -134,13 +135,15 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 .node .rate { display: block; font-weight: 700; white-space: nowrap; }
 #flow path.edge { stroke: #8a7040; fill: none; opacity: 0.9; }
 #flow path.edge.in { stroke: #4f8fc0; }
-#flow path.edge.hot { stroke: #f1be64; }
+/* a line keeps its item colour (flow-core lineStyle); selected and lit
+   lines stand out by glow and by everything else fading */
+#flow path.edge.hot { filter: drop-shadow(0 0 2px rgba(255,230,192,0.9)); }
 /* flow.js's setHover: the hovered card's one-hop neighbourhood stays lit. */
 #flow-container.hovering .node:not(.lit) { opacity: 0.25; }
 #flow-container.hovering #flow path.edge:not(.lit) { opacity: 0.12; }
-#flow-container.hovering #flow path.edge.lit { stroke: #f1be64; opacity: 1; }
+#flow-container.hovering #flow path.edge.lit { opacity: 1; filter: drop-shadow(0 0 2px rgba(255,230,192,0.9)); }
 #flow-container.hovering .elbl:not(.lit) { visibility: hidden; }
-#flow-container.hovering .elbl.lit { display: block; color: #f1be64; }
+#flow-container.hovering .elbl.lit { display: flex; color: #f1be64; }
 .lbl { color: #a8a8a8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
 /* header.js's renderAsmSeg needs the "Assemblers" label to carry .lbl (it
    checks previousElementSibling.classList.contains("lbl") to hide the label
@@ -186,7 +189,9 @@ div.tooltip .flow-card .dest-detail { font-size: 12px; padding-left: 10px; }
 /* flow.js's setLineHover: a hovered line's label becomes a chip (item icon,
    rate, belt icon, belts) and its two cards answer in their machine line. */
 #flow path.hit { fill: none; stroke: transparent; stroke-width: 14px; pointer-events: stroke; cursor: help; }
-.elbl.chip { display: flex; align-items: center; gap: 5px; padding: 2px 8px; font-size: 13px; font-weight: 700; color: #f1be64; border: 1px solid #5a4a2a; box-shadow: 0 2px 6px rgba(0,0,0,0.7); white-space: nowrap; z-index: 3; }
+.elbl.chip { flex-direction: column; align-items: flex-start; gap: 2px; padding: 3px 8px; font-size: 13px; font-weight: 700; color: #f1be64; border-width: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.7); z-index: 3; }
+.elbl.chip .chip-row { display: flex; align-items: center; gap: 5px; }
+.elbl.chip .chip-row.machines { color: #ffe6c0; }
 .elbl.chip .sep { color: #5a4a2a; }
 .node.answering .right { display: none; }
 .node .sub.answer { color: #f1be64; font-weight: 700; }
