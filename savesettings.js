@@ -4,6 +4,7 @@
 import { navigateToHash } from "./init.js"
 import { loadSettings } from "./fragment.js"
 import { spec } from "./factory.js"
+import { companion } from "./hosting.js"
 import { mergeFragment, serialize, saveLabel, signatureOf } from "./savesettings-core.js"
 
 const FOLLOW_INTERVAL_MS = 5 * 60 * 1000
@@ -136,6 +137,10 @@ async function applyFromServer() {
 // Called once by init.js, after the first solve, with the boot-time
 // fragment Map (before any reload this module might trigger).
 export async function applySaveSettings(settings) {
+    // No companion server (the static copy): there are no saves to follow.
+    if (!(await companion())) {
+        return
+    }
     if (!settings.has("save") && !settings.has("follow") && !settings.has("items")) {
         spec.saveState = { save: "", follow: true, overrides: new Set() }
         // Persists save=/follow=1 into the fragment immediately: without

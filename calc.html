@@ -39,15 +39,15 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
 <div id="page">
   <div class="frame" id="topbar">
     <span class="title">Factorio Calculator</span>
-    <span class="muted" id="save-line"></span>
-    <select id="save-picker"></select>
-    <span id="save-status" class="muted"></span>
+    <span class="muted needs-companion" id="save-line"></span>
+    <select id="save-picker" class="needs-companion"></select>
+    <span id="save-status" class="muted needs-companion"></span>
     <span id="page-note" class="muted"></span>
     <div class="spacer"></div>
     <div class="seg" id="view-seg"><button data-view="table">Table</button><button data-view="graph">Graph</button></div>
     <button class="btn" id="settings-open" title="Settings">Settings</button>
-    <button class="btn btn-green" id="board-button">Add to board</button>
-    <div class="frame" id="board-panel" hidden></div>
+    <button class="btn btn-green needs-companion" id="board-button">Add to board</button>
+    <div class="frame needs-companion" id="board-panel" hidden></div>
   </div>
 
   <div class="frame intro" id="make-panel">
@@ -98,8 +98,8 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
     <div class="frame" id="settings-panel">
       <div class="titlebar"><span class="title">Settings</span><div class="spacer"></div><button class="x" id="settings-close">&#10005;</button></div>
 
-      <div class="sec">From your save</div>
-      <div class="deep" id="settings-fromsave"></div>
+      <div class="sec needs-companion">From your save</div>
+      <div class="deep needs-companion" id="settings-fromsave"></div>
 
       <div id="settings-overrides">
         <div class="sec">Machines</div>

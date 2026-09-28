@@ -3,19 +3,23 @@
 import { spec } from "./factory.js"
 import { Rational } from "./rational.js"
 import { parseQuery, datasetEntries, mergeEntries } from "./search-core.js"
-import { rankMatches } from "/board/boardcore.js"
+import { rankMatches } from "./boardcore.js"
+import { companion } from "./hosting.js"
 
 const RESULT_LIMIT = 8
 
 let catalogPromise = null
 
 // Memoised: every caller (this module, calc/board.js) shares one fetch.
+// The companion's live catalog when it's there, else the snapshot shipped
+// with the page (data/catalog.json) so nicknames like "red science" still
+// work on the static copy.
 export async function fetchCatalog() {
     if (!catalogPromise) {
-        catalogPromise = fetch("/api/catalog")
+        catalogPromise = companion().then(live => live ? live.entries : fetch("data/catalog.json")
             .then(resp => resp.ok ? resp.json() : { entries: [] })
             .then(data => (data && data.entries) || [])
-            .catch(() => [])
+            .catch(() => []))
     }
     return catalogPromise
 }

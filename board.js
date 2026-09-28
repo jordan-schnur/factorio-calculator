@@ -8,6 +8,8 @@
 // init.js's boot graph with no surrounding try/catch, so a static import
 // failing here would abort the whole calculator.
 
+import { companion } from "./hosting.js"
+
 // Fragments longer than this are rejected client-side rather than posted
 // (matches board.MAX_PLAN_LEN on the server, which would reject them anyway
 // -- this just avoids a round trip and gives an inline reason).
@@ -18,11 +20,11 @@ function capitalize(s) {
 }
 
 let catalogPromise = null
+// The board only exists with the companion server (hosting.js); its
+// catalog is the same answer the probe already fetched.
 function fetchCatalog() {
   if (!catalogPromise) {
-    catalogPromise = fetch("/api/catalog")
-      .then((resp) => (resp.ok ? resp.json() : { entries: [] }))
-      .catch(() => ({ entries: [] }))
+    catalogPromise = companion().then((live) => live || { entries: [] })
   }
   return catalogPromise
 }
@@ -222,7 +224,7 @@ function onAddClick(checksBox, titleInput, columnSelect, result) {
 async function onOpenClick(panel) {
   let boardcore
   try {
-    boardcore = await import("/board/boardcore.js")
+    boardcore = await import("./boardcore.js")
   } catch (err) {
     renderNote(panel, "Could not load the board module.")
     console.error("board button failed", err)

@@ -238,6 +238,8 @@ div.tooltip .flow-card .dest-detail { font-size: 12px; padding-left: 10px; }
     width: 360px;
 }
 [hidden] { display: none !important; }
+/* hosting.js: save and board controls only exist with the companion server */
+html:not([data-companion="yes"]) .needs-companion { display: none !important; }
 #table-frame { flex: 1; min-height: 0; overflow: auto; }
 #graph-frame { position: relative; flex: 1; min-height: 0; }
 #flow-container { position: absolute; inset: 0; overflow: hidden; cursor: grab; touch-action: none; }

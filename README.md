@@ -1,21 +1,43 @@
 # Factorio Calculator
 
-This is the repostory for the [Factorio Calculator](https://kirkmcdonald.github.io/calc.html), a tool for calculating resource requirements and production ratios in the game [Factorio](https://factorio.com/).
+A production-rate calculator for [Factorio](https://factorio.com/) 2.0 and
+Space Age: pick what you want to make and how fast, and it works out every
+machine, belt and input behind it.
 
-## Running locally
+**Use it:** https://jordanschnur.com/factorio-calculator/
 
-The calculator consists entirely of static files (HTML, JS, CSS), and may be run locally using any HTTP server. If you have Python 3 installed, you can start a simple development server on port 8000 with:
+It is a fork of Kirk McDonald's [Factorio Calculator](https://kirkmcdonald.github.io/calc.html)
+([source](https://github.com/KirkMcDonald/kirkmcdonald.github.io), Apache-2.0).
+The solver and data model are his; the page around them is new:
+
+- **Table first.** One row per item, grouped Build here / Bring in from
+  another build / Mine or pipe in. Open a row for what it needs, where it
+  goes, machine ratios ("1 offshore pump feeds 9.6 foundries"), the recipe
+  and the machine, per row or for the whole build.
+- **Graph.** The same plan as a left-to-right flow. Every item's lines have
+  their own colour and dash pattern. Hover or click a card and each of its
+  lines says its rate, belts ("1 1/3 belts") and how many machines on each
+  end it takes ("32 of 56 send this").
+- **Colour-blind mode** (Settings > Display) writes the colour on belt,
+  splitter and inserter icons.
+- Nickname search ("red science 60, gears, blue chip 45"), a scratch pad,
+  and the whole plan in the link, so a link is the plan.
+
+## Running it locally
+
+It is all static files. Serve this folder with any HTTP server:
 
 ```text
-$ python3 -m http.server 8000
+python3 -m http.server 8000
 ```
 
-An experimental standalone version of the calculator named `factoriocalc`, which will automatically obtain the game data from your locally installed mods, is also available from the [factorio-tools](https://github.com/KirkMcDonald/factorio-tools) repository. A Windows build is available from [the project's releases page](https://github.com/KirkMcDonald/factorio-tools/releases).
+then open http://localhost:8000/calc.html.
 
-## Dumping new datasets
+This repo is also the calculator inside the Factorio Companion (a Claude
+Desktop MCP server), whose local server adds extras the static site hides:
+reading settings from your save and adding a plan to a board.
 
-The utility for dumping datasets from the game, as well as assembling the sprite sheets, is called `factoriodump`, and may be found in the [factorio-tools](https://github.com/KirkMcDonald/factorio-tools) repository.
+## Licence
 
-## Support the calculator
-
-Please consider donating to [my Patreon campaign](https://www.patreon.com/kirkmcdonald). Any amount helps. And thank you!
+Apache-2.0, as upstream: see `LICENSE` and `NOTICE-factorio-companion.md`.
+Factorio's item and machine icons are Wube Software's.

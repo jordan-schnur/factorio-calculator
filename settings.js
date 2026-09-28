@@ -1051,7 +1051,7 @@ function ensureOverrideTag(resolveHost) {
     let tag = host.querySelector(":scope > span.override-tag")
     if (!tag) {
         tag = document.createElement("span")
-        tag.className = "muted override-tag"
+        tag.className = "muted override-tag needs-companion"
         tag.style.marginLeft = "auto"
         tag.style.fontSize = "13px"
         host.appendChild(tag)
@@ -1079,7 +1079,8 @@ function ensureResetAllButton() {
         return
     }
     let row = document.createElement("div")
-    row.className = "kv"
+    // Resets to the save's values, so only with the companion (hosting.js).
+    row.className = "kv needs-companion"
     let btn = document.createElement("button")
     btn.id = "overrides-reset-all"
     btn.type = "button"
