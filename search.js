@@ -54,6 +54,15 @@ function addTargetAtPerSecond(itemKey, rate) {
     return target
 }
 
+// "7 machines": the target is sized by machine count, as if its unit
+// dropdown were switched to machines (target.js's getRate shows it so).
+function addTargetMachines(itemKey, count) {
+    let target = spec.addTarget(itemKey)
+    target.setBuildings(Rational.from_float(count), target.recipe)
+    spec.updateSolution()
+    return target
+}
+
 function closeResults() {
     let container = document.getElementById("target-search-results")
     container.innerHTML = ""
@@ -119,9 +128,13 @@ function markHighlighted() {
 
 function pick(entry) {
     let input = document.getElementById("target-search")
-    let { rate } = parseQuery(input.value)
-    let perDisplayUnit = rate === null ? 60 : rate
-    addTargetAtPerSecond(entry.name, Rational.from_float(perDisplayUnit).div(spec.format.rateFactor))
+    let { rate, machines } = parseQuery(input.value)
+    if (machines && rate !== null) {
+        addTargetMachines(entry.name, rate)
+    } else {
+        let perDisplayUnit = rate === null ? 60 : rate
+        addTargetAtPerSecond(entry.name, Rational.from_float(perDisplayUnit).div(spec.format.rateFactor))
+    }
     input.value = ""
     closeResults()
 }
