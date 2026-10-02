@@ -267,6 +267,7 @@ html:not([data-companion="yes"]) .needs-companion { display: none !important; }
 #make-panel.intro .make-row { width: 640px; max-width: 100%; }
 #make-panel:not(.intro) #intro-title, #make-panel:not(.intro) #intro-extras { display: none; }
 #intro-extras .examples { display: flex; gap: 10px; }
+#intro-extras .about { max-width: 640px; margin: 18px auto 0; text-align: center; line-height: 1.5; }
 #footer { display: flex; align-items: center; gap: 18px; }
 .column { display: flex; flex-direction: column; gap: 12px; }
 #settings-drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 50; display: flex; justify-content: flex-end; }
