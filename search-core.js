@@ -21,11 +21,13 @@ export function datasetEntries(items) {
 }
 
 // catalog entries win by name; fallback fills the rest; only names in
-// `fallback` (producible in this dataset) are kept.
+// `fallback` (producible in this dataset) are kept. Technologies are never
+// targets, and many share an item's name ("quality-module-2" is both) with
+// a tierless label ("Quality module"), so they would overwrite the item.
 export function mergeEntries(catalog, fallback) {
     const allowed = new Map(fallback.map(e => [e.name, e]))
     const out = new Map()
-    for (const e of catalog) if (allowed.has(e.name)) out.set(e.name, e)
+    for (const e of catalog) if (e.kind !== "technology" && allowed.has(e.name)) out.set(e.name, e)
     for (const [name, e] of allowed) if (!out.has(name)) out.set(name, e)
     return [...out.values()]
 }
