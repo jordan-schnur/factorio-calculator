@@ -259,6 +259,10 @@ function renderIgnore(settings) {
 
 export const DEFAULT_TITLE = "Factorio Calculator"
 
+// The tab title with nothing planned yet: what search engines index and what
+// a shared bare link previews as. Keep it in step with calc.html's <title>.
+export const INTRO_TITLE = "Factorio Calculator – Space Age & 2.0 Production Ratios"
+
 // The Title setting, "" when unset. Only this goes in the fragment; the tab
 // title otherwise names what the plan makes, so it can be found in history.
 export let customTitle = ""
@@ -276,7 +280,7 @@ export function targetsTitle(targets) {
         let amount = unit.startsWith("/") ? t.numInput.value + unit : t.numInput.value + " " + unit
         return t.item.name + " " + amount
     })
-    return parts.length ? parts.join(", ") + " · " + DEFAULT_TITLE : DEFAULT_TITLE
+    return parts.length ? parts.join(", ") + " · " + DEFAULT_TITLE : INTRO_TITLE
 }
 
 function renderPageTitle(spec) {

@@ -120,10 +120,12 @@ function applyPageState(settings) {
     let ov = settings.get("ov")
     spec.saveState.overrides = new Set(ov ? ov.split(",") : [])
     spec.whereItem = settings.has("item") ? settings.get("item") : null
-    spec.view = settings.get("view") === "graph" ? "graph" : "table"
-    // "tab=" is a leftover fragment key from before the redesign (the page
-    // is one screen now); it is still read so old links round-trip, but is
-    // never acted on.
+    // Kirk's calculator links say "tab=graph" for its graph tab; with no
+    // view= of our own, that opens our graph. Any other "tab=" (ours from
+    // before the redesign, or Kirk's totals/settings) is still read so old
+    // links round-trip, but is never acted on.
+    let kirkGraph = !settings.has("view") && settings.get("tab") === "graph"
+    spec.view = settings.get("view") === "graph" || kirkGraph ? "graph" : "table"
 }
 
 // display() is now nothing but renderAll(), so the bookkeeping it used to do
