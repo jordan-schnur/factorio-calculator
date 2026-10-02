@@ -4,9 +4,15 @@
 // this directly under plain node.
 
 // "red science 90" -> {query: "red science", rate: 90}; "gears" -> {query: "gears", rate: null}
+// A count of machines instead of a rate: "yellow science 7 machines" (or
+// "7 machine", "7x") -> {query: "yellow science", rate: 7, machines: true}.
+// Any start of "machines" from "ma" counts, so results don't vanish mid-word;
+// a lone "m" doesn't ("60m" reads as per minute).
 export function parseQuery(text) {
-    const m = /^(.*?)(?:\s+(\d+(?:\.\d+)?))?\s*$/.exec(text || "")
-    return { query: (m[1] || "").trim(), rate: m[2] === undefined ? null : Number(m[2]) }
+    const m = /^(.*?)(?:\s+(\d+(?:\.\d+)?)\s*(ma(?:c(?:h(?:i(?:n(?:es?)?)?)?)?)?|x)?)?\s*$/i.exec(text || "")
+    const out = { query: (m[1] || "").trim(), rate: m[2] === undefined ? null : Number(m[2]) }
+    if (m[3] !== undefined) out.machines = true
+    return out
 }
 
 // items: [{key, localized_name: {en}, group}] -> catalog-shaped entries with no aliases
