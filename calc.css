@@ -1,0 +1,563 @@
+/* Factorio Companion's calculator page.
+
+The component classes below (.frame .titlebar .deep .slot .row .btn .tab ...)
+come from docs/superpowers/mockups/calculator/style.css; the tail of the file
+keeps the rules from Kirk's original sheet that his surviving components
+still need (tooltips, sprite icons, the dropdown/module widgets and the
+Settings-tab renderers), retinted to the tokens below. */
+
+:root {
+    --bg: #1f1f1f;
+    --frame: #313131;
+    --deep: #242424;
+    --text: #ffe6c0;
+    --accent: #f1be64;
+    --accent-dark: #e39827;
+    --muted: #a8a8a8;
+    --edge-light: #4d4d4d;
+    --edge-dark: #1a1a1a;
+    --input-bg: #1c1c1c;
+    --green: #6fc873;
+    --red: #e05a5a;
+
+    /* Kirk's variable names, kept alive for the rules at the foot of this
+       file, pointed at the tokens above. */
+    --dark: #242424;
+    --dark-overlay: rgba(36, 36, 36, 0.92);
+    --medium: #2a2a2a;
+    --main: #1f1f1f;
+    --light: #3a3a3a;
+    --foreground: #ffe6c0;
+    --bright: #ffe6c0;
+}
+
+/* --- the mockup's component set ---------------------------------------- */
+
+body { margin: 0; font-family: "Titillium Web", "Segoe UI", system-ui, sans-serif; font-size: 15px; color: #ffe6c0; background: #1f1f1f; }
+a { color: #f1be64; } a:hover { color: #ffe6c0; }
+.num { font-variant-numeric: tabular-nums; font-weight: 600; }
+.frame { background: #313131; box-shadow: inset 0 1px 0 #4d4d4d, inset 1px 0 0 #4d4d4d, inset 0 -1px 0 #1a1a1a, inset -1px 0 0 #1a1a1a, 0 2px 6px rgba(0,0,0,0.6); padding: 8px; }
+.titlebar { display: flex; align-items: center; gap: 10px; padding: 2px 4px 8px; }
+.title { font-weight: 700; font-size: 17px; color: #ffe6c0; white-space: nowrap; }
+.drag { flex: 1; height: 14px; background: repeating-linear-gradient(135deg, #3f3f3f 0 2px, #2a2a2a 2px 5px); box-shadow: inset 0 1px 0 #4a4a4a, inset 0 -1px 0 #1a1a1a; }
+.deep { background: #242424; box-shadow: inset 0 2px 4px rgba(0,0,0,0.7), inset 0 -1px 0 #3d3d3d, inset 1px 0 0 #1a1a1a; padding: 6px; }
+.slot { width: 36px; height: 36px; background: linear-gradient(#3d3d3d, #303030); box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -1px 0 #1a1a1a, 0 0 0 1px #1a1a1a; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.slot img { width: 28px; height: 28px; }
+.slot-sm { width: 26px; height: 26px; }
+.slot-sm img { width: 20px; height: 20px; }
+.slot-lg { width: 44px; height: 44px; }
+.slot-lg img { width: 34px; height: 34px; }
+.slot.sel { box-shadow: inset 0 0 0 2px #f1be64, 0 0 0 1px #1a1a1a; background: linear-gradient(#5a4a2a, #3d3520); }
+/* settings.js's Available row: a machine switched off for planning. */
+.slot.off { opacity: 0.35; background: repeating-linear-gradient(135deg, #303030 0 6px, #262626 6px 12px); }
+.slot.dim img { opacity: 0.35; }
+/* details.js's Machine line under a row's Recipe list. */
+.machines { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 4px; }
+.machines button.slot { border: none; padding: 0; cursor: pointer; }
+.machine-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.machine-actions .btn { white-space: normal; text-align: left; }
+.row { display: flex; align-items: center; gap: 10px; padding: 4px 6px; }
+.row:nth-child(even) { background: rgba(255,255,255,0.025); }
+.row.hot { background: rgba(241,190,100,0.12); box-shadow: inset 0 0 0 1px #6a5a30; }
+.btn { background: linear-gradient(#a9a9a9, #8e8e8e); color: #1f1f1f; font-weight: 700; padding: 5px 14px; box-shadow: inset 0 1px 0 #c8c8c8, inset 0 -2px 0 #6a6a6a, 0 1px 3px rgba(0,0,0,0.6); font-size: 14px; white-space: nowrap; border: none; font-family: inherit; cursor: pointer; }
+.btn-green { background: linear-gradient(#6fc873, #4f9e53); color: #fff; box-shadow: inset 0 1px 0 #9ae09c, inset 0 -2px 0 #3a7a3e, 0 1px 3px rgba(0,0,0,0.6); }
+.btn-orange { background: linear-gradient(#f5b464, #e39827); color: #1f1f1f; box-shadow: inset 0 1px 0 #ffd28f, inset 0 -2px 0 #b8741a, 0 1px 3px rgba(0,0,0,0.6); }
+.btn-red { background: linear-gradient(#e05a5a, #c43e3e); color: #fff; box-shadow: inset 0 1px 0 #f08a8a, inset 0 -2px 0 #8f2b2b, 0 1px 3px rgba(0,0,0,0.6); }
+.btn-sm { padding: 2px 8px; font-size: 13px; }
+.h { font-weight: 700; color: #ffe6c0; }
+.muted { color: #a8a8a8; font-weight: 400; }
+.sec { font-weight: 700; color: #ffe6c0; padding: 10px 6px 4px; display: flex; align-items: center; gap: 10px; }
+.sec::after { content: ""; flex: 1; height: 2px; background: #3d3d3d; box-shadow: 0 1px 0 #1a1a1a; }
+input { background: #1c1c1c; box-shadow: inset 0 2px 3px rgba(0,0,0,0.8), inset 0 -1px 0 #454545; border: none; color: #ffe6c0; padding: 6px 8px; font: inherit; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: #3a3a3a; box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -1px 0 #1a1a1a; padding: 2px 8px 2px 2px; font-weight: 600; }
+.kv { display: flex; align-items: center; gap: 8px; padding: 3px 6px; }
+.machines .num { font-size: 18px; }
+.c-name { width: 230px; }
+.c-out { width: 110px; text-align: right; }
+.c-belt { width: 90px; text-align: right; }
+.bar { height: 12px; background: linear-gradient(#f5b464, #e39827); box-shadow: inset 0 1px 0 #ffd28f, inset 0 -1px 0 #b8741a; }
+.bartrack { flex: 1; height: 12px; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8); }
+.tip { background: #313131; box-shadow: 0 0 0 1px #4d4d4d, 0 4px 12px rgba(0,0,0,0.8); padding: 8px 10px; font-size: 13px; }
+.key { display: inline-block; background: #3a3a3a; box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -2px 0 #1a1a1a; padding: 0 6px; font-size: 12px; font-weight: 700; color: #ffe6c0; }
+.radio { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.dot { width: 14px; height: 14px; border-radius: 50%; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8), 0 0 0 1px #4d4d4d; }
+.dot.on { background: radial-gradient(#f1be64 40%, #1c1c1c 48%); }
+.check { width: 16px; height: 16px; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8), 0 0 0 1px #4d4d4d; display: inline-flex; align-items: center; justify-content: center; color: #f1be64; font-weight: 700; font-size: 13px; }
+select { appearance: none; -webkit-appearance: none; font-family: inherit; font-size: 14px; font-weight: 700; color: #ffe6c0; background: #1c1c1c url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpolyline points='1,1 5,5 9,1' fill='none' stroke='%23a8a8a8' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 8px center; background-size: 10px; border: none; box-shadow: inset 0 1px 3px #000, inset 0 0 0 1px #1a1a1a; padding: 4px 26px 4px 10px; cursor: pointer; }
+select:focus-visible { outline: 2px solid #f1be64; outline-offset: 1px; }
+select option { background: #2a2a2a; color: #ffe6c0; }
+/* target.js's unit <select> carries .muted for its old (pre-redesign) grey
+   look; .muted's class-level specificity would otherwise beat the plain
+   `select` rule above and leave it looking like a default control again. */
+select.muted { color: #ffe6c0; font-weight: 700; }
+
+/* --- page layout -------------------------------------------------------- */
+
+/* --- the mockup's remaining component set (Main.css / shared.css) ------ */
+
+.seg { display: inline-flex; box-shadow: inset 0 0 0 1px #1a1a1a; }
+.seg button { background: linear-gradient(#3a3a3a, #2c2c2c); color: #a8a8a8; font-weight: 700; padding: 4px 12px; border: none; font-family: inherit; font-size: 13px; cursor: pointer; box-shadow: inset 0 1px 0 #4a4a4a, inset 0 -1px 0 #1a1a1a; }
+.seg button.on { background: linear-gradient(#f1be64, #e39827); color: #1f1f1f; box-shadow: inset 0 1px 0 #ffd98a, inset 0 -1px 0 #a36a12; }
+.seg button.on.in { background: linear-gradient(#7fb6e0, #4f8fc0); box-shadow: inset 0 1px 0 #b3d5f0, inset 0 -1px 0 #2b5f8a; }
+.badge { font-size: 12px; font-weight: 700; padding: 1px 7px; text-transform: uppercase; letter-spacing: 0.04em; }
+.badge.in { background: #2b5f8a; color: #d7ebfa; }
+.badge.mine { background: #6a4b17; color: #ffe6c0; }
+.badge.pipe { background: #3d5a5e; color: #d5f0f3; }
+.badge.target { background: #e39827; color: #1f1f1f; }
+.x { background: none; border: none; color: #a8a8a8; cursor: pointer; font-size: 16px; padding: 0 4px; font-family: inherit; }
+.x:hover { color: #e05a5a; }
+.drop { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; background: #2a2a2a; box-shadow: 0 4px 12px rgba(0,0,0,0.7), inset 0 0 0 1px #1a1a1a; }
+.drop button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px; background: none; border: none; color: #ffe6c0; font-family: inherit; font-size: 15px; cursor: pointer; text-align: left; }
+.drop button:hover, .drop button:first-child { background: #3a3a3a; }
+.canvas { background: #242424; background-image: radial-gradient(#2e2e2e 1px, transparent 1px); background-size: 24px 24px; box-shadow: inset 0 1px 3px #000; }
+#flow-columns .stage-label { position: absolute; left: 0; right: 0; top: 6px; text-align: center; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #b9b9b9; white-space: nowrap; }
+#flow-columns .stage-sub { position: absolute; left: 0; right: 0; top: 22px; text-align: center; font-size: 12px; color: #7d7d7d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#flow-columns .stage { position: absolute; top: 0; width: 240px; background: rgba(255, 230, 192, 0.03); box-shadow: inset 1px 0 0 rgba(255, 230, 192, 0.06); }
+/* reduced graph card: prototype's .gcard, kept as .node for flow.js's
+   existing selectors (.node .mid/.name/.sub/.right/.rate) */
+.node { position: absolute; width: 210px; height: 58px; box-sizing: border-box; background: #313131; box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -1px 0 #1a1a1a, 0 2px 5px rgba(0,0,0,0.6); }
+.node .nbody { width: 100%; height: 100%; display: flex; align-items: center; gap: 8px; padding: 0 8px; box-sizing: border-box; background: none; border: none; color: #ffe6c0; font-family: inherit; font-size: 14px; cursor: pointer; text-align: left; }
+.node:hover { background: #3a3a3a; }
+.node.sel { box-shadow: inset 0 0 0 2px #f1be64, 0 2px 5px rgba(0,0,0,0.6); }
+.node.in { background: #26313a; box-shadow: inset 0 0 0 1px #4f8fc0, 0 2px 5px rgba(0,0,0,0.6); }
+.node.in.sel { box-shadow: inset 0 0 0 2px #f1be64, 0 2px 5px rgba(0,0,0,0.6); }
+.node.tgt { box-shadow: inset 0 0 0 1px #e39827, 0 2px 5px rgba(0,0,0,0.6); }
+.badge.locked { background: #5a3a2a; color: #ffd9c0; font-size: 10px; padding: 0 5px; vertical-align: 1px; text-transform: none; letter-spacing: 0; }
+.elbl { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 4px; font-size: 11px; background: #1f1f1f; color: #d8c7a6; padding: 1px 5px; border: 1px solid #3a3a3a; white-space: nowrap; cursor: help; }
+.elbl .swatch { flex-shrink: 0; }
+/* Zoomed out below 0.6, only labels on a hot (hovered/selected) edge stay visible. */
+#flow-nodes.small .elbl:not(.hot) { display: none; }
+.elbl.hot { color: #f1be64; }
+.node .mid { flex: 1; min-width: 0; text-align: left; overflow: hidden; }
+.node .name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14px; font-weight: 700; white-space: normal; line-height: 1.1; overflow: hidden; }
+.node .sub { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #d8c7a6; white-space: nowrap; overflow: hidden; }
+.node .right { text-align: right; }
+.node .rate { display: block; font-weight: 700; white-space: nowrap; }
+#flow path.edge { stroke: #8a7040; fill: none; opacity: 0.9; }
+#flow path.edge.in { stroke: #4f8fc0; }
+/* a line keeps its item colour (flow-core lineStyle); selected and lit
+   lines stand out by glow and by everything else fading */
+#flow path.edge.hot { filter: drop-shadow(0 0 2px rgba(255,230,192,0.9)); }
+/* flow.js's setHover: the hovered card's one-hop neighbourhood stays lit. */
+#flow-container.hovering .node:not(.lit) { opacity: 0.25; }
+#flow-container.hovering #flow path.edge:not(.lit) { opacity: 0.12; }
+#flow-container.hovering #flow path.edge.lit { opacity: 1; filter: drop-shadow(0 0 2px rgba(255,230,192,0.9)); }
+#flow-container.hovering .elbl:not(.lit) { visibility: hidden; }
+#flow-container.hovering .elbl.lit { display: flex; color: #f1be64; }
+.lbl { color: #a8a8a8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+/* header.js's renderAsmSeg needs the "Assemblers" label to carry .lbl (it
+   checks previousElementSibling.classList.contains("lbl") to hide the label
+   along with the seg when no dataset is loaded); this row's label otherwise
+   looks like every other .kv label, so cancel .lbl's uppercase styling here. */
+.kv .muted.lbl { text-transform: none; letter-spacing: 0; font-size: inherit; font-weight: inherit; }
+
+/* item table: one .sect header row per group, one .lrow per item, an
+   optional .detail directly after an open .lrow */
+.sect { display: grid; grid-template-columns: minmax(0, 1fr) 150px 300px 40px; gap: 10px; align-items: center; padding: 12px 14px 4px; }
+.sect .lbl.r { text-align: right; }
+.lrow { display: grid; grid-template-columns: minmax(0, 1fr) 150px 300px 40px; gap: 10px; align-items: center; padding: 4px 14px; min-height: 48px; box-shadow: inset 0 -1px 0 #2c2c2c; cursor: pointer; background: none; border: none; color: inherit; font: inherit; text-align: left; width: 100%; box-sizing: border-box; }
+.lrow:hover { background: #2a2a2a; }
+.lrow.open { background: #3a3323; box-shadow: inset 2px 0 0 #f1be64; }
+.lrow.dim { color: #a8a8a8; } .lrow.dim .slot img { opacity: 0.6; }
+.lrow .item { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lrow .name { font-weight: 700; line-height: 1.15; }
+.lrow .need { text-align: right; line-height: 1.15; }
+.lrow .need .belts { display: block; font-size: 12px; font-weight: 400; color: #a8a8a8; }
+.lrow .machines { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; }
+.lrow .machines .cnt { font-size: 17px; }
+.lrow .chev { color: #7d7d7d; text-align: center; font-size: 13px; }
+.lrow.open .chev { color: #f1be64; }
+.slot.sm { width: 30px; height: 30px; }
+.slot.sm .icon, .slot.sm img { width: 24px; height: 24px; }
+
+/* the open row's expanded content: Needs / Goes to / Source+Recipe */
+.detail { background: #242424; box-shadow: inset 0 2px 4px rgba(0,0,0,0.7), inset 0 -1px 0 #3d3d3d, inset 2px 0 0 #f1be64; padding: 12px 14px 14px 58px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 320px; gap: 22px; }
+.detail .col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.drow { display: flex; align-items: center; gap: 8px; min-height: 30px; }
+.drow .grow { flex: 1; min-width: 0; }
+.drow .share { color: #a8a8a8; width: 44px; text-align: right; font-weight: 400; }
+/* details.js's machine ratio under a Needs/Goes to row, indented past the icon. */
+.ratio { display: block; font-size: 12px; margin: -6px 0 4px 26px; }
+/* hover a Needs/Goes to rate for its belts and machines (details.js flowTooltip) */
+.num.flow { cursor: help; text-decoration: underline dotted; text-underline-offset: 3px; }
+div.tooltip .flow-card { max-width: 380px; line-height: 1.4; }
+div.tooltip .flow-card h3 { font-size: 14px; }
+div.tooltip .flow-card .lbl { display: block; margin-top: 6px; }
+div.tooltip .flow-card .dest { margin-top: 4px; }
+div.tooltip .flow-card .dest-detail { font-size: 12px; padding-left: 10px; }
+.lrow .need.flow { cursor: help; }
+/* flow.js's setLineHover: a hovered line's label becomes a chip (item icon,
+   rate, belt icon, belts) and its two cards answer in their machine line. */
+#flow path.hit { fill: none; stroke: transparent; stroke-width: 14px; pointer-events: stroke; cursor: help; }
+.elbl.chip { flex-direction: column; align-items: flex-start; gap: 2px; padding: 3px 8px; font-size: 13px; font-weight: 700; color: #f1be64; border-width: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.7); z-index: 3; }
+.elbl.chip .chip-row { display: flex; align-items: center; gap: 5px; }
+.elbl.chip .chip-row.machines { color: #ffe6c0; }
+.elbl.chip .sep { color: #5a4a2a; }
+.node.answering .right { display: none; }
+.node .sub.answer { color: #f1be64; font-weight: 700; }
+.opt { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; background: #2a2a2a; border: none; color: #ffe6c0; font-family: inherit; font-size: 13px; cursor: pointer; text-align: left; box-shadow: inset 0 0 0 1px #1a1a1a; min-height: 44px; box-sizing: border-box; }
+.opt:hover { background: #3a3a3a; }
+.opt.cur { background: #3a3323; box-shadow: inset 0 0 0 1px #f1be64; }
+.opt.cur.in { background: #26313a; box-shadow: inset 0 0 0 1px #4f8fc0; }
+.opt .mark { width: 14px; color: #a8a8a8; font-size: 12px; text-align: center; flex: none; }
+.opt.cur .mark { color: #f1be64; } .opt.cur.in .mark { color: #7fb6e0; }
+.opt .grow { flex: 1; min-width: 0; }
+.opt .oname { font-weight: 700; }
+.opt .oline { font-size: 12px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opt .ocount { text-align: right; white-space: nowrap; font-weight: 700; }
+.opt .ocount .muted { display: block; font-size: 11px; font-weight: 400; }
+
+/* --- page layout -------------------------------------------------------- */
+
+#page { height: 100vh; display: flex; flex-direction: column; gap: 12px; padding: 12px; box-sizing: border-box; }
+#topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    position: relative;
+}
+#topbar .spacer, .spacer { flex: 1; }
+#save-picker {
+    background: var(--input-bg);
+    box-shadow: inset 0 2px 3px rgba(0,0,0,0.8);
+    border: none;
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+    padding: 4px 10px;
+}
+#save-picker:empty { display: none; }
+#save-status { color: var(--green); font-weight: 600; }
+#page-note { color: var(--red); font-weight: 600; }
+#board-panel {
+    position: absolute;
+    right: 12px;
+    top: 100%;
+    z-index: 30;
+    width: 360px;
+}
+[hidden] { display: none !important; }
+/* hosting.js: save and board controls only exist with the companion server */
+html:not([data-companion="yes"]) .needs-companion { display: none !important; }
+#table-frame { flex: 1; min-height: 0; overflow: auto; }
+#graph-frame { position: relative; flex: 1; min-height: 0; }
+#flow-container { position: absolute; inset: 0; overflow: hidden; cursor: grab; touch-action: none; }
+#flow-container:active { cursor: grabbing; }
+#flow, #flow-nodes, #flow-columns { position: absolute; left: 0; top: 0; }
+#flow { width: 100%; height: 100%; display: block; }
+#flow-nodes, #flow-columns { width: 0; height: 0; transform-origin: 0 0; }
+/* #flow-columns now sits below #flow-nodes in the DOM so its stage stripes
+   paint first, but as an absolutely-positioned sibling it would still
+   hit-test above the SVG edges and swallow clicks meant for node cards
+   without this. */
+#flow-columns { pointer-events: none; }
+#flow-fit { position: absolute; top: 8px; right: 8px; z-index: 5; }
+#graph-side { position: absolute; right: 0; top: 0; bottom: 0; width: 340px; overflow: auto; z-index: 6; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+#graph-side .head .title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* .detail's 3-column grid and 58px left pad (room for the table row's icon
+   column) don't fit the 340px side card: one column, no left pad. */
+#graph-side .detail { grid-template-columns: minmax(0, 1fr); padding: 10px 0 0; gap: 14px; }
+#make-panel { display: flex; flex-direction: column; gap: 8px; }
+#make-panel .make-row { display: flex; align-items: center; gap: 10px; }
+#make-panel .search-wrap { position: relative; flex: 1; }
+#make-panel.intro { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 40px; }
+#make-panel.intro #intro-title { font-size: 26px; }
+#make-panel.intro #target-search { min-height: 44px; font-size: 17px; }
+#make-panel.intro .make-row { width: 640px; max-width: 100%; }
+#make-panel:not(.intro) #intro-title, #make-panel:not(.intro) #intro-extras { display: none; }
+#intro-extras .examples { display: flex; gap: 10px; }
+#footer { display: flex; align-items: center; gap: 18px; }
+.column { display: flex; flex-direction: column; gap: 12px; }
+#settings-drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 50; display: flex; justify-content: flex-end; }
+#settings-drawer[hidden] { display: none; }
+#settings-panel { width: min(980px, 92vw); height: 100%; overflow: auto; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; }
+.adv { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; }
+/* settings.js's renderBelts/renderFuel append button.slot siblings straight
+   into these spans with no wrapping flex container of their own (unlike
+   renderBuildings, which wraps each row in one); .slot's own display:flex
+   blockifies each button, so without this they stack one per line. */
+#belt_selector, #fuel_selector { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+/* one span.radio per planet, run together with no gap between one planet's
+   name and the next planet's checkbox. */
+#planet_selector { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.adv summary { cursor: pointer; }
+#targets { list-style-type: none; margin: 0; padding: 0; }
+#target-search, #scratch-input { width: 100%; box-sizing: border-box; }
+#target-search-results:empty { display: none; }
+#target-search-results { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; background: var(--frame); box-shadow: inset 0 1px 0 var(--edge-light), 0 2px 6px rgba(0,0,0,0.6); }
+#restore-last { cursor: pointer; }
+.example-target { cursor: pointer; padding-right: 10px; }
+#scratchpad-frame { padding: 8px 14px; box-shadow: inset 0 1px 0 #4d4d4d; }
+#scratchpad-frame summary { cursor: pointer; font-weight: 700; }
+#about { padding: 4px; color: var(--muted); font-size: 13px; }
+#about summary { cursor: pointer; }
+
+/* --- rules Kirk's surviving components still need ----------------------- */
+
+/* icon.js: every icon is a crop of the sprite sheet, positioned by
+   background-position; the width/height attributes it sets must survive. */
+img.icon {
+    display: inline-block;
+    vertical-align: middle;
+}
+/* icon.js: belt-family and inserter icons carry their sprite as variables;
+   colour-blind mode (colorblind.js) layers their colour word on top. */
+img.icon[data-tier] {
+    background-image: var(--sprite);
+    background-size: var(--sprite-size);
+    background-position: var(--sprite-pos);
+    background-repeat: no-repeat;
+}
+.tier-word { display: none; }
+html.colorblind .tier-word, .cb-probe .tier-word { display: inline; font-weight: 700; color: #ffffff; background: #000000; padding: 0 3px; font-size: 0.9em; }
+html.colorblind img.icon[data-tier] {
+    background-image: var(--tier-badge), var(--sprite);
+    background-size: 100% 100%, var(--sprite-size);
+    background-position: 0 0, var(--sprite-pos);
+}
+.ignore {
+    opacity: 0.3;
+}
+/* tooltip.js */
+div.tooltip {
+    opacity: 1;
+    z-index: 20;
+}
+div.tooltip .frame {
+    background: var(--dark-overlay);
+    box-shadow: 0 0 0 1px var(--edge-light), 0 4px 12px rgba(0,0,0,0.8);
+    padding: 0.4em;
+    text-align: left;
+}
+div.tooltip h3 {
+    margin: 0;
+}
+div.tooltip h3:not(:last-child) {
+    margin-bottom: 0.5em;
+}
+div.tooltip div.product {
+    position: relative;
+    display: inline-block;
+    background-color: var(--light);
+    margin-top: 5px;
+}
+div.tooltip div.product span.count {
+    position: absolute;
+    right: 1px;
+    bottom: 1px;
+    font-size: 12px;
+    font-family: monospace;
+    color: var(--bright);
+    text-shadow: -1px -1px 0px var(--dark), -1px 1px 0px var(--dark), 1px -1px 0px var(--dark), 1px 1px 0px var(--dark);
+}
+div.tooltip img.ingredient {
+    background-color: var(--light);
+}
+/* dropdown.js (module pickers, and settings.js's icon lists) */
+.dropdownWrapper {
+    display: inline-block;
+}
+/* Closed, a dropdown shows only the one checked module's icon, but its
+   hidden (unchecked) radio+label rows still occupy real height in the
+   layout even at display:none-adjacent -- pin it to a slot-sized square so
+   it doesn't stretch into a tall column; .dropdownWrapper.open below resets
+   this back to auto so the open picker can grow. */
+.dropdownWrapper .dropdown {
+    width: 36px;
+    height: 36px;
+    box-sizing: border-box;
+    border: 2px solid var(--light);
+    border-radius: 5px;
+    background-color: var(--dark);
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    cursor: pointer;
+}
+.dropdownWrapper.open .dropdown {
+    border-color: var(--accent);
+    padding: 0.4em;
+    position: absolute;
+    z-index: 10;
+    transition: height 0.1s;
+    height: auto;
+    width: auto;
+    cursor: default;
+}
+.dropdownWrapper .clicker {
+    display: none;
+}
+.dropdownWrapper.open .clicker {
+    display: block;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    top: 0px;
+    left: 0px;
+    cursor: default;
+}
+.dropdownWrapper .dropdown:hover {
+    border-color: var(--accent);
+}
+.dropdownWrapper .spacer {
+    display: none;
+}
+.dropdownWrapper.open .spacer {
+    border: 2px solid transparent;
+    margin: 2px;
+    display: inline-block;
+    vertical-align: middle;
+}
+.dropdownWrapper .dropdown br, .dropdownWrapper .dropdown hr {
+    display: none;
+}
+.dropdownWrapper.open .dropdown br {
+    display: inline;
+}
+.dropdownWrapper.open .dropdown hr {
+    display: block;
+    border-color: var(--accent);
+    border-style: solid;
+}
+.dropdownWrapper .dropdown input[type="radio"] {
+    display: none;
+}
+.dropdownWrapper .dropdown input[type="radio"] + label {
+    border-radius: 5px;
+    display: none;
+    margin: 2px;
+}
+.dropdownWrapper.open .dropdown input[type="radio"] + label {
+    display: inline-block;
+}
+.dropdownWrapper .dropdown input[type="radio"] + label:hover {
+    background-color: var(--light);
+}
+.dropdownWrapper .dropdown input[type="radio"]:checked + label {
+    display: inline-block;
+    pointer-events: none;
+}
+.dropdownWrapper.open .dropdown input[type="radio"]:checked + label {
+    background-color: var(--light);
+    pointer-events: auto;
+}
+.dropdownWrapper .dropdown .search {
+    display: none;
+    width: 100%;
+    padding-left: 0.4em;
+    margin-bottom: 0.4em;
+}
+.dropdownWrapper.open .dropdown .search {
+    display: block;
+}
+.dropdownWrapper.open div.itemDropdown {
+    height: 400px;
+    width: 380px;
+    overflow-y: scroll;
+}
+label.selected {
+    font-weight: bold;
+    color: var(--bright);
+}
+/* module.js's moduleDropdown */
+.moduleRow {
+    white-space: nowrap;
+}
+.module-wrapper, .input {
+    display: inline-block;
+}
+/* settings.js's renderers, until the settings-tab unit restyles them */
+input.prec, input.mprod {
+    width: 4em;
+}
+.radio-setting input[type="radio"] {
+    display: none;
+}
+.radio-setting input[type="radio"] + label {
+    cursor: pointer;
+    background: var(--light);
+    display: inline-block;
+    margin: 2px;
+    padding: 2px;
+}
+.radio-setting input[type="radio"] + label:hover {
+    background: var(--edge-light);
+}
+.radio-setting input[type="radio"]:checked + label {
+    background: var(--accent);
+}
+.toggle-list .toggle {
+    cursor: pointer;
+    display: inline-block;
+    border: 2px solid var(--light);
+    margin: 2px;
+    padding: 2px;
+    background-color: var(--dark);
+}
+.toggle-list .toggle:hover {
+    border-color: var(--bright);
+}
+.toggle-list .selected {
+    border-color: var(--accent);
+}
+span.beacon-container {
+    background-color: var(--light);
+    padding: 0.5em;
+}
+#resource_settings {
+    border: 2px solid var(--light);
+    background-color: var(--dark);
+}
+#resource_settings .resource-tier {
+    border: 1px solid transparent;
+}
+#resource_settings .resource-tier.highlight {
+    border-color: var(--accent);
+}
+#resource_settings .bookend {
+    background-color: var(--light);
+}
+#resource_settings .bookend.highlight {
+    background-color: var(--accent);
+}
+#resource_settings .bookend * {
+    pointer-events: none;
+}
+#resource_settings .middle {
+    height: 10px;
+    background-color: var(--light);
+}
+#resource_settings .middle.highlight {
+    background-color: var(--accent);
+}
+#resource_settings .resource {
+    display: inline-block;
+    margin: 3px;
+}
+#resource_settings img.icon {
+    display: block;
+}
+#resource_settings.dragging .resource-tier > * {
+    pointer-events: none;
+}
+table.resource {
+    border-collapse: collapse;
+}
+table.resource td {
+    text-align: right;
+}
+table.resource input[type="radio"] {
+    display: none;
+}
+table.resource input[type="radio"] + label {
+    cursor: pointer;
+    fill: var(--light);
+}
+table.resource input[type="radio"] + label:hover {
+    fill: var(--bright);
+}
+table.resource input[type="radio"]:checked + label {
+    fill: var(--accent);
+}
