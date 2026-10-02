@@ -5,7 +5,7 @@
 
 // The GA4 web stream for https://factoriocalculator.app/. Empty means
 // analytics is off everywhere.
-export const MEASUREMENT_ID = ""
+export const MEASUREMENT_ID = "G-J67TQSQFYV"
 
 // Only the public site reports; the companion's local server never does.
 export const TRACKED_HOSTS = ["factoriocalculator.app"]
