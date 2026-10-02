@@ -4,7 +4,7 @@ A production-rate calculator for [Factorio](https://factorio.com/) 2.0 and
 Space Age: pick what you want to make and how fast, and it works out every
 machine, belt and input behind it.
 
-**Use it:** https://jordanschnur.com/factorio-calculator/
+**Use it:** https://factoriocalculator.app/
 
 It is a fork of Kirk McDonald's [Factorio Calculator](https://kirkmcdonald.github.io/calc.html)
 ([source](https://github.com/KirkMcDonald/kirkmcdonald.github.io), Apache-2.0).

@@ -14,11 +14,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Static files, no build: the repo root is the site, served at
-      # jordanschnur.com/factorio-calculator/.
+      # Static files, no build, served at https://factoriocalculator.app/.
+      # The calculator is the site root: calc.html is published as
+      # index.html, and calc-redirect.html takes its old name so links to
+      # /calc.html#... still open their plan.
+      - name: Lay out the site
+        run: |
+          mkdir _site
+          rsync -a --exclude .git --exclude .github --exclude .gitignore --exclude _site ./ _site/
+          mv _site/calc.html _site/index.html
+          mv _site/calc-redirect.html _site/calc.html
+
+      # cname writes the CNAME file on every deploy; without it each push
+      # would drop the custom domain.
       - name: Deploy to gh-pages root
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          exclude_assets: '.github,.gitignore'
+          publish_dir: ./_site
+          cname: factoriocalculator.app
