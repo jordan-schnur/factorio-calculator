@@ -15,9 +15,9 @@ limitations under the License.*/
 import { spec } from "./factory.js"
 import { Tooltip } from "./tooltip.js"
 import { badgeUrl, tierOf } from "./colorblind-core.js"
+import { spriteCrop } from "./sprite-core.js"
 
-export const PX_WIDTH = 32
-export const PX_HEIGHT = 32
+export { PX_WIDTH, PX_HEIGHT } from "./sprite-core.js"
 
 /*export function setSheetHash(h) {
     sheetHash = h
@@ -54,20 +54,12 @@ export class Icon {
     //   target: The reference node next to which any tooltip will be rendered.
     //           If not provided, defaults to the image itself.
     make(size, suppressTooltip, target) {
-        let x = -this.obj.icon_col * PX_WIDTH
-        let y = -this.obj.icon_row * PX_HEIGHT
         let img = d3.select(makeEmptyIcon(size))
             .classed("icon", true)
         let sheet = "url(images/sprite-sheet-" + sheetHash + ".png)"
-        let sheetSize = null
-        if (size !== 32) {
-            let ratio = size / 32
-            x *= ratio
-            y *= ratio
-            let width = sheetWidth * ratio
-            let height = sheetHeight * ratio
-            sheetSize = `${width}px ${height}px`
-        }
+        // In percent of the box, so the crop holds when CSS shows the icon
+        // at a size other than `size` (sprite-core.js).
+        let crop = spriteCrop(this.obj.icon_col, this.obj.icon_row, sheetWidth, sheetHeight)
         // A belt-family or inserter icon hands its sprite to calc.css as
         // variables instead of inline background, so html.colorblind can
         // layer its colour word over it (colorblind-core.js).
@@ -75,15 +67,13 @@ export class Icon {
         if (tier) {
             img.attr("data-tier", tier)
                 .style("--sprite", sheet)
-                .style("--sprite-size", sheetSize || "auto")
-                .style("--sprite-pos", `${x}px ${y}px`)
+                .style("--sprite-size", crop.size)
+                .style("--sprite-pos", crop.position)
                 .style("--tier-badge", badgeUrl(tier, size !== null && size !== undefined && size < 24))
         } else {
             img.style("background", sheet)
-            if (sheetSize) {
-                img.style("background-size", sheetSize)
-            }
-            img.style("background-position", `${x}px ${y}px`)
+            img.style("background-size", crop.size)
+            img.style("background-position", crop.position)
         }
         if (!suppressTooltip && this.obj.renderTooltip) {
             let self = this
