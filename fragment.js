@@ -16,7 +16,7 @@ import { DEFAULT_TAB, currentTab } from "./events.js"
 import { spec, DEFAULT_BELT, DEFAULT_FUEL } from "./factory.js"
 import { formatRecipeMachines } from "./machines-core.js"
 import { Rational } from "./rational.js"
-import { currentMod, DEFAULT_TITLE } from "./settings.js"
+import { currentMod, customTitle } from "./settings.js"
 import { sorted } from "./sort.js"
 
 function getModuleKey(module) {
@@ -31,8 +31,8 @@ function getModuleKey(module) {
 
 export function formatSettings(excludeTitle, overrideTab, targets) {
     let settings = ""
-    if (!excludeTitle && document.title !== DEFAULT_TITLE) {
-        settings += "title=" + encodeURIComponent(document.title) + "&"
+    if (!excludeTitle && customTitle !== "") {
+        settings += "title=" + encodeURIComponent(customTitle) + "&"
     }
     settings += "data=" + currentMod() + "&"
     let tab = currentTab

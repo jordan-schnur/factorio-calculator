@@ -259,12 +259,28 @@ function renderIgnore(settings) {
 
 export const DEFAULT_TITLE = "Factorio Calculator"
 
+// The Title setting, "" when unset. Only this goes in the fragment; the tab
+// title otherwise names what the plan makes, so it can be found in history.
+export let customTitle = ""
+
 export function setTitle(s) {
-    if (s === "") {
-        document.title = DEFAULT_TITLE
-    } else {
-        document.title = s
-    }
+    customTitle = s
+    renderPageTitle(spec)
+}
+
+// "Electronic circuit 60/min, Plastic bar 30/min · Factorio Calculator",
+// read off the target rows renderHousekeeping has just synced.
+export function targetsTitle(targets) {
+    let parts = targets.map(t => {
+        let unit = t.unitSelect.value
+        let amount = unit.startsWith("/") ? t.numInput.value + unit : t.numInput.value + " " + unit
+        return t.item.name + " " + amount
+    })
+    return parts.length ? parts.join(", ") + " · " + DEFAULT_TITLE : DEFAULT_TITLE
+}
+
+function renderPageTitle(spec) {
+    document.title = customTitle !== "" ? customTitle : targetsTitle(spec.buildTargets)
 }
 
 function renderTitle(settings) {
@@ -1103,6 +1119,7 @@ function renderSettingsTab(spec) {
 export function initSettingsTab() {
     spec.roundMachines = roundMachinesChoice
     registerRenderer(renderSettingsTab)
+    registerRenderer(renderPageTitle)
 }
 
 export function renderSettings(settings) {
