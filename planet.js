@@ -12,6 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 import { Icon } from "./icon.js"
+import { blockedCategories, meets } from "./planet-core.js"
 
 class SurfaceProperty {
 }
@@ -24,6 +25,7 @@ class Planet {
         this.resources = resources
         this.properties = properties
         this.disable = new Set()
+        this.blocked = new Set()
 
         this.icon_col = col
         this.icon_row = row
@@ -33,24 +35,11 @@ class Planet {
         if (recipe.isResource()) {
             return this.resources.has(recipe)
         }
-        for (let condition of recipe.conditions) {
-            let value = this.properties.get(condition.property)
-            if (value === undefined) {
-                value = defaultProperties.get(condition.property)
-            }
-            let aboveMinimum = true
-            let belowMaximum = true
-            if (condition.min !== undefined) {
-                aboveMinimum = value >= condition.min
-            }
-            if (condition.max !== undefined) {
-                belowMaximum = value <= condition.max
-            }
-            if (!(aboveMinimum && belowMaximum)) {
-                return false
-            }
+        // A recipe whose every machine is barred here is barred too.
+        if (this.blocked.has(recipe.category)) {
+            return false
         }
-        return true
+        return meets(recipe.conditions, this.properties, defaultProperties)
     }
 }
 
@@ -106,6 +95,7 @@ export function getPlanets(data, recipes) {
             resources,
             properties,
         )
+        planet.blocked = blockedCategories(data.crafting_machines || [], properties, defaultProperties)
         for (let recipe of recipes.values()) {
             if (!planet.allows(recipe) || recipe.key.endsWith("-recycling")) {
                 planet.disable.add(recipe)
