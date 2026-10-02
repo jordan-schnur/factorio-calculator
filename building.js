@@ -309,9 +309,6 @@ export function getBuildings(data, items) {
         ))
     }
     for (let d of data.mining_drills) {
-        if (d.key == "pumpjack") {
-            continue
-        }
         let fuel = null
         if (d.energy_source && d.energy_source.type === "burner") {
             fuel = d.energy_source.fuel_category

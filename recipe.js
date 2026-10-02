@@ -331,30 +331,6 @@ class MiningRecipe extends Recipe {
     }
 }
 
-// XXX: Still a hack.
-class PumpjackRecipe extends Recipe {
-    constructor(key, name, col, row, category, product) {
-        super(
-            key,
-            name,
-            undefined,
-            col,
-            row,
-            false,
-            category,
-            zero,
-            [],
-            [new Ingredient(product, one)],
-            [],
-        )
-        this.defaultPriority = 1
-        this.defaultWeight = Rational.from_float(100)
-    }
-    isResource() {
-        return true
-    }
-}
-
 class OffshorePumpRecipe extends Recipe {
     //constructor(key, name, order, col, row, allow_prod, category, time, ingredients, products) {
     constructor(key, name, order, col, row, product) {
@@ -469,19 +445,6 @@ export function getRecipes(data, items) {
         if (!category) {
             category = "basic-solid"
         }
-        if (category === "basic-fluid") {
-            // XXX: Do something about pumpjacks.
-            let item = items.get(d.results[0].name)
-            recipes.set(d.key, new PumpjackRecipe(
-                d.key,
-                d.localized_name.en,
-                d.icon_col,
-                d.icon_row,
-                null,
-                item,
-            ))
-            continue
-        }
         let ingredients = null
         if ("required_fluid" in d) {
             ingredients = [new Ingredient(
@@ -490,13 +453,24 @@ export function getRecipes(data, items) {
             )]
         }
         let products = []
-        for (let {name, amount, probability} of d.results) {
+        for (let {name, amount, amount_min, amount_max, probability} of d.results) {
             let item = items.get(name)
+            if (amount === undefined) {
+                amount = ((amount_min ?? amount_max) + (amount_max ?? amount_min)) / 2
+            }
             let ratAmount = Rational.from_float_approximate(amount)
             if (probability !== undefined) {
                 ratAmount = ratAmount.mul(Rational.from_float_approximate(probability))
             }
             products.push(new Ingredient(item, ratAmount))
+        }
+        let miningTime = Rational.from_float_approximate(d.mining_time)
+        if (category === "basic-fluid") {
+            // A pumpjack cycle at 100% yield pumps `amount` units (10 crude
+            // oil). Resource weights are per craft and assume one fluid unit
+            // per craft, so keep one unit and fold the yield into the time.
+            miningTime = miningTime.div(products[0].amount)
+            products = [new Ingredient(products[0].item, one)]
         }
         recipes.set(d.key, new MiningRecipe(
             d.key,
@@ -505,7 +479,7 @@ export function getRecipes(data, items) {
             d.icon_col,
             d.icon_row,
             category,
-            Rational.from_float_approximate(d.mining_time),
+            miningTime,
             ingredients,
             products,
         ))
