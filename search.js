@@ -73,9 +73,7 @@ function paintResults() {
     visibleRows.forEach((entry, i) => {
         let row = document.createElement("div")
         row.className = "row"
-        if (i === highlighted) {
-            row.setAttribute("style", "background:#e39827;color:#1f1f1f")
-        }
+        row.dataset.item = entry.name
         let slot = document.createElement("span")
         slot.className = "slot slot-sm"
         let item = spec.items.get(entry.name)
@@ -85,9 +83,6 @@ function paintResults() {
         row.appendChild(slot)
         let label = document.createElement("span")
         label.className = "h"
-        if (i === highlighted) {
-            label.style.color = "#1f1f1f"
-        }
         label.textContent = entry.label
         row.appendChild(label)
         if (entry.matchedAlias) {
@@ -98,12 +93,28 @@ function paintResults() {
             alias.textContent = entry.matchedAlias
             row.appendChild(alias)
         }
+        // mousemove, not mouseenter: a list repainted under a resting
+        // pointer must not steal the highlight from the keyboard.
+        row.addEventListener("mousemove", () => {
+            if (highlighted !== i) {
+                highlighted = i
+                markHighlighted()
+            }
+        })
         row.addEventListener("mousedown", event => {
             event.preventDefault()
             pick(entry)
         })
         container.appendChild(row)
     })
+    markHighlighted()
+}
+
+function markHighlighted() {
+    let rows = document.getElementById("target-search-results").children
+    for (let i = 0; i < rows.length; i++) {
+        rows[i].classList.toggle("hot", i === highlighted)
+    }
 }
 
 function pick(entry) {
@@ -128,13 +139,13 @@ function onSearchKeydown(event) {
     if (event.key === "ArrowDown") {
         if (visibleRows.length) {
             highlighted = (highlighted + 1) % visibleRows.length
-            paintResults()
+            markHighlighted()
         }
         event.preventDefault()
     } else if (event.key === "ArrowUp") {
         if (visibleRows.length) {
             highlighted = (highlighted - 1 + visibleRows.length) % visibleRows.length
-            paintResults()
+            markHighlighted()
         }
         event.preventDefault()
     } else if (event.key === "Enter") {
@@ -211,9 +222,14 @@ function groupLabel(key) {
 }
 
 export function initSearch() {
-    loadEntries()
-
     let input = document.getElementById("target-search")
+    // Text typed before the catalog arrived was searched against nothing.
+    loadEntries().then(() => {
+        if (input.value.trim()) {
+            onSearchInput({ target: input })
+        }
+    })
+
     input.addEventListener("input", onSearchInput)
     input.addEventListener("keydown", onSearchKeydown)
     input.addEventListener("blur", () => setTimeout(closeResults, 150))
