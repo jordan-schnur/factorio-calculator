@@ -268,6 +268,11 @@ html:not([data-companion="yes"]) .needs-companion { display: none !important; }
 #make-panel:not(.intro) #intro-title, #make-panel:not(.intro) #intro-extras { display: none; }
 #intro-extras .examples { display: flex; gap: 10px; }
 #intro-extras .about { max-width: 640px; margin: 18px auto 0; text-align: center; line-height: 1.5; }
+#consent-banner { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 1000; width: calc(100% - 32px); max-width: 680px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+#consent-banner span { flex: 1; line-height: 1.4; }
+#consent-banner[hidden] { display: none; }
+#analytics-settings { display: block; margin-top: 6px; cursor: pointer; }
+#analytics-settings[hidden] { display: none; }
 #footer { display: flex; align-items: center; gap: 18px; }
 .column { display: flex; flex-direction: column; gap: 12px; }
 #settings-drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 50; display: flex; justify-content: flex-end; }

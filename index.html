@@ -32,6 +32,8 @@
     }
     </script>
     <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
+    <!-- Google Analytics on factoriocalculator.app only, never the local companion. -->
+    <script type="module" src="analytics.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&display=swap">
     <link rel="stylesheet" type="text/css" href="calc.css">
     <script src="third_party/BigInteger.min.js"></script>
@@ -187,6 +189,7 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
       <summary>About</summary>
       Based on Kirk McDonald's Factorio Calculator (Apache-2.0), forked at commit 349ebfb5.
       The solver and the game data are his; the page and its UI modules are Factorio Companion's.
+      <a id="analytics-settings" hidden>Analytics settings</a>
   </details>
 </div>
 </body>
