@@ -4,4 +4,8 @@
     <loc>https://factoriocalculator.app/</loc>
     <changefreq>weekly</changefreq>
   </url>
+  <url>
+    <loc>https://factoriocalculator.app/changelog.html</loc>
+    <changefreq>weekly</changefreq>
+  </url>
 </urlset>

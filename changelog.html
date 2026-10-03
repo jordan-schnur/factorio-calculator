@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Changelog – Factorio Calculator</title>
+    <meta name="description" content="What changed in each version of the Factorio Calculator at factoriocalculator.app.">
+    <link rel="canonical" href="https://factoriocalculator.app/changelog.html">
+    <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&display=swap">
+    <!-- One entry per release, newest first. The first <h2 id="v..."> must
+         match VERSION in version.js (tests/test_calc_version.py). -->
+    <style>
+        :root {
+            --bg: #1f1f1f;
+            --frame: #313131;
+            --text: #ffe6c0;
+            --accent: #f1be64;
+            --muted: #a8a8a8;
+            --edge-light: #4d4d4d;
+            --edge-dark: #1a1a1a;
+        }
+        body { margin: 0; padding: 24px 16px 48px; font-family: "Titillium Web", "Segoe UI", system-ui, sans-serif; font-size: 16px; line-height: 1.5; color: var(--text); background: var(--bg); }
+        main { max-width: 720px; margin: 0 auto; }
+        a { color: var(--accent); }
+        a:hover { color: var(--text); }
+        h1 { font-size: 26px; margin: 0 0 4px; }
+        .back { display: inline-block; margin-bottom: 20px; }
+        section { background: var(--frame); box-shadow: inset 0 1px 0 var(--edge-light), inset 0 -1px 0 var(--edge-dark), 0 2px 6px rgba(0,0,0,0.6); padding: 14px 18px; margin: 0 0 16px; }
+        h2 { font-size: 20px; margin: 0; }
+        .date { color: var(--muted); font-size: 14px; margin: 0 0 8px; }
+        h3 { font-size: 15px; margin: 12px 0 2px; color: var(--accent); }
+        ul { margin: 0; padding-left: 20px; }
+        li { margin: 3px 0; }
+        .muted { color: var(--muted); }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Changelog</h1>
+    <a class="back" href="./">← Back to the calculator</a>
+
+    <section>
+        <h2 id="v1.1.0">1.1.0</h2>
+        <p class="date">2 October 2026</p>
+        <h3>New</h3>
+        <ul>
+            <li>The search box knows the abbreviations players type: GC, RC, BC, PU, LDS, RF, UG, prod3 and more. "gc 60" asks for 60 green circuits a minute.</li>
+            <li>Plan by machine count: "yellow science 7 machines" plans for seven machines instead of a rate.</li>
+            <li>The landing screen shows screenshots of real plans behind the search box.</li>
+        </ul>
+        <h3>Fixed</h3>
+        <ul>
+            <li>Machine counts no longer go negative with lots of productivity modules. Speed now stops at −80%, as it does in the game; eight productivity modules in a cryogenic plant used to show a negative count.</li>
+            <li>Icons no longer show slices of their neighbours at some sizes.</li>
+            <li>The search results list draws over the landing screen text again instead of behind it.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2 id="v1.0.0">1.0.0</h2>
+        <p class="date">2 October 2026</p>
+        <p>First public release at factoriocalculator.app.</p>
+        <ul>
+            <li>Factorio 2.0 and Space Age: pick an item and a rate and see every machine, belt and raw input.</li>
+            <li>A table of everything the build needs, grouped into what you build here, what you bring in and what you mine or pipe in. Click a row for its ingredients, where it goes, its recipes and exact machine counts.</li>
+            <li>A flow graph of the same plan. Hover a line for its belts and how many machines on each side it feeds.</li>
+            <li>Plans only with machines you can build on the chosen planet, and lets you pin a recipe to a machine by hand.</li>
+            <li>Belt counts as fractions ("1/3 belt"), and a colour-blind mode that writes the colour on belt and inserter icons.</li>
+            <li>Kirk McDonald calculator links open here with the same plan.</li>
+        </ul>
+    </section>
+
+    <p class="muted">Built on <a href="https://kirkmcdonald.github.io/calc.html">Kirk McDonald's calculator</a> (Apache-2.0).</p>
+</main>
+</body>
+</html>
