@@ -198,6 +198,13 @@ export class ModuleSpec {
                 speed = speed.add(beacon)
             }
         }
+        // The game never runs a machine below 20% speed, however many
+        // productivity or quality modules slow it. Without the floor, eight
+        // productivity modules made a negative speed and a negative count.
+        let minimum = Rational.from_floats(1, 5)
+        if (speed.less(minimum)) {
+            speed = minimum
+        }
         return speed
     }
     prodEffect(spec) {
