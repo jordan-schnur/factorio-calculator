@@ -4,11 +4,14 @@
 // full-width band under Needs / Goes to / Make here, details.js) and
 // Settings -> Modules -> By machine (scope "machine", modules-settings.js).
 //
-// Every click writes straight to the layer the "Use these modules for"
-// radio names, inside spec.commitModules(), so the page re-renders and the
-// editor is mounted again from spec. Its one piece of state of its own,
-// the selected slot, lives in `selection` across those re-renders; picking
-// a slot re-renders only the editor. Styles: calc/modules-editor.css.
+// Picking a module or a beacon count writes straight to the layer the "Use
+// these modules for" radio currently names, inside spec.commitModules(), so
+// the page re-renders and the editor is mounted again from spec. The radio
+// itself only chooses that layer for the *next* edit -- switching it never
+// writes anything on its own (see scopeBlock). Its state of its own, the
+// selected slot (`selection`) and the chosen radio (`chosenTarget`), lives
+// across those re-renders; picking a slot or flipping the radio re-renders
+// only the editor. Styles: calc/modules-editor.css.
 import { spec } from "./factory.js"
 import { sprites } from "./icon.js"
 import { beaconData } from "./module.js"
@@ -26,12 +29,15 @@ const MAX_BEACONS = 16
 const selection = new Map()
 
 // Mount key -> the "Use these modules for" radio the editor is showing, for
-// scope "row" (scope "machine" has only one target). Seeded once, the first
-// time a row's details are opened in this page session (see currentTarget),
-// from where its modules come from; after that it's whatever the radio was
-// last set to, so picking "Every row" and then making several more edits
-// keeps editing the plan rather than resetting to "row" on every re-render.
+// scope "row" (scope "machine" has only one target). Seeded from where a
+// row's modules come from the moment its details open (see currentTarget),
+// then sticky -- picking "Every row" and making several more edits keeps
+// editing the plan rather than resetting on every re-render -- until the
+// row closes: cleared wholesale on "calc:select" (dispatched only when the
+// open/selected row changes, never by an edit inside this editor), so
+// reopening any row re-seeds it fresh.
 const chosenTarget = new Map()
+document.addEventListener("calc:select", () => chosenTarget.clear())
 
 function el(tag, className, text) {
     let node = document.createElement(tag)
@@ -375,7 +381,7 @@ const SCOPE_NOTE = {
     plan: "Every row without its own setting changes. Machines with their own setting and rows set by hand keep theirs.",
 }
 
-function scopeBlock(opts, entry, target) {
+function scopeBlock(opts, entry, target, render) {
     let box = el("div", "me-block me-scope")
     box.appendChild(el("span", "lbl", "Use these modules for"))
     let name = `me-scope-${opts.recipe.key}`
@@ -396,12 +402,15 @@ function scopeBlock(opts, entry, target) {
         if (why) label.title = why
         input.addEventListener("change", () => {
             if (input.checked && value !== target) {
+                // The radio only decides where the *next* edit goes -- it
+                // never itself writes. Carrying over "what's currently
+                // shown" here used to write a fallen-back row's or a
+                // machine's modules into the wider scope (or the layer's
+                // raw modules into the row) before the user had asked for
+                // any particular change.
                 selection.delete(mountKey(opts))
                 chosenTarget.set(mountKey(opts), value)
-                // Carries over what's currently shown (the old target's own
-                // entry), not the new target's: switching scope is "apply
-                // what I see onto a wider scope", not "read that scope".
-                write(opts, value, currentEntry(opts, target))
+                render()
             }
         })
         label.append(input, document.createTextNode(" " + text))
@@ -434,7 +443,7 @@ export function mountModuleEditor(container, opts) {
         let right = el("div", "me-col")
         right.appendChild(effectsBlock(opts, entry))
         if (opts.scope === "row") {
-            right.append(compareBlock(opts, entry), scopeBlock(opts, entry, target))
+            right.append(compareBlock(opts, entry), scopeBlock(opts, entry, target, render))
         }
         body.append(left, right)
         root.appendChild(body)

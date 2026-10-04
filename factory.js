@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 import { Formatter } from "./align.js"
 import { formatSettings, writeHash } from "./fragment.js"
-import { ModuleSpec } from "./module.js"
+import { beaconData, ModuleSpec } from "./module.js"
 import { PriorityList } from "./priority.js"
 import { Rational, zero, half, one } from "./rational.js"
 import { DISABLED_RECIPE_PREFIX } from "./recipe.js"
@@ -21,7 +21,7 @@ import { renderAll } from "./render.js"
 import { solve } from "./solve.js"
 import { BuildTarget } from "./target.js"
 import { capableBuildings, pickBuilding } from "./machines-core.js"
-import { resolveModules } from "./modules-core.js"
+import { canBeacon, canUse, resolveModules } from "./modules-core.js"
 
 const DEFAULT_ITEM_KEY = "advanced-circuit"
 
@@ -690,7 +690,11 @@ class FactorySpecification {
         this.machineModules = new Map([...map].map(([key, entry]) => [key, normalEntry(entry)]))
         this.reapplyModules()
     }
-    // Sets `recipe`'s modules by hand and marks it hand-set.
+    // Sets `recipe`'s modules by hand and marks it hand-set. A slot module
+    // this recipe or machine can't use, or a beacon module beacons can't
+    // hold, is dropped rather than carried in unchecked -- the one
+    // backstop every caller (the editor, a `modules=` link) relies on
+    // instead of each re-deriving what's valid.
     setRowModules(recipe, entry) {
         let moduleSpec = this.getModuleSpec(recipe)
         if (moduleSpec === undefined) {
@@ -702,7 +706,8 @@ class FactorySpecification {
         while (moduleSpec.modules.length < slots) {
             moduleSpec.modules.push(null)
         }
-        moduleSpec.beaconModules = e.beaconModules
+        moduleSpec.modules = moduleSpec.modules.map(m => canUse(m, recipe, moduleSpec.building) ? m : null)
+        moduleSpec.beaconModules = e.beaconModules.map(m => canBeacon(m, beaconData.allowedEffects) ? m : null)
         moduleSpec.beaconCount = e.beaconCount
         this.handSet.add(recipe.key)
     }
