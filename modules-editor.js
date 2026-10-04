@@ -89,6 +89,25 @@ function currentEntry(opts, target) {
     }
 }
 
+// What this row actually gets under `target`'s current entry -- not that
+// entry's raw, unfiltered modules, which a recipe or machine may refuse in
+// whole or in part (no productivity on this recipe, a kind this machine
+// refuses). Nothing is ever uncommitted at render time (every edit commits
+// straight away, see write()), so `target`'s layer already holds `entry`,
+// and this is simply the row's real, current resolution; "row" already is
+// that (its own ModuleSpec). Only `modules` can differ from `entry` --
+// resolveModules never filters beacons by recipe or machine.
+function displayEntry(opts, target, entry) {
+    if (target === "row" || opts.scope !== "row") {
+        return entry
+    }
+    return {
+        modules: spec.resolveFor(opts.recipe, opts.machine).modules,
+        beaconModules: entry.beaconModules,
+        beaconCount: entry.beaconCount,
+    }
+}
+
 // Where edits go: "row" (Just <recipe>), "machine" or "plan". A row's
 // editor opens on its own row, unless its modules come from a machine
 // entry (Jordan's mockup: one click should never silently rewrite the
@@ -118,11 +137,11 @@ function write(opts, target, entry) {
             }
             spec.setMachineModules(opts.machine.key, entry)
         } else {
-            // "Every row": the plan layer. This row leaves its hand-set
-            // state and its own machine's entry is dropped, or the very row
-            // being edited would not change.
+            // "Every row": the plan layer only. This row leaves its
+            // hand-set state, but its machine's own entry (if it has one)
+            // stays -- that entry still wins over whatever the plan says,
+            // so this row may not even change (SCOPE_NOTE says as much).
             spec.releaseRow(opts.recipe)
-            spec.setMachineModules(opts.machine.key, null)
             let plan = spec.planLayer()
             let module = entry.modules[0] ?? null
             let beacon = entry.beaconModules[0] ?? null
@@ -381,6 +400,16 @@ const SCOPE_NOTE = {
     plan: "Every row without its own setting changes. Machines with their own setting and rows set by hand keep theirs.",
 }
 
+// "Every row" edits the plan only (write() never drops a machine's entry);
+// a machine with its own entry still wins over the plan, so this row would
+// not even change. Null when this row's machine has no entry of its own.
+function planNoteOverride(opts, target) {
+    if (target !== "plan" || !spec.machineModules.has(opts.machine.key)) {
+        return null
+    }
+    return `${opts.machine.name} has its own setting, so this row keeps it. Change it under Every row made in ${opts.machine.name.toLowerCase()}.`
+}
+
 function scopeBlock(opts, entry, target, render) {
     let box = el("div", "me-block me-scope")
     box.appendChild(el("span", "lbl", "Use these modules for"))
@@ -416,7 +445,7 @@ function scopeBlock(opts, entry, target, render) {
         label.append(input, document.createTextNode(" " + text))
         box.appendChild(label)
     }
-    box.appendChild(el("div", "muted me-scope-note", SCOPE_NOTE[target]))
+    box.appendChild(el("div", "muted me-scope-note", planNoteOverride(opts, target) || SCOPE_NOTE[target]))
     return box
 }
 
@@ -432,6 +461,7 @@ export function mountModuleEditor(container, opts) {
         root.textContent = ""
         let target = currentTarget(opts)
         let entry = currentEntry(opts, target)
+        let disp = displayEntry(opts, target, entry)
         let sel = selection.get(mountKey(opts)) || null
         if (sel && sel.kind === "slot" && target === "plan") {
             sel = null
@@ -439,11 +469,14 @@ export function mountModuleEditor(container, opts) {
         root.appendChild(header(opts))
         let body = el("div", "me-body")
         let left = el("div", "me-col")
-        left.append(machineSlots(opts, entry, target, sel, render), beaconSlots(opts, entry, target, sel, render), palette(opts, sel))
+        // machineSlots shows what the row really gets (disp); beaconSlots
+        // keeps the raw layer entry -- its +/- and pick both write straight
+        // from it, and resolveModules never filters beacons anyway.
+        left.append(machineSlots(opts, disp, target, sel, render), beaconSlots(opts, entry, target, sel, render), palette(opts, sel))
         let right = el("div", "me-col")
-        right.appendChild(effectsBlock(opts, entry))
+        right.appendChild(effectsBlock(opts, disp))
         if (opts.scope === "row") {
-            right.append(compareBlock(opts, entry), scopeBlock(opts, entry, target, render))
+            right.append(compareBlock(opts, disp), scopeBlock(opts, entry, target, render))
         }
         body.append(left, right)
         root.appendChild(body)

@@ -265,15 +265,21 @@ function renderMachineModules(settings) {
             console.log("unknown machine:", entry.key)
             continue
         }
+        // A hand-written link can name a module this machine's own
+        // allowed_effects refuses (no recipe is pinned here, so only the
+        // machine's own check applies), or a beacon module beacons refuse:
+        // checked once on load, the same backstop as `modules=` above.
         let modules = []
         for (let i = 0; i < building.moduleSlots; i++) {
             let key = entry.slots[i]
-            modules.push(key === undefined || key === "" ? null : getModule(key))
+            let module = key === undefined || key === "" ? null : getModule(key)
+            modules.push(module !== null && !canUse(module, null, building) ? null : module)
         }
         let beaconModules = [null, null]
         let beaconCount = zero
         if (entry.beacon !== null && entry.beacon.length === 3) {
             beaconModules = [getModule(entry.beacon[0]), getModule(entry.beacon[1])]
+                .map(m => m !== null && !canBeacon(m, beaconData.allowedEffects) ? null : m)
             beaconCount = Rational.from_string(entry.beacon[2])
         }
         layer.set(building.key, {modules, beaconModules, beaconCount})
@@ -677,6 +683,9 @@ function renderDefaultBeacon(settings) {
             defaultCount = divmod.quotient
         }
     }
+    // A hand-written `db=` can name a module beacons refuse (productivity,
+    // quality): checked once here too, the same backstop as `modules=`/`mm=`.
+    defaultBeacon = defaultBeacon.map(m => m !== null && !canBeacon(m, beaconData.allowedEffects) ? null : m)
     for (let i = 0; i < defaultBeacon.length; i++) {
         spec.setDefaultBeacon(defaultBeacon[i], i)
     }
