@@ -11,7 +11,8 @@
 import { registerRenderer } from "./render.js"
 import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
-import { buildFlowModel, dashArray, hoverSet, itemStyles, layered, lineStyle, rankNodes, stackLabels } from "./flow-core.js"
+import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, lineStyle, rankNodes, stackLabels } from "./flow-core.js"
+import { beaconBadge, moduleStrip } from "./modules-strip.js"
 import { RATE_LABEL } from "./table-core.js"
 import { linkMachines } from "./details.js"
 import { beltWords, lineEnd } from "./ratio-core.js"
@@ -137,6 +138,21 @@ function nodeSub(node) {
     return {icon: node.machine.icon, text: `${node.count} × ${node.machine.name}`}
 }
 
+// The modules this card's recipe runs with: 16px slot icons under the
+// machine line and a "beacon ×N" badge. Null for a card whose machine has
+// no module slots (or no machine).
+function cardModules(recipe, node) {
+    if (!recipe || !node.machine || node.machine.moduleSlots === 0) return null
+    let moduleSpec = spec.getModuleSpec(recipe)
+    if (!moduleSpec) return null
+    let line = document.createElement("span")
+    line.className = "mods"
+    line.appendChild(moduleStrip(moduleSpec.modules, 16))
+    let badge = beaconBadge(moduleSpec.beaconModules, moduleSpec.beaconCount, 14, false)
+    if (badge) line.appendChild(badge)
+    return line
+}
+
 function nodeMarkup(node) {
     let item = node.itemKey ? spec.items.get(node.itemKey) : null
 
@@ -172,6 +188,7 @@ function nodeMarkup(node) {
     // liquefaction) keep the recipe name since the icon/rate are only the
     // first product.
     let recipe = node.kind === "input" ? null : spec.recipes.get(node.id)
+    if (recipe && spec.handSet.has(recipe.key)) div.classList.add("hand")
     let title = node.label
     if (item && recipe && recipe.products.length === 1) title = item.name
     name.textContent = title
@@ -185,6 +202,11 @@ function nodeMarkup(node) {
         sub.appendChild(document.createTextNode(subInfo.text))
     }
     mid.appendChild(sub)
+    let mods = cardModules(recipe, node)
+    if (mods) {
+        mid.appendChild(mods)
+        div.classList.add("has-mods")
+    }
     body.appendChild(mid)
 
     let right = document.createElement("span")
@@ -742,8 +764,11 @@ function draw(totals) {
     // size dead.
     let ranks = rankNodes(model).rank
     ensureZoom()
-    // Wide enough for any line's chip, decided once per solve (chipGap).
-    let laidOut = layered(model, {nodeWidth: 210, nodeHeight: 58, ranks, colGap: chipGap(model.edges)})
+    // Wide enough for any line's chip, decided once per solve (chipGap);
+    // as tall as the module strip needs, decided once per solve too
+    // (cardHeight). The strip is never part of a chip or of the machine
+    // line answerOnCard swaps, so neither measurement changes on hover.
+    let laidOut = layered(model, {nodeWidth: 210, nodeHeight: cardHeight(model.nodes), ranks, colGap: chipGap(model.edges)})
     lastLayout = laidOut
     focusUndo = []
     restoreLine = []
