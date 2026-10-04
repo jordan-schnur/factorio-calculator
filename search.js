@@ -2,7 +2,7 @@
 // add) and the "Browse" item grid. DOM-facing counterpart of search-core.js.
 import { spec } from "./factory.js"
 import { Rational } from "./rational.js"
-import { parseQuery, datasetEntries, mergeEntries } from "./search-core.js"
+import { parseQuery, datasetEntries, mergeEntries, isSearchable } from "./search-core.js"
 import { rankMatches } from "./boardcore.js"
 import { companion } from "./hosting.js"
 
@@ -31,7 +31,7 @@ let highlighted = -1
 function datasetItemEntries() {
     let out = []
     for (let item of spec.items.values()) {
-        if (item.recipes.length > 0 || item.uses.length) {
+        if (isSearchable(item)) {
             out.push({ key: item.key, localized_name: { en: item.name } })
         }
     }

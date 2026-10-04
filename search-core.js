@@ -26,6 +26,21 @@ export function datasetEntries(items) {
     }))
 }
 
+// A recipe whose only ingredient and product is the same item: recycling
+// something that has no recipe of its own gives it straight back.
+function returnsItself(recipe) {
+    let items = new Set([...recipe.ingredients, ...recipe.products].map(x => x.item))
+    return items.size === 1
+}
+
+// Worth offering as a target: some recipe makes it, or it goes into one.
+// "Science" (and coins, blueprints, linked chests) are made and used only by
+// their own recycling recipe, so a plan for one is empty.
+// item: {recipes, uses}, each recipe {ingredients, products} of {item}.
+export function isSearchable(item) {
+    return item.recipes.some(r => !returnsItself(r)) || item.uses.some(r => !returnsItself(r))
+}
+
 // catalog entries win by name; fallback fills the rest; only names in
 // `fallback` (producible in this dataset) are kept. Technologies are never
 // targets, and many share an item's name ("quality-module-2" is both) with
