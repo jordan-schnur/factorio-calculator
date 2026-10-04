@@ -496,6 +496,11 @@ label.selected {
 .moduleRow {
     white-space: nowrap;
 }
+/* Closed, only the checked module's row shows. A row of hidden labels still
+   takes a line of height, so a module from the fourth row sat below the box. */
+.dropdownWrapper:not(.open) .moduleRow:not(:has(input:checked)) {
+    display: none;
+}
 .module-wrapper, .input {
     display: inline-block;
 }

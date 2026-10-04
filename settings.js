@@ -301,6 +301,7 @@ function renderTitle(settings) {
 
 function rateHandler() {
     spec.format.setDisplayRate(this.value)
+    d3.select("#belt_selector span.belt-summary").text(beltSummaryText)
     spec.display()
 }
 
