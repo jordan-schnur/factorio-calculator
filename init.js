@@ -26,6 +26,7 @@ import { getSprites } from "./icon.js"
 import { getItems } from "./item.js"
 import { initItemTable } from "./itemtable.js"
 import { getModules } from "./module.js"
+import { initModulesSettings } from "./modules-settings.js"
 import { getPlanets } from "./planet.js"
 import { getRecipes } from "./recipe.js"
 import { registerRenderer } from "./render.js"
@@ -154,6 +155,7 @@ function initModules() {
     initFlow()
     initSource()
     initSettingsTab()
+    initModulesSettings()
     initBoard()
     initSaveSettings()
     initHeader()

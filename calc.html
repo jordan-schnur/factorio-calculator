@@ -148,8 +148,6 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
           <div class="kv"><span class="muted" style="width: 110px;">Machines</span><span id="building_selector"></span></div>
           <div class="kv"><span class="muted" style="width: 110px;">Available</span><span id="machine_allow"></span></div>
           <div class="kv"><span class="muted" style="width: 110px;">Belt</span><span id="belt_selector" class="radio-setting"></span></div>
-          <div class="kv"><span class="muted" style="width: 110px;">Modules</span><span id="default_module"></span><span class="muted">in every slot, or</span><span id="secondary_module"></span><span class="muted">where the first isn't allowed</span></div>
-          <div class="kv"><span class="muted" style="width: 110px;">Beacons</span><span id="default_beacon" class="beacon-container"></span>&times;<input id="default_beacon_count" class="num" type="text" size="3"></div>
           <div class="kv"><span class="muted" style="width: 110px;">Mining</span><span class="muted">productivity</span>+<input id="mprod" class="num mprod" type="number" step="10" value="0" min="0" onchange="handlers.changeMprod(event)"><span class="muted">%</span></div>
         </div>
 
@@ -160,6 +158,9 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
           <span class="muted">Which recipe makes each item is picked on its row in the table.</span>
         </div>
       </div>
+
+      <div class="sec" id="modules-sec">Modules</div>
+      <div class="deep" id="settings-modules"></div>
 
       <div class="sec">Display</div>
       <div class="deep" id="settings-display">

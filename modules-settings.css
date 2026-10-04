@@ -1,1 +1,18 @@
-/* Per-recipe modules (calculator 1.2.0): modules-settings.js, Settings -> Modules. */
+/* Per-recipe modules (calculator 1.2.0): modules-settings.js, Settings ->
+   Modules (#settings-modules): the strategy, By machine, Set by hand. */
+#settings-modules .ms-group { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 8px; }
+#settings-modules .ms-group + .ms-group { box-shadow: inset 0 1px 0 #3d3d3d; padding-top: 8px; }
+#settings-modules .ms-head { font-weight: 700; padding: 2px 6px; }
+#settings-modules .seg button { display: inline-flex; align-items: center; gap: 4px; }
+#settings-modules .seg button .icon { width: 20px; height: 20px; }
+#settings-modules .ms-count { min-width: 22px; text-align: center; }
+#settings-modules .ms-fellback, #settings-modules .ms-foot { font-size: 13px; padding: 0 6px 0 124px; }
+#settings-modules .ms-foot { padding-left: 6px; }
+#settings-modules .ms-summary { padding: 6px; color: #ffe6c0; font-weight: 600; }
+#settings-modules .ms-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 4px 6px; min-height: 36px; }
+#settings-modules .ms-row:nth-child(even) { background: rgba(255,255,255,0.025); }
+#settings-modules .ms-name { font-weight: 700; }
+#settings-modules .ms-hand { font-size: 12px; flex-basis: 100%; order: 1; padding-left: 38px; }
+#settings-modules .ms-actions { margin-left: auto; display: flex; gap: 6px; }
+#settings-modules .ms-editor { padding: 8px 6px 12px 38px; }
+#settings-modules #modules-reset-all { align-self: flex-start; margin: 4px 6px; }

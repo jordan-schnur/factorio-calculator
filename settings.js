@@ -15,7 +15,7 @@ import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_
 import { spec, DEFAULT_PLANET, DEFAULT_BELT, DEFAULT_FUEL, buildingSort } from "./factory.js"
 import { getRecipeGroups } from "./groups.js"
 import { changeMod } from "./init.js"
-import { shortModules, moduleRows, moduleDropdown } from "./module.js"
+import { shortModules } from "./module.js"
 import { Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { markOverride, clearOverrides } from "./savesettings.js"
@@ -624,125 +624,16 @@ function renderFuel(settings) {
         .text("for boilers and burner machines")
 }
 
-// default module
-
-class DefaultModuleInput {
-    constructor(cell, module) {
-        this.cell = cell
-        this.module = module
-    }
-    checked() {
-        return this.module === spec.defaultModule
-    }
-    choose() {
-        spec.setDefaultModule(this.module)
-        spec.updateSolution()
-    }
-}
-class DefaultModuleCell {
-    constructor() {
-        this.name = "default_module_dropdown"
-        this.inputRows = []
-        for (let row of moduleRows) {
-            let inputRow = []
-            for (let module of row) {
-                inputRow.push(new DefaultModuleInput(this, module))
-            }
-            this.inputRows.push(inputRow)
-        }
-    }
-}
-class SecondaryModuleInput {
-    constructor(cell, module) {
-        this.cell = cell
-        this.module = module
-    }
-    checked() {
-        return this.module === spec.secondaryDefaultModule
-    }
-    choose() {
-        spec.setSecondaryDefaultModule(this.module)
-        spec.updateSolution()
-    }
-}
-class SecondaryModuleCell {
-    constructor() {
-        this.name = "secondary_module_dropdown"
-        this.inputRows = []
-        for (let row of moduleRows) {
-            let inputRow = []
-            for (let module of row) {
-                inputRow.push(new SecondaryModuleInput(this, module))
-            }
-            this.inputRows.push(inputRow)
-        }
-    }
-}
+// The plan layer, read from dm/dm2 and db/dbc. Settings -> Modules
+// (modules-settings.js) draws it on every render.
 
 function renderDefaultModule(settings) {
-    let defaultModule = null
-    if (settings.has("dm")) {
-        defaultModule = getModule(settings.get("dm"))
-    }
-    spec.setDefaultModule(defaultModule)
-    let secondaryModule = null
-    if (settings.has("dm2")) {
-        secondaryModule = getModule(settings.get("dm2"))
-    }
-    spec.setSecondaryDefaultModule(secondaryModule)
-
-    let cell = new DefaultModuleCell()
-    let select = d3.select("#default_module")
-    select.selectAll("*").remove()
-    moduleDropdown(select, [cell])
-    cell = new SecondaryModuleCell()
-    select = d3.select("#secondary_module")
-    select.selectAll("*").remove()
-    moduleDropdown(select, [cell])
+    spec.setDefaultModule(settings.has("dm") ? getModule(settings.get("dm")) : null)
+    spec.setSecondaryDefaultModule(settings.has("dm2") ? getModule(settings.get("dm2")) : null)
 }
 
-// default beacon
-
-class DefaultBeaconInput {
-    constructor(cell, module) {
-        this.cell = cell
-        this.module = module
-    }
-    checked() {
-        return this.module === spec.defaultBeacon[this.cell.index]
-    }
-    choose() {
-        let self = this
-        let oldModule = spec.defaultBeacon[this.cell.index]
-        spec.setDefaultBeacon(this.module, this.cell.index)
-        if (this.cell.index === 0) {
-            let modules = spec.defaultBeacon
-            if (oldModule === modules[1]) {
-                spec.setDefaultBeacon(this.module, 1)
-                d3.selectAll("#default_beacon span.module-wrapper:nth-child(2) input")
-                    .property("checked", d => self.module === d.module)
-            }
-        }
-        spec.updateSolution()
-    }
-}
-class DefaultBeaconCell {
-    constructor(index) {
-        this.name = `default_beacon_dropdown_${index}`
-        this.index = index
-        this.inputRows = []
-        for (let row of moduleRows) {
-            let inputRow = []
-            for (let module of row) {
-                if (module === null || module.canBeacon()) {
-                    inputRow.push(new DefaultBeaconInput(this, module))
-                }
-            }
-            this.inputRows.push(inputRow)
-        }
-    }
-}
-
+// A one-module legacy `db=` with an even `dbc` means that module in both
+// beacon slots and half the count.
 function renderDefaultBeacon(settings) {
     let defaultBeacon = [null, null]
     let defaultCount = zero
@@ -771,17 +662,6 @@ function renderDefaultBeacon(settings) {
         spec.setDefaultBeacon(defaultBeacon[i], i)
     }
     spec.setDefaultBeaconCount(defaultCount)
-
-    let cells = [new DefaultBeaconCell(0), new DefaultBeaconCell(1)]
-    let select = d3.select("#default_beacon")
-    select.selectAll("*").remove()
-    moduleDropdown(select, cells)
-    d3.select("#default_beacon_count")
-        .attr("value", defaultCount.toDecimal())
-        .on("change", (event) => {
-            spec.setDefaultBeaconCount(Rational.from_string(event.target.value))
-            spec.updateSolution()
-        })
 }
 
 // recipe disabling
