@@ -155,6 +155,11 @@ class FactorySpecification {
         // machine change touches.
         this.machineModules = new Map()
         this.handSet = new Set()
+        // Bumped by every commitModules(); renderers that don't otherwise
+        // see a change (display() re-renders with the same totals object)
+        // fold this into their own "did anything change" key -- see
+        // flow.js's renderKey().
+        this.modulesVersion = 0
 
         this.belt = null
 
@@ -720,6 +725,7 @@ class FactorySpecification {
     // change machine counts and power, which every renderer recomputes from
     // the ModuleSpecs. Like toggleIgnore(), the edits never solve on their own.
     commitModules(change) {
+        this.modulesVersion++
         let before = new Map()
         for (let [recipe, moduleSpec] of this.spec) {
             before.set(recipe, moduleSpec.prodEffect(this).toString())

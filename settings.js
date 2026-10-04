@@ -15,12 +15,12 @@ import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_
 import { spec, DEFAULT_PLANET, DEFAULT_BELT, DEFAULT_FUEL, buildingSort } from "./factory.js"
 import { getRecipeGroups } from "./groups.js"
 import { changeMod } from "./init.js"
-import { shortModules } from "./module.js"
+import { beaconData, shortModules } from "./module.js"
 import { Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { markOverride, clearOverrides } from "./savesettings.js"
 import { excludedMachines, parseRecipeMachines } from "./machines-core.js"
-import { parseModuleList } from "./modules-core.js"
+import { canBeacon, canUse, parseModuleList } from "./modules-core.js"
 import { sorted } from "./sort.js"
 
 // Category keys (spec.buildings' Map keys, also the C5 payload's
@@ -230,6 +230,25 @@ function renderModules(settings) {
             moduleSpec.setBeaconModule(module1, 0)
             moduleSpec.setBeaconModule(module2, 1)
             moduleSpec.setBeaconCount(count)
+        }
+        // A hand-written link can name a module the recipe or machine can't
+        // take (no productivity on this recipe, a kind this machine
+        // refuses) or a beacon can't hold (quality, productivity): fall
+        // back to what the layers would say for that slot, or empty the
+        // beacon slot, rather than carry an invalid pick through silently.
+        let resolved = null
+        for (let i = 0; i < moduleSpec.modules.length; i++) {
+            let module = moduleSpec.modules[i]
+            if (module !== null && !canUse(module, recipe, moduleSpec.building)) {
+                resolved = resolved || spec.resolveFor(recipe, moduleSpec.building)
+                moduleSpec.setModule(i, resolved.modules[i] ?? null)
+            }
+        }
+        for (let i = 0; i < moduleSpec.beaconModules.length; i++) {
+            let module = moduleSpec.beaconModules[i]
+            if (module !== null && !canBeacon(module, beaconData.allowedEffects)) {
+                moduleSpec.setBeaconModule(null, i)
+            }
         }
         spec.handSet.add(recipe.key)
     }

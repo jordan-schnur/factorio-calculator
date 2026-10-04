@@ -13,8 +13,8 @@ import { spec } from "./factory.js"
 import { sprites } from "./icon.js"
 import { beaconData } from "./module.js"
 import {
-    beaconWhyNot, effectsOf, kindOf, moduleLabel, num, paletteRows, percentWords,
-    planExpressible, powerWords, resolveModules, rowMachines, whyNot,
+    beaconWhyNot, effectsOf, kindOf, moduleFor, moduleLabel, num, paletteRows, percentWords,
+    planExpressible, powerWords, resolveModules, rowMachines, tierOf, whyNot,
 } from "./modules-core.js"
 import { handTag } from "./modules-strip.js"
 import { RATE_LABEL } from "./table-core.js"
@@ -24,6 +24,14 @@ const MAX_BEACONS = 16
 // Mount key ("row:<recipe key>" / "machine:<machine key>") -> the selected
 // slot, {kind: "slot" | "beacon", index}. Cleared once a module goes in.
 const selection = new Map()
+
+// Mount key -> the "Use these modules for" radio the editor is showing, for
+// scope "row" (scope "machine" has only one target). Seeded once, the first
+// time a row's details are opened in this page session (see currentTarget),
+// from where its modules come from; after that it's whatever the radio was
+// last set to, so picking "Every row" and then making several more edits
+// keeps editing the plan rather than resetting to "row" on every re-render.
+const chosenTarget = new Map()
 
 function el(tag, className, text) {
     let node = document.createElement(tag)
@@ -46,14 +54,27 @@ function mountKey(opts) {
     return opts.scope === "row" ? `row:${opts.recipe.key}` : `machine:${opts.machine.key}`
 }
 
-// The modules this editor shows, with a plain-number beacon count.
-function currentEntry(opts) {
+// The modules `target` shows, with a plain-number beacon count. For
+// "machine"/"plan" this is the shared layer's own entry (what editing it
+// actually changes), not the row's resolved-and-possibly-fallen-back
+// modules -- a beacon-only edit on a row that fell back must not write the
+// fallback values over the layer it didn't touch. Only "row" (and a
+// scope-radio switch away from it, see scopeBlock below) reads the row's
+// own ModuleSpec.
+function currentEntry(opts, target) {
     let source
-    if (opts.scope === "row") {
-        source = spec.getModuleSpec(opts.recipe)
-    } else {
+    if (target === "machine") {
         source = spec.machineModules.get(opts.machine.key) ||
             resolveModules({recipe: null, machine: opts.machine, plan: spec.planLayer(), machineLayer: new Map()})
+    } else if (target === "plan") {
+        let plan = spec.planLayer()
+        source = {
+            modules: new Array(opts.machine.moduleSlots).fill(plan.defaultModule),
+            beaconModules: plan.defaultBeacon,
+            beaconCount: plan.defaultBeaconCount,
+        }
+    } else {
+        source = spec.getModuleSpec(opts.recipe)
     }
     return {
         modules: source.modules.slice(),
@@ -63,13 +84,20 @@ function currentEntry(opts) {
 }
 
 // Where edits go: "row" (Just <recipe>), "machine" or "plan". A row's
-// editor opens on where its modules come from now.
+// editor opens on its own row, unless its modules come from a machine
+// entry (Jordan's mockup: one click should never silently rewrite the
+// whole plan or machine) -- see chosenTarget above. The header below still
+// says where the modules come from even when that differs from this.
 function currentTarget(opts) {
     if (opts.scope === "machine") {
         return "machine"
     }
-    let source = spec.moduleSource(opts.recipe)
-    return source === "hand" ? "row" : source
+    let key = mountKey(opts)
+    if (!chosenTarget.has(key)) {
+        let source = spec.moduleSource(opts.recipe)
+        chosenTarget.set(key, source === "machine" ? "machine" : "row")
+    }
+    return chosenTarget.get(key)
 }
 
 // Writes `entry` to `target` and re-renders (re-solves when productivity
@@ -105,7 +133,7 @@ function write(opts, target, entry) {
 function pick(opts, module) {
     let key = mountKey(opts)
     let target = currentTarget(opts)
-    let entry = currentEntry(opts)
+    let entry = currentEntry(opts, target)
     let sel = selection.get(key)
     if (sel && sel.kind === "beacon") {
         if (target === "plan") {
@@ -142,18 +170,25 @@ function slotIcon(module, size) {
     return icon
 }
 
-function header(opts, target) {
+// Where this row's modules actually come from -- independent of `target`,
+// the radio currently showing, which may differ (the editor opens on
+// "row" even for a row whose modules still come from the plan).
+function header(opts) {
     let head = el("div", "me-head")
     head.appendChild(el("span", "me-title", "Modules"))
     if (opts.scope === "machine") {
         head.appendChild(el("span", "muted me-source", `Every ${opts.machine.name.toLowerCase()} without a row set by hand`))
-    } else if (target === "row") {
+        return head
+    }
+    let source = spec.moduleSource(opts.recipe)
+    if (source === "hand") {
         head.appendChild(handTag())
         head.appendChild(button("btn btn-sm me-back", "Back to plan default", () => {
             selection.delete(mountKey(opts))
+            chosenTarget.set(mountKey(opts), "row")
             spec.commitModules(() => spec.releaseRow(opts.recipe))
         }))
-    } else if (target === "machine") {
+    } else if (source === "machine") {
         head.appendChild(el("span", "muted me-source", `From ${opts.machine.name} settings`))
     } else {
         head.appendChild(el("span", "muted me-source", "From the plan"))
@@ -200,9 +235,20 @@ function beaconSlots(opts, entry, target, sel, render) {
     let row = el("div", "me-row")
     let step = delta => {
         let next = Math.max(0, Math.min(MAX_BEACONS, entry.beaconCount + delta))
-        if (next !== entry.beaconCount) {
-            write(opts, target, {...entry, beaconCount: next})
+        if (next === entry.beaconCount) {
+            return
         }
+        let patch = {beaconCount: next}
+        // "Every row": the plan layer only keeps a beacon count alongside a
+        // beacon module (write() below zeroes the count otherwise), so +
+        // from empty needs a module too, or it would silently do nothing.
+        if (target === "plan" && delta > 0 && !entry.beaconModules[0] && !entry.beaconModules[1]) {
+            let plan = spec.planLayer()
+            let tier = plan.defaultModule ? tierOf(plan.defaultModule) : 3
+            let fill = moduleFor(spec.modules.values(), "speed", tier) || moduleFor(spec.modules.values(), "speed", 3)
+            patch.beaconModules = [fill, fill]
+        }
+        write(opts, target, {...entry, ...patch})
     }
     let minus = button("btn btn-sm me-minus", "−", () => step(-1))
     minus.disabled = entry.beaconCount <= 0
@@ -351,7 +397,11 @@ function scopeBlock(opts, entry, target) {
         input.addEventListener("change", () => {
             if (input.checked && value !== target) {
                 selection.delete(mountKey(opts))
-                write(opts, value, currentEntry(opts))
+                chosenTarget.set(mountKey(opts), value)
+                // Carries over what's currently shown (the old target's own
+                // entry), not the new target's: switching scope is "apply
+                // what I see onto a wider scope", not "read that scope".
+                write(opts, value, currentEntry(opts, target))
             }
         })
         label.append(input, document.createTextNode(" " + text))
@@ -371,13 +421,13 @@ export function mountModuleEditor(container, opts) {
     container.appendChild(root)
     let render = () => {
         root.textContent = ""
-        let entry = currentEntry(opts)
         let target = currentTarget(opts)
+        let entry = currentEntry(opts, target)
         let sel = selection.get(mountKey(opts)) || null
         if (sel && sel.kind === "slot" && target === "plan") {
             sel = null
         }
-        root.appendChild(header(opts, target))
+        root.appendChild(header(opts))
         let body = el("div", "me-body")
         let left = el("div", "me-col")
         left.append(machineSlots(opts, entry, target, sel, render), beaconSlots(opts, entry, target, sel, render), palette(opts, sel))
