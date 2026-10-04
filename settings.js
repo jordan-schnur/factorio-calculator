@@ -20,6 +20,7 @@ import { Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { markOverride, clearOverrides } from "./savesettings.js"
 import { excludedMachines, parseRecipeMachines } from "./machines-core.js"
+import { parseModuleList } from "./modules-core.js"
 import { sorted } from "./sort.js"
 
 // Category keys (spec.buildings' Map keys, also the C5 payload's
@@ -177,63 +178,88 @@ function getModule(moduleKey) {
     return module
 }
 
-// NOTE: Buildings must be configured before modules!
+// NOTE: Buildings must be configured before modules! And the plan (dm,
+// dm2, db, dbc) and machine (mm) layers before the rows: a row's ModuleSpec
+// is created from those layers here, then its listed slots overwrite them,
+// so Kirk's partial lists keep the layers in the slots they leave out.
+// Every entry read marks its recipe as set by hand.
 function renderModules(settings) {
     let two = Rational.from_float(2)
-    let moduleString = settings.get("modules")
-    if (moduleString !== undefined && moduleString !== "") {
-        for (let recipeSetting of moduleString.split(",")) {
-            let [buildingModuleSettings, beaconSettings] = recipeSetting.split(";")
-            let [recipeKey, ...moduleKeyList] = buildingModuleSettings.split(":")
-            let recipe = spec.recipes.get(recipeKey)
-            if (recipe === undefined) {
-                console.log("unknown recipe:", recipeKey)
-                continue
-            }
-            let moduleSpec = spec.getModuleSpec(recipe)
-            for (let i = 0; i < moduleKeyList.length; i++) {
-                let moduleKey = moduleKeyList[i]
-                if (moduleKey === "") {
-                    continue
-                }
-                let module = getModule(moduleKey)
-                if (module !== undefined) {
-                    moduleSpec.setModule(i, module)
-                }
-            }
-            if (beaconSettings !== undefined) {
-                let beaconParts = beaconSettings.split(":")
-                // The legacy beacon config was simply in the form
-                // "module:module count". If the count is even, then it is
-                // adapted to the new format by dividing it by two and placing
-                // the specified module in both slots. Otherwise, a single slot
-                // is filled and the count is used as the beacon count.
-                let module1
-                let module2
-                let count
-                if (beaconParts.length === 2) {
-                    let module = getModule(beaconParts[0])
-                    count = Rational.from_string(beaconParts[1])
-                    let divmod = count.divmod(two)
-                    if (divmod.remainder.isZero()) {
-                        module1 = module
-                        module2 = module
-                        count = divmod.quotient
-                    } else {
-                        module1 = module
-                        module2 = null
-                    }
-                } else {
-                    module1 = getModule(beaconParts[0])
-                    module2 = getModule(beaconParts[1])
-                    count = Rational.from_string(beaconParts[2])
-                }
-                moduleSpec.setBeaconModule(module1, 0)
-                moduleSpec.setBeaconModule(module2, 1)
-                moduleSpec.setBeaconCount(count)
+    for (let entry of parseModuleList(settings.get("modules"))) {
+        let recipe = spec.recipes.get(entry.key)
+        if (recipe === undefined) {
+            console.log("unknown recipe:", entry.key)
+            continue
+        }
+        let moduleSpec = spec.getModuleSpec(recipe)
+        if (moduleSpec === undefined) {
+            console.log("no module slots:", entry.key)
+            continue
+        }
+        for (let i = 0; i < entry.slots.length; i++) {
+            if (entry.slots[i] !== "") {
+                moduleSpec.setModule(i, getModule(entry.slots[i]))
             }
         }
+        if (entry.beacon !== null) {
+            // The legacy beacon config was simply in the form
+            // "module:count". If the count is even, then it is adapted to
+            // the new format by dividing it by two and placing the
+            // specified module in both slots. Otherwise, a single slot is
+            // filled and the count is used as the beacon count.
+            let module1
+            let module2
+            let count
+            if (entry.beacon.length === 2) {
+                let module = getModule(entry.beacon[0])
+                count = Rational.from_string(entry.beacon[1])
+                let divmod = count.divmod(two)
+                if (divmod.remainder.isZero()) {
+                    module1 = module
+                    module2 = module
+                    count = divmod.quotient
+                } else {
+                    module1 = module
+                    module2 = null
+                }
+            } else {
+                module1 = getModule(entry.beacon[0])
+                module2 = getModule(entry.beacon[1])
+                count = Rational.from_string(entry.beacon[2])
+            }
+            moduleSpec.setBeaconModule(module1, 0)
+            moduleSpec.setBeaconModule(module2, 1)
+            moduleSpec.setBeaconCount(count)
+        }
+        spec.handSet.add(recipe.key)
     }
+}
+
+// The machine layer, `mm=<machine>:<m>:...;<b1>:<b2>:<count>,...`. Every
+// slot is listed ("null" for empty); slots past the machine's own count are
+// dropped, missing ones are empty. Runs after the plan layer, before rows.
+function renderMachineModules(settings) {
+    let layer = new Map()
+    for (let entry of parseModuleList(settings.get("mm"))) {
+        let building = spec.buildingKeys.get(entry.key)
+        if (building === undefined) {
+            console.log("unknown machine:", entry.key)
+            continue
+        }
+        let modules = []
+        for (let i = 0; i < building.moduleSlots; i++) {
+            let key = entry.slots[i]
+            modules.push(key === undefined || key === "" ? null : getModule(key))
+        }
+        let beaconModules = [null, null]
+        let beaconCount = zero
+        if (entry.beacon !== null && entry.beacon.length === 3) {
+            beaconModules = [getModule(entry.beacon[0]), getModule(entry.beacon[1])]
+            beaconCount = Rational.from_string(entry.beacon[2])
+        }
+        layer.set(building.key, {modules, beaconModules, beaconCount})
+    }
+    spec.setMachineLayer(layer)
 }
 
 // ignore
@@ -1145,6 +1171,7 @@ export function renderSettings(settings) {
     renderFuel(settings)
     renderDefaultModule(settings)
     renderDefaultBeacon(settings)
+    renderMachineModules(settings)
     renderResourcePriorities(settings)
     renderRecipes(settings)
     renderTargets(settings)

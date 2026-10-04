@@ -21,6 +21,7 @@ import { renderAll } from "./render.js"
 import { solve } from "./solve.js"
 import { BuildTarget } from "./target.js"
 import { capableBuildings, pickBuilding } from "./machines-core.js"
+import { resolveModules } from "./modules-core.js"
 
 const DEFAULT_ITEM_KEY = "advanced-circuit"
 
@@ -53,6 +54,21 @@ class BuildingSet {
             }
         }
         return false
+    }
+}
+
+// A beacon count from the page (a number) or a fragment (a Rational).
+function toCount(count) {
+    return typeof count === "number" ? Rational.from_float(count) : count
+}
+
+// {modules, beaconModules, beaconCount} with no undefined slots and a
+// Rational count.
+function normalEntry(entry) {
+    return {
+        modules: entry.modules.map(m => m ?? null),
+        beaconModules: [entry.beaconModules[0] ?? null, entry.beaconModules[1] ?? null],
+        beaconCount: toCount(entry.beaconCount),
     }
 }
 
@@ -131,6 +147,14 @@ class FactorySpecification {
         this.secondaryDefaultModule = null
         this.defaultBeacon = [null, null]
         this.defaultBeaconCount = zero
+        // The other two module layers (docs/superpowers/specs/
+        // 2026-10-04-per-recipe-modules-design.md). Machine key ->
+        // {modules, beaconModules, beaconCount} for every recipe made in that
+        // machine (fragment `mm=`), and the keys of recipes whose modules
+        // were set by hand on their row (`modules=`), which no plan or
+        // machine change touches.
+        this.machineModules = new Map()
+        this.handSet = new Set()
 
         this.belt = null
 
@@ -512,16 +536,11 @@ class FactorySpecification {
         } else {
             this.recipeBuildings.set(recipe.key, building.key)
         }
-        let moduleSpec = this.spec.get(recipe)
-        if (moduleSpec !== undefined) {
-            moduleSpec.setBuilding(this.getBuilding(recipe), this)
-        }
+        this.reapplyModules()
     }
     setRecipeBuildings(map) {
         this.recipeBuildings = new Map(map)
-        for (let [recipe, moduleSpec] of this.spec) {
-            moduleSpec.setBuilding(this.getBuilding(recipe), this)
-        }
+        this.reapplyModules()
     }
     // True when every machine that can make `recipe` is excluded, so
     // getBuilding fell back to one anyway.
@@ -533,9 +552,7 @@ class FactorySpecification {
     }
     setExcludedBuildings(keys) {
         this.excludedBuildings = new Set(keys)
-        for (let [recipe, moduleSpec] of this.spec) {
-            moduleSpec.setBuilding(this.getBuilding(recipe), this)
-        }
+        this.reapplyModules()
     }
     toggleExcludedBuilding(building) {
         let keys = new Set(this.excludedBuildings)
@@ -553,18 +570,12 @@ class FactorySpecification {
     setMinimumBuilding(building) {
         let group = this.getBuildingGroup(building)
         group.building = building
-        for (let [recipe, moduleSpec] of this.spec) {
-            let g = this.buildings.get(recipe.category)
-            if (group === g) {
-                let b = this.getBuilding(recipe)
-                moduleSpec.setBuilding(b, this)
-            }
-        }
+        this.reapplyModules()
     }
     initModuleSpec(recipe, building) {
         if (!this.spec.has(recipe) && building !== null && building.canBeacon()) {
             let m = new ModuleSpec(recipe, this)
-            m.setBuilding(building, this)
+            m.applyResolved(building, this.resolveFor(recipe, building))
             this.spec.set(recipe, m)
             return m
         }
@@ -590,62 +601,142 @@ class FactorySpecification {
         }
         return this.getModuleSpec(recipe).prodEffect(this)
     }
-    setDefaultModule(module) {
+    // --- modules: three layers, the most specific wins -------------------
+    // Plan (defaultModule & co., `dm`/`dm2`/`db`/`dbc`), machine
+    // (machineModules, `mm`), row (handSet, `modules`). None of the edits
+    // below re-solves: callers wrap them in commitModules().
+    planLayer() {
+        return {
+            defaultModule: this.defaultModule,
+            secondaryDefaultModule: this.secondaryDefaultModule,
+            defaultBeacon: [this.defaultBeacon[0], this.defaultBeacon[1]],
+            defaultBeaconCount: this.defaultBeaconCount,
+        }
+    }
+    // What `recipe` gets from the plan and machine layers in `building`,
+    // ignoring any modules set by hand on its row.
+    resolveFor(recipe, building = this.getBuilding(recipe)) {
+        return resolveModules({recipe, machine: building, plan: this.planLayer(), machineLayer: this.machineModules})
+    }
+    // Where `recipe`'s modules come from now: "hand", "machine" or "plan".
+    moduleSource(recipe) {
+        if (this.handSet.has(recipe.key)) {
+            return "hand"
+        }
+        let building = this.getBuilding(recipe)
+        return building !== null && this.machineModules.has(building.key) ? "machine" : "plan"
+    }
+    // Rebuilds every ModuleSpec not set by hand from the layers, and fits
+    // the hand-set ones to their (possibly new) machine. Runs after every
+    // layer edit and every machine pick.
+    reapplyModules() {
         for (let [recipe, moduleSpec] of this.spec) {
-            for (let i = 0; i < moduleSpec.modules.length; i++) {
-                let m = moduleSpec.modules[i]
-                if (m === this.defaultModule && (!module || module.canUse(recipe))) {
-                    moduleSpec.modules[i] = module
-                } else if (m === this.defaultModule && (!this.secondaryDefaultModule || this.secondaryDefaultModule.canUse(recipe))) {
-                    moduleSpec.modules[i] = this.secondaryDefaultModule
-                }
+            let building = this.getBuilding(recipe)
+            if (building === null) {
+                continue
+            }
+            if (this.handSet.has(recipe.key)) {
+                moduleSpec.setBuilding(building, this)
+            } else {
+                moduleSpec.applyResolved(building, this.resolveFor(recipe, building))
             }
         }
+    }
+    setDefaultModule(module) {
         this.defaultModule = module
+        this.reapplyModules()
     }
     setSecondaryDefaultModule(module) {
-        if (this.secondaryDefaultModule !== this.defaultModule) {
-            for (let [recipe, moduleSpec] of this.spec) {
-                for (let i = 0; i < moduleSpec.modules.length; i++) {
-                    let m = moduleSpec.modules[i]
-                    if (m === this.secondaryDefaultModule && (!module || module.canUse(recipe))) {
-                        moduleSpec.modules[i] = module
-                    }
-                }
-            }
-        }
         this.secondaryDefaultModule = module
-    }
-    // Gets the default module for this recipe, given the current
-    // default/secondary settings.
-    getDefaultModule(recipe) {
-        if (this.defaultModule === null || this.defaultModule.canUse(recipe)) {
-            return this.defaultModule
-        }
-        if (this.secondaryDefaultModule === null || this.secondaryDefaultModule.canUse(recipe)) {
-            return this.secondaryDefaultModule
-        }
-        return null
+        this.reapplyModules()
     }
     isDefaultDefaultBeacon() {
         return this.defaultBeacon[0] === null && this.defaultBeacon[1] === null
     }
     setDefaultBeacon(module, i) {
-        for (let [recipe, moduleSpec] of this.spec) {
-            let m = moduleSpec.beaconModules[i]
-            if (m === this.defaultBeacon[i] && (!module || module.canUse(recipe))) {
-                moduleSpec.beaconModules[i] = module
-            }
-        }
         this.defaultBeacon[i] = module
+        this.reapplyModules()
     }
     setDefaultBeaconCount(count) {
+        this.defaultBeaconCount = toCount(count)
+        this.reapplyModules()
+    }
+    // The whole plan layer at once (Settings' strategy, the editor's
+    // "Every row"): {defaultModule, secondaryDefaultModule, defaultBeacon,
+    // defaultBeaconCount}, the count a number or a Rational.
+    setPlanLayer(plan) {
+        this.defaultModule = plan.defaultModule
+        this.secondaryDefaultModule = plan.secondaryDefaultModule
+        this.defaultBeacon = [plan.defaultBeacon[0], plan.defaultBeacon[1]]
+        this.defaultBeaconCount = toCount(plan.defaultBeaconCount)
+        this.reapplyModules()
+    }
+    // One machine's entry, or null to drop it ("Use plan").
+    setMachineModules(machineKey, entry) {
+        if (entry === null) {
+            this.machineModules.delete(machineKey)
+        } else {
+            this.machineModules.set(machineKey, normalEntry(entry))
+        }
+        this.reapplyModules()
+    }
+    // The whole machine layer (fragment `mm=`): Map machine key -> entry.
+    setMachineLayer(map) {
+        this.machineModules = new Map([...map].map(([key, entry]) => [key, normalEntry(entry)]))
+        this.reapplyModules()
+    }
+    // Sets `recipe`'s modules by hand and marks it hand-set.
+    setRowModules(recipe, entry) {
+        let moduleSpec = this.getModuleSpec(recipe)
+        if (moduleSpec === undefined) {
+            return
+        }
+        let e = normalEntry(entry)
+        let slots = moduleSpec.building.moduleSlots
+        moduleSpec.modules = e.modules.slice(0, slots)
+        while (moduleSpec.modules.length < slots) {
+            moduleSpec.modules.push(null)
+        }
+        moduleSpec.beaconModules = e.beaconModules
+        moduleSpec.beaconCount = e.beaconCount
+        this.handSet.add(recipe.key)
+    }
+    // "Back to plan default" / Settings' Reset: the row takes the layers again.
+    releaseRow(recipe) {
+        this.handSet.delete(recipe.key)
+        let moduleSpec = this.spec.get(recipe)
+        let building = this.getBuilding(recipe)
+        if (moduleSpec !== undefined && building !== null) {
+            moduleSpec.applyResolved(building, this.resolveFor(recipe, building))
+        }
+    }
+    releaseAllRows() {
+        this.handSet.clear()
+        this.reapplyModules()
+    }
+    // Runs `change` (any of the layer edits above), then re-solves when a
+    // recipe's productivity moved -- that changes the recipe ratios the
+    // solver works out -- and otherwise only re-renders: speed and power
+    // change machine counts and power, which every renderer recomputes from
+    // the ModuleSpecs. Like toggleIgnore(), the edits never solve on their own.
+    commitModules(change) {
+        let before = new Map()
         for (let [recipe, moduleSpec] of this.spec) {
-            if (moduleSpec.beaconCount.equal(this.defaultBeaconCount)) {
-                moduleSpec.beaconCount = count
+            before.set(recipe, moduleSpec.prodEffect(this).toString())
+        }
+        change()
+        let resolve = false
+        for (let [recipe, moduleSpec] of this.spec) {
+            if (before.get(recipe) !== moduleSpec.prodEffect(this).toString()) {
+                resolve = true
+                break
             }
         }
-        this.defaultBeaconCount = count
+        if (resolve) {
+            this.updateSolution()
+        } else {
+            this.display()
+        }
     }
     // Returns the recipe-rate at which a single building can produce a recipe.
     // Returns null for recipes that do not have a building.
