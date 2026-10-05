@@ -12,6 +12,8 @@ img.qbadge {
     z-index: 1;
     pointer-events: none;
     filter: drop-shadow(0 0 1px #000000);
+    max-width: none;
+    max-height: none;
 }
 
 /* The tier picker. */
