@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 import { powerRepr } from "./power.js"
 import { Icon } from "./icon.js"
+import { allowedEffectsOf } from "./modules-core.js"
 import { Rational, zero, one } from "./rational.js"
 
 let thirty = Rational.from_float(30)
@@ -27,6 +28,9 @@ class Building {
         this.moduleSlots = moduleSlots
         this.power = power
         this.fuel = fuel
+        // The data's allowed_effects as a Set (modules-core.js's
+        // allowedEffectsOf); null when it names none, which allows all.
+        this.allowedEffects = null
 
         this.icon_col = col
         this.icon_row = row
@@ -324,6 +328,14 @@ export function getBuildings(data, items) {
             Rational.from_float_approximate(d.energy_usage),
             fuel
         ))
+    }
+    // allowed_effects by key: crafting machines, silos and drills carry it.
+    let defs = new Map([...data.crafting_machines, ...data.rocket_silo, ...data.mining_drills].map(d => [d.key, d]))
+    for (let building of buildings) {
+        let def = defs.get(building.key)
+        if (def !== undefined) {
+            building.allowedEffects = allowedEffectsOf(def)
+        }
     }
     return buildings
 }

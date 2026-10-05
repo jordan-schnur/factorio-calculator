@@ -9,6 +9,7 @@ import { recipesFor } from "./machines-core.js"
 import { beltWords, destinationLines, flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
+import { mountModuleEditor } from "./modules-editor.js"
 import { relevantRecipes, renderOptions } from "./source.js"
 import { RATE_LABEL } from "./table-core.js"
 import { buildRows, powerRepr } from "./table.js"
@@ -502,6 +503,15 @@ export function renderDetail(container, item, totals) {
     container.appendChild(buildNeedsCol(rows, row, totals))
     container.appendChild(buildGoesToCol(rows, item, totals, isTarget))
     container.appendChild(buildSourceCol(item, row, totals, isTarget, isResource))
+    // The module editor, a full-width band under the three columns, for a
+    // row made here in a machine with module slots.
+    let building = row && row.isReal ? spec.getBuilding(row.recipe) : null
+    if (building !== null && building.moduleSlots > 0) {
+        let band = document.createElement("div")
+        band.className = "modband"
+        mountModuleEditor(band, {scope: "row", recipe: row.recipe, machine: building, row})
+        container.appendChild(band)
+    }
 }
 
 function renderGraphSide(_spec, totals) {

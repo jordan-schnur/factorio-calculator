@@ -1,0 +1,32 @@
+/* Per-recipe modules (calculator 1.2.0): modules-editor.js, the module
+   editor -- a band under an open row's three columns, and Settings ->
+   Modules -> By machine. */
+.detail .modband { grid-column: 1 / -1; box-shadow: inset 0 1px 0 #3d3d3d; padding-top: 12px; }
+.modeditor { display: flex; flex-direction: column; gap: 10px; }
+.modeditor .me-head { display: flex; align-items: center; gap: 10px; }
+.modeditor .me-title { font-weight: 700; font-size: 15px; }
+.modeditor .me-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
+#graph-side .modeditor .me-body, .modeditor[data-scope="machine"] .me-body { grid-template-columns: minmax(0, 1fr); }
+.modeditor .me-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.modeditor .me-block { display: flex; flex-direction: column; gap: 6px; }
+.modeditor .me-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.modeditor button.slot { border: none; padding: 0; cursor: pointer; }
+.modeditor button.slot:disabled { cursor: not-allowed; opacity: 0.35; }
+/* While "Every row" is chosen a slot can't be picked alone, but it still shows its module. */
+.modeditor .me-slot:disabled { cursor: default; opacity: 1; }
+.modeditor .me-count { min-width: 22px; text-align: center; }
+.modeditor .me-hint, .modeditor .me-note, .modeditor .me-scope-note, .modeditor .me-floor { font-size: 12px; }
+.modeditor .me-prow { display: flex; align-items: center; gap: 4px; }
+.modeditor .me-plabel { width: 92px; font-size: 13px; }
+.modeditor .me-eff { display: grid; grid-template-columns: 96px minmax(0, 1fr) 64px; align-items: center; gap: 8px; }
+.modeditor .me-bar { height: 8px; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8); }
+.modeditor .me-fill { display: block; height: 100%; background: #6fc873; }
+.modeditor .me-fill.bad { background: #e05a5a; }
+.modeditor .me-pct { text-align: right; }
+.modeditor .me-cells { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.modeditor .me-cell { display: flex; flex-direction: column; padding: 6px 8px; background: #2a2a2a; box-shadow: inset 0 0 0 1px #1a1a1a; }
+.modeditor .me-cell.cur { background: #3a3323; box-shadow: inset 0 0 0 1px #f1be64; }
+.modeditor .me-clabel { font-size: 12px; color: #a8a8a8; }
+.modeditor .me-machines { font-size: 16px; }
+.modeditor .me-radio { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; min-height: 28px; }
+.modeditor .me-radio:has(input:disabled) { opacity: 0.5; cursor: not-allowed; }

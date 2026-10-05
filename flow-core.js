@@ -358,6 +358,16 @@ export function beltText(belts) {
 // the one above with `gap` px between, then the whole stack is shifted back
 // so it stays centred on where the chips wanted to be. labels: [{id, x, y,
 // h}] with y the chip's centre; returns Map id -> new centre y.
+// Card height for a plan: 58px, or 78px when any card shows a module strip
+// (its machine has module slots), so every card in one plan is the same
+// height and hovering or focusing never moves one.
+export const CARD_HEIGHT = 58
+export const CARD_HEIGHT_WITH_MODULES = 78
+
+export function cardHeight(nodes) {
+    return nodes.some(n => n.machine && n.machine.moduleSlots > 0) ? CARD_HEIGHT_WITH_MODULES : CARD_HEIGHT
+}
+
 export function stackLabels(labels, gap = 4) {
     const out = new Map()
     const groups = new Map()

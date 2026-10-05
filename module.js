@@ -14,6 +14,7 @@ limitations under the License.*/
 import { makeDropdown, addInputs } from "./dropdown.js"
 import { Icon, sprites } from "./icon.js"
 import { useLegacyCalculation } from "./init.js"
+import { allowedEffectsOf, canBeacon as beaconTakes, canUse } from "./modules-core.js"
 import { Rational, zero, half, one } from "./rational.js"
 import { sorted } from "./sort.js"
 
@@ -27,7 +28,7 @@ function percent(x) {
 }
 
 class Module {
-    constructor(key, name, col, row, category, order, productivity, speed, power) {
+    constructor(key, name, col, row, category, order, productivity, speed, power, effect) {
         // Other module effects not modeled by this calculator.
         this.key = key
         this.name = name
@@ -36,6 +37,10 @@ class Module {
         this.productivity = productivity
         this.speed = speed
         this.power = power
+        // Every effect as a float, {speed, productivity, consumption,
+        // pollution, quality}: modules-core.js reads it to decide which
+        // machines and beacons take this module.
+        this.effect = effect
 
         this.icon_col = col
         this.icon_row = row
@@ -46,14 +51,11 @@ class Module {
     shortName() {
         return this.key[0] + this.key[this.key.length - 1]
     }
-    canUse(recipe) {
-        if (this.hasProdEffect() && !recipe.allow_productivity) {
-            return false
-        }
-        return true
-    }
+    // Whether a beacon can hold this module: the data's beacon
+    // allowed_effects (speed and efficiency in 2.0), so quality modules
+    // stay out as well as productivity.
     canBeacon() {
-        return this.productivity.isZero()
+        return beaconTakes(this, beaconData.allowedEffects)
     }
     hasProdEffect() {
         return !this.productivity.isZero()
@@ -138,22 +140,36 @@ export function moduleDropdown(selector, data) {
 // ModuleSpec represents the set of modules (including beacons) configured for
 // a given recipe.
 export class ModuleSpec {
+    // Empty until FactorySpecification fills it from the layers
+    // (applyResolved) or a fragment's `modules=` entry.
     constructor(recipe, spec) {
         this.recipe = recipe
         this.building = null
         this.modules = []
-        this.beaconModules = [spec.defaultBeacon[0], spec.defaultBeacon[1]]
-        this.beaconCount = spec.defaultBeaconCount
+        this.beaconModules = [null, null]
+        this.beaconCount = zero
     }
+    // Takes what modules-core.js's resolveModules worked out for this recipe
+    // in `building`.
+    applyResolved(building, resolved) {
+        this.building = building
+        this.modules = resolved.modules.slice()
+        this.beaconModules = [resolved.beaconModules[0], resolved.beaconModules[1]]
+        this.beaconCount = resolved.beaconCount
+    }
+    // A row set by hand moved to `building`: its own modules stay, a slot
+    // the new machine adds takes what the layers say, and a module the new
+    // machine refuses leaves its slot empty.
     setBuilding(building, spec) {
         this.building = building
+        let resolved = spec.resolveFor(this.recipe, building)
         if (this.modules.length > building.moduleSlots) {
             this.modules.length = building.moduleSlots
         }
-        let toAdd = spec.getDefaultModule(this.recipe)
         while (this.modules.length < building.moduleSlots) {
-            this.modules.push(toAdd)
+            this.modules.push(resolved.modules[this.modules.length])
         }
+        this.modules = this.modules.map(m => canUse(m, this.recipe, building) ? m : null)
     }
     getModule(index) {
         return this.modules[index]
@@ -182,7 +198,7 @@ export class ModuleSpec {
             }
             speed = speed.add(module.speed)
         }
-        if (this.modules.length > 0) {
+        if (this.modules.length > 0 && !this.beaconCount.isZero()) {
             for (let module of this.beaconModules) {
                 if (module === null) {
                     continue
@@ -226,7 +242,7 @@ export class ModuleSpec {
             }
             power = power.add(module.power)
         }
-        if (this.modules.length > 0) {
+        if (this.modules.length > 0 && !this.beaconCount.isZero()) {
             for (let module of this.beaconModules) {
                 if (module === null) {
                     continue
@@ -256,6 +272,10 @@ export let shortModules = null
 let beaconProfile
 let beaconEffect
 
+// The beacon as modules-core.js reads it: which module effects it takes,
+// what one draws, and the floats effectsOf() needs. Set by getModules().
+export let beaconData = null
+
 export function getModules(data, items) {
     let modules = new Map()
     for (let d of data.modules) {
@@ -276,6 +296,13 @@ export function getModules(data, items) {
             productivity,
             speed,
             power,
+            {
+                speed: effect.speed || 0,
+                productivity: effect.productivity || 0,
+                consumption: effect.consumption || 0,
+                pollution: effect.pollution || 0,
+                quality: effect.quality || 0,
+            },
         ))
     }
     let sortedModules = sorted(modules.values(), m => m.order)
@@ -304,6 +331,12 @@ export function getModules(data, items) {
         for (let x of data.beacon.profile) {
             beaconProfile.push(Rational.from_float_approximate(x))
         }
+    }
+    beaconData = {
+        allowedEffects: allowedEffectsOf(data.beacon),
+        powerW: data.beacon.energy_usage || 0,
+        distributionEffectivity: data.beacon.distribution_effectivity,
+        profile: useLegacyCalculation || !data.beacon.profile ? null : data.beacon.profile.slice(),
     }
     return modules
 }

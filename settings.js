@@ -15,11 +15,12 @@ import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_
 import { spec, DEFAULT_PLANET, DEFAULT_BELT, DEFAULT_FUEL, buildingSort } from "./factory.js"
 import { getRecipeGroups } from "./groups.js"
 import { changeMod } from "./init.js"
-import { shortModules, moduleRows, moduleDropdown } from "./module.js"
+import { beaconData, shortModules } from "./module.js"
 import { Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { markOverride, clearOverrides } from "./savesettings.js"
 import { excludedMachines, parseRecipeMachines } from "./machines-core.js"
+import { canBeacon, canUse, parseModuleList } from "./modules-core.js"
 import { sorted } from "./sort.js"
 
 // Category keys (spec.buildings' Map keys, also the C5 payload's
@@ -177,63 +178,125 @@ function getModule(moduleKey) {
     return module
 }
 
-// NOTE: Buildings must be configured before modules!
+const MAX_BEACONS = 16
+
+// A beacon count from a link: a whole number 0-16. Anything else reads as
+// 0, the same backstop as an unknown module key, so a bad link can't stop
+// the page from rendering.
+function parseBeaconCount(text, max = MAX_BEACONS) {
+    let n = /^\d+$/.test(text ?? "") ? Number(text) : NaN
+    return n <= max ? Rational.from_float(n) : zero
+}
+
+// Kirk's legacy one-module beacon form, "module:count": an even count
+// means that module in both slots and half the count.
+function legacyBeaconCount(text) {
+    let n = /^\d+$/.test(text) ? Number(text) : 0
+    let both = n % 2 === 0
+    let count = both ? n / 2 : n
+    return {both, count: count <= MAX_BEACONS ? Rational.from_float(count) : zero}
+}
+
+// NOTE: Buildings must be configured before modules! And the plan (dm,
+// dm2, db, dbc) and machine (mm) layers before the rows: a row's ModuleSpec
+// is created from those layers here, then its listed slots overwrite them,
+// so Kirk's partial lists keep the layers in the slots they leave out.
+// Every entry read marks its recipe as set by hand.
 function renderModules(settings) {
-    let two = Rational.from_float(2)
-    let moduleString = settings.get("modules")
-    if (moduleString !== undefined && moduleString !== "") {
-        for (let recipeSetting of moduleString.split(",")) {
-            let [buildingModuleSettings, beaconSettings] = recipeSetting.split(";")
-            let [recipeKey, ...moduleKeyList] = buildingModuleSettings.split(":")
-            let recipe = spec.recipes.get(recipeKey)
-            if (recipe === undefined) {
-                console.log("unknown recipe:", recipeKey)
-                continue
-            }
-            let moduleSpec = spec.getModuleSpec(recipe)
-            for (let i = 0; i < moduleKeyList.length; i++) {
-                let moduleKey = moduleKeyList[i]
-                if (moduleKey === "") {
-                    continue
-                }
-                let module = getModule(moduleKey)
-                if (module !== undefined) {
-                    moduleSpec.setModule(i, module)
-                }
-            }
-            if (beaconSettings !== undefined) {
-                let beaconParts = beaconSettings.split(":")
-                // The legacy beacon config was simply in the form
-                // "module:module count". If the count is even, then it is
-                // adapted to the new format by dividing it by two and placing
-                // the specified module in both slots. Otherwise, a single slot
-                // is filled and the count is used as the beacon count.
-                let module1
-                let module2
-                let count
-                if (beaconParts.length === 2) {
-                    let module = getModule(beaconParts[0])
-                    count = Rational.from_string(beaconParts[1])
-                    let divmod = count.divmod(two)
-                    if (divmod.remainder.isZero()) {
-                        module1 = module
-                        module2 = module
-                        count = divmod.quotient
-                    } else {
-                        module1 = module
-                        module2 = null
-                    }
-                } else {
-                    module1 = getModule(beaconParts[0])
-                    module2 = getModule(beaconParts[1])
-                    count = Rational.from_string(beaconParts[2])
-                }
-                moduleSpec.setBeaconModule(module1, 0)
-                moduleSpec.setBeaconModule(module2, 1)
-                moduleSpec.setBeaconCount(count)
+    for (let entry of parseModuleList(settings.get("modules"))) {
+        let recipe = spec.recipes.get(entry.key)
+        if (recipe === undefined) {
+            console.log("unknown recipe:", entry.key)
+            continue
+        }
+        let moduleSpec = spec.getModuleSpec(recipe)
+        if (moduleSpec === undefined) {
+            console.log("no module slots:", entry.key)
+            continue
+        }
+        for (let i = 0; i < entry.slots.length; i++) {
+            if (entry.slots[i] !== "") {
+                moduleSpec.setModule(i, getModule(entry.slots[i]))
             }
         }
+        if (entry.beacon !== null) {
+            // The legacy beacon config was simply in the form
+            // "module:count". If the count is even, then it is adapted to
+            // the new format by dividing it by two and placing the
+            // specified module in both slots. Otherwise, a single slot is
+            // filled and the count is used as the beacon count.
+            let module1
+            let module2
+            let count
+            if (entry.beacon.length === 2) {
+                let module = getModule(entry.beacon[0])
+                let legacy = legacyBeaconCount(entry.beacon[1])
+                module1 = module
+                module2 = legacy.both ? module : null
+                count = legacy.count
+            } else {
+                module1 = getModule(entry.beacon[0])
+                module2 = getModule(entry.beacon[1])
+                count = parseBeaconCount(entry.beacon[2])
+            }
+            moduleSpec.setBeaconModule(module1, 0)
+            moduleSpec.setBeaconModule(module2, 1)
+            moduleSpec.setBeaconCount(count)
+        }
+        // A hand-written link can name a module the recipe or machine can't
+        // take (no productivity on this recipe, a kind this machine
+        // refuses) or a beacon can't hold (quality, productivity): fall
+        // back to what the layers would say for that slot, or empty the
+        // beacon slot, rather than carry an invalid pick through silently.
+        let resolved = null
+        for (let i = 0; i < moduleSpec.modules.length; i++) {
+            let module = moduleSpec.modules[i]
+            if (module !== null && !canUse(module, recipe, moduleSpec.building)) {
+                resolved = resolved || spec.resolveFor(recipe, moduleSpec.building)
+                moduleSpec.setModule(i, resolved.modules[i] ?? null)
+            }
+        }
+        for (let i = 0; i < moduleSpec.beaconModules.length; i++) {
+            let module = moduleSpec.beaconModules[i]
+            if (module !== null && !canBeacon(module, beaconData.allowedEffects)) {
+                moduleSpec.setBeaconModule(null, i)
+            }
+        }
+        spec.handSet.add(recipe.key)
     }
+}
+
+// The machine layer, `mm=<machine>:<m>:...;<b1>:<b2>:<count>,...`. Every
+// slot is listed ("null" for empty); slots past the machine's own count are
+// dropped, missing ones are empty. Runs after the plan layer, before rows.
+function renderMachineModules(settings) {
+    let layer = new Map()
+    for (let entry of parseModuleList(settings.get("mm"))) {
+        let building = spec.buildingKeys.get(entry.key)
+        if (building === undefined) {
+            console.log("unknown machine:", entry.key)
+            continue
+        }
+        // A hand-written link can name a module this machine's own
+        // allowed_effects refuses (no recipe is pinned here, so only the
+        // machine's own check applies), or a beacon module beacons refuse:
+        // checked once on load, the same backstop as `modules=` above.
+        let modules = []
+        for (let i = 0; i < building.moduleSlots; i++) {
+            let key = entry.slots[i]
+            let module = key === undefined || key === "" ? null : getModule(key)
+            modules.push(module !== null && !canUse(module, null, building) ? null : module)
+        }
+        let beaconModules = [null, null]
+        let beaconCount = zero
+        if (entry.beacon !== null && entry.beacon.length === 3) {
+            beaconModules = [getModule(entry.beacon[0]), getModule(entry.beacon[1])]
+                .map(m => m !== null && !canBeacon(m, beaconData.allowedEffects) ? null : m)
+            beaconCount = parseBeaconCount(entry.beacon[2])
+        }
+        layer.set(building.key, {modules, beaconModules, beaconCount})
+    }
+    spec.setMachineLayer(layer)
 }
 
 // ignore
@@ -598,125 +661,16 @@ function renderFuel(settings) {
         .text("for boilers and burner machines")
 }
 
-// default module
-
-class DefaultModuleInput {
-    constructor(cell, module) {
-        this.cell = cell
-        this.module = module
-    }
-    checked() {
-        return this.module === spec.defaultModule
-    }
-    choose() {
-        spec.setDefaultModule(this.module)
-        spec.updateSolution()
-    }
-}
-class DefaultModuleCell {
-    constructor() {
-        this.name = "default_module_dropdown"
-        this.inputRows = []
-        for (let row of moduleRows) {
-            let inputRow = []
-            for (let module of row) {
-                inputRow.push(new DefaultModuleInput(this, module))
-            }
-            this.inputRows.push(inputRow)
-        }
-    }
-}
-class SecondaryModuleInput {
-    constructor(cell, module) {
-        this.cell = cell
-        this.module = module
-    }
-    checked() {
-        return this.module === spec.secondaryDefaultModule
-    }
-    choose() {
-        spec.setSecondaryDefaultModule(this.module)
-        spec.updateSolution()
-    }
-}
-class SecondaryModuleCell {
-    constructor() {
-        this.name = "secondary_module_dropdown"
-        this.inputRows = []
-        for (let row of moduleRows) {
-            let inputRow = []
-            for (let module of row) {
-                inputRow.push(new SecondaryModuleInput(this, module))
-            }
-            this.inputRows.push(inputRow)
-        }
-    }
-}
+// The plan layer, read from dm/dm2 and db/dbc. Settings -> Modules
+// (modules-settings.js) draws it on every render.
 
 function renderDefaultModule(settings) {
-    let defaultModule = null
-    if (settings.has("dm")) {
-        defaultModule = getModule(settings.get("dm"))
-    }
-    spec.setDefaultModule(defaultModule)
-    let secondaryModule = null
-    if (settings.has("dm2")) {
-        secondaryModule = getModule(settings.get("dm2"))
-    }
-    spec.setSecondaryDefaultModule(secondaryModule)
-
-    let cell = new DefaultModuleCell()
-    let select = d3.select("#default_module")
-    select.selectAll("*").remove()
-    moduleDropdown(select, [cell])
-    cell = new SecondaryModuleCell()
-    select = d3.select("#secondary_module")
-    select.selectAll("*").remove()
-    moduleDropdown(select, [cell])
+    spec.setDefaultModule(settings.has("dm") ? getModule(settings.get("dm")) : null)
+    spec.setSecondaryDefaultModule(settings.has("dm2") ? getModule(settings.get("dm2")) : null)
 }
 
-// default beacon
-
-class DefaultBeaconInput {
-    constructor(cell, module) {
-        this.cell = cell
-        this.module = module
-    }
-    checked() {
-        return this.module === spec.defaultBeacon[this.cell.index]
-    }
-    choose() {
-        let self = this
-        let oldModule = spec.defaultBeacon[this.cell.index]
-        spec.setDefaultBeacon(this.module, this.cell.index)
-        if (this.cell.index === 0) {
-            let modules = spec.defaultBeacon
-            if (oldModule === modules[1]) {
-                spec.setDefaultBeacon(this.module, 1)
-                d3.selectAll("#default_beacon span.module-wrapper:nth-child(2) input")
-                    .property("checked", d => self.module === d.module)
-            }
-        }
-        spec.updateSolution()
-    }
-}
-class DefaultBeaconCell {
-    constructor(index) {
-        this.name = `default_beacon_dropdown_${index}`
-        this.index = index
-        this.inputRows = []
-        for (let row of moduleRows) {
-            let inputRow = []
-            for (let module of row) {
-                if (module === null || module.canBeacon()) {
-                    inputRow.push(new DefaultBeaconInput(this, module))
-                }
-            }
-            this.inputRows.push(inputRow)
-        }
-    }
-}
-
+// A one-module legacy `db=` with an even `dbc` means that module in both
+// beacon slots and half the count.
 function renderDefaultBeacon(settings) {
     let defaultBeacon = [null, null]
     let defaultCount = zero
@@ -730,32 +684,22 @@ function renderDefaultBeacon(settings) {
             defaultBeacon[i] = getModule(keys[i])
         }
     }
-    if (settings.has("dbc")) {
-        defaultCount = Rational.from_string(settings.get("dbc"))
-    }
     if (legacy) {
-        let two = Rational.from_float(2)
-        let divmod = defaultCount.divmod(two)
-        if (divmod.remainder.isZero()) {
+        let parsed = legacyBeaconCount(settings.get("dbc") ?? "0")
+        if (parsed.both) {
             defaultBeacon = [defaultBeacon[0], defaultBeacon[0]]
-            defaultCount = divmod.quotient
         }
+        defaultCount = parsed.count
+    } else if (settings.has("dbc")) {
+        defaultCount = parseBeaconCount(settings.get("dbc"))
     }
+    // A hand-written `db=` can name a module beacons refuse (productivity,
+    // quality): checked once here too, the same backstop as `modules=`/`mm=`.
+    defaultBeacon = defaultBeacon.map(m => m !== null && !canBeacon(m, beaconData.allowedEffects) ? null : m)
     for (let i = 0; i < defaultBeacon.length; i++) {
         spec.setDefaultBeacon(defaultBeacon[i], i)
     }
     spec.setDefaultBeaconCount(defaultCount)
-
-    let cells = [new DefaultBeaconCell(0), new DefaultBeaconCell(1)]
-    let select = d3.select("#default_beacon")
-    select.selectAll("*").remove()
-    moduleDropdown(select, cells)
-    d3.select("#default_beacon_count")
-        .attr("value", defaultCount.toDecimal())
-        .on("change", (event) => {
-            spec.setDefaultBeaconCount(Rational.from_string(event.target.value))
-            spec.updateSolution()
-        })
 }
 
 // recipe disabling
@@ -1145,6 +1089,7 @@ export function renderSettings(settings) {
     renderFuel(settings)
     renderDefaultModule(settings)
     renderDefaultBeacon(settings)
+    renderMachineModules(settings)
     renderResourcePriorities(settings)
     renderRecipes(settings)
     renderTargets(settings)

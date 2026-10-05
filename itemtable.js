@@ -3,6 +3,9 @@
 // or pipe in, replacing the old Ledger side panel. A row expands into a
 // detail panel (calc/details.js) in place instead of opening a side card.
 import { spec } from "./factory.js"
+import { sprites } from "./icon.js"
+import { beaconPhrase, fallbackNote, planSentence } from "./modules-core.js"
+import { beaconBadge, handTag, moduleStrip } from "./modules-strip.js"
 import { beltWords } from "./ratio-core.js"
 import { registerRenderer } from "./render.js"
 import { buildRows, buildingCount } from "./table.js"
@@ -135,6 +138,89 @@ function machinesCell(row) {
     return cell
 }
 
+// The Modules column: the row's slots (24px, empty ones drawn empty), its
+// beacon badge, and under them SET BY HAND or, for a row whose recipe
+// takes no productivity, what the plan put in instead. Empty for a row
+// brought in or made in a machine without module slots.
+function modulesCell(row) {
+    const cell = document.createElement("span")
+    cell.className = "mods"
+    if (!row.isReal) {
+        return cell
+    }
+    const building = spec.getBuilding(row.recipe)
+    if (building === null || building.moduleSlots === 0) {
+        return cell
+    }
+    const moduleSpec = spec.getModuleSpec(row.recipe)
+    const line = document.createElement("span")
+    line.className = "mods-line"
+    line.appendChild(moduleStrip(moduleSpec.modules, 24))
+    const badge = beaconBadge(moduleSpec.beaconModules, moduleSpec.beaconCount, 18)
+    if (badge) {
+        line.appendChild(badge)
+    }
+    cell.appendChild(line)
+    if (spec.handSet.has(row.recipe.key)) {
+        cell.appendChild(handTag())
+    } else {
+        const note = fallbackNote(spec.resolveFor(row.recipe, building))
+        if (note) {
+            const muted = document.createElement("span")
+            muted.className = "muted mods-note"
+            muted.textContent = note
+            cell.appendChild(muted)
+        }
+    }
+    return cell
+}
+
+function isHandSet(row) {
+    return row.isReal && spec.handSet.has(row.recipe.key)
+}
+
+// Opens Settings at its Modules section (calc.html's #modules-sec).
+function openModuleSettings() {
+    document.getElementById("settings-open")?.click()
+    document.getElementById("modules-sec")?.scrollIntoView({ block: "start" })
+}
+
+// The bar over the table: the plan layer in one line, Change, and the
+// rows set by hand with a way to reset them.
+function modulesBar(rows) {
+    const bar = document.createElement("div")
+    bar.id = "modules-bar"
+    const plan = spec.planLayer()
+    const icon = document.createElement("span")
+    icon.className = "slot sm"
+    icon.appendChild(plan.defaultModule ? plan.defaultModule.icon.make(24, true) : sprites.get("slot_icon_module").icon.make(24, true))
+    bar.appendChild(icon)
+    const words = document.createElement("span")
+    words.className = "mb-words"
+    words.textContent = `${planSentence(plan)} · ${beaconPhrase(plan.defaultBeacon, plan.defaultBeaconCount)}`
+    bar.appendChild(words)
+    const change = document.createElement("button")
+    change.type = "button"
+    change.className = "btn btn-sm mb-change"
+    change.textContent = "Change"
+    change.addEventListener("click", openModuleSettings)
+    bar.appendChild(change)
+    const hand = rows.filter(isHandSet).map(row => row.recipe)
+    if (hand.length > 0) {
+        const count = document.createElement("span")
+        count.className = "lbl mb-hand"
+        count.textContent = `${hand.length} row${hand.length === 1 ? "" : "s"} set by hand`
+        bar.appendChild(count)
+        const reset = document.createElement("button")
+        reset.type = "button"
+        reset.className = "btn btn-sm mb-reset"
+        reset.textContent = "Reset them"
+        reset.addEventListener("click", () => spec.commitModules(() => hand.forEach(recipe => spec.releaseRow(recipe))))
+        bar.appendChild(reset)
+    }
+    return bar
+}
+
 function toggleOpen(key, open) {
     spec.whereItem = open ? null : key
     spec.setHash()
@@ -146,11 +232,12 @@ function renderRowButton(row, totals, rows) {
     const open = spec.whereItem === key
     const btn = document.createElement("button")
     btn.type = "button"
-    btn.className = "lrow" + (open ? " open" : "") + (!row.isReal ? " dim" : "")
+    btn.className = "lrow" + (open ? " open" : "") + (!row.isReal ? " dim" : "") + (isHandSet(row) ? " hand" : "")
     btn.dataset.item = key
     btn.appendChild(itemCell(row))
     btn.appendChild(needCell(row, totals, rows))
     btn.appendChild(machinesCell(row))
+    btn.appendChild(modulesCell(row))
     const chev = document.createElement("span")
     chev.className = "chev"
     chev.textContent = open ? "▴" : "▾"
@@ -174,6 +261,10 @@ function sectHeader(group) {
     mach.className = "lbl"
     mach.textContent = group.machHdr
     sect.appendChild(mach)
+    const mods = document.createElement("span")
+    mods.className = "lbl"
+    mods.textContent = "Modules"
+    sect.appendChild(mods)
     sect.appendChild(document.createElement("span"))
     return sect
 }
@@ -190,6 +281,7 @@ function renderTable(_spec, totals) {
     }
     const rows = buildRows(totals)
     const ranks = itemDepths(totals)
+    container.appendChild(modulesBar(rows))
     for (const group of groupForTable(rows, ranks)) {
         if (group.rows.length === 0) {
             continue

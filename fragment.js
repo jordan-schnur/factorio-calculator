@@ -15,9 +15,20 @@ import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_
 import { DEFAULT_TAB, currentTab } from "./events.js"
 import { spec, DEFAULT_BELT, DEFAULT_FUEL } from "./factory.js"
 import { formatRecipeMachines } from "./machines-core.js"
+import { formatModuleList } from "./modules-core.js"
 import { Rational } from "./rational.js"
 import { currentMod, customTitle } from "./settings.js"
 import { sorted } from "./sort.js"
+
+// One `mm=`/`modules=` entry with every slot listed in order, so slot
+// positions survive a round trip.
+function moduleEntry(key, modules, beaconModules, beaconCount) {
+    return {
+        key,
+        slots: modules.map(getModuleKey),
+        beacon: [getModuleKey(beaconModules[0]), getModuleKey(beaconModules[1]), beaconCount.toString()],
+    }
+}
 
 function getModuleKey(module) {
     let moduleKey
@@ -104,6 +115,10 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     if (!spec.defaultBeaconCount.isZero()) {
         settings += "dbc=" + spec.defaultBeaconCount.toDecimal(0) + "&"
     }
+    if (spec.machineModules.size > 0) {
+        let entries = [...spec.machineModules].map(([key, e]) => moduleEntry(key, e.modules, e.beaconModules, e.beaconCount))
+        settings += "mm=" + formatModuleList(entries) + "&"
+    }
     settings += "items="
     let targetStrings = []
     if (targets) {
@@ -175,38 +190,15 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
         settings += "&enable=" + parts.join(",")
     }
 
-    let moduleSettings = []
+    // Only rows set by hand, every slot listed; the rest come from the layers.
+    let moduleEntries = []
     for (let [recipe, moduleSpec] of spec.spec) {
-        if (!spec.lastTotals || !spec.lastTotals.rates.has(recipe)) {
-            continue
-        }
-        let modules = []
-        let beacon = ""
-        let any = false
-        for (let module of moduleSpec.modules) {
-            if (module !== spec.getDefaultModule(recipe)) {
-                modules.push(getModuleKey(module))
-                any = true
-            }
-        }
-        if (moduleSpec.beaconModules[0] !== spec.defaultBeacon[0] || moduleSpec.beaconModules[1] !== spec.defaultBeacon[1] || !moduleSpec.beaconCount.equal(spec.defaultBeaconCount)) {
-            let beaconKeys = []
-            for (let module of moduleSpec.beaconModules) {
-                beaconKeys.push(getModuleKey(module))
-            }
-            beacon = beaconKeys.join(":") + ":" + moduleSpec.beaconCount.toString()
-            any = true
-        }
-        if (any) {
-            let s = recipe.key + ":" + modules.join(":")
-            if (beacon !== "") {
-                s += ";" + beacon
-            }
-            moduleSettings.push(s)
+        if (spec.handSet.has(recipe.key)) {
+            moduleEntries.push(moduleEntry(recipe.key, moduleSpec.modules, moduleSpec.beaconModules, moduleSpec.beaconCount))
         }
     }
-    if (moduleSettings.length > 0) {
-        settings += "&modules=" + moduleSettings.join(",")
+    if (moduleEntries.length > 0) {
+        settings += "&modules=" + formatModuleList(moduleEntries)
     }
 
     if (!spec.isDefaultPriority()) {

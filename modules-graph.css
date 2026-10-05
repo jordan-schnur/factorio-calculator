@@ -1,0 +1,11 @@
+/* Per-recipe modules (calculator 1.2.0): flow.js's module strip on a graph
+   card, and the gold edge of a card set by hand. The strip runs along the
+   card's bottom 20px (cardHeight() makes such cards 78px, not 58px), so the
+   icon, name, machine line and rate above it sit exactly as on a 58px card. */
+.node.has-mods .nbody { padding-bottom: 20px; }
+.node .mods { position: absolute; left: 8px; right: 8px; bottom: 4px; display: flex; align-items: center; gap: 2px; overflow: hidden; white-space: nowrap; }
+.node .mods .modstrip { flex-wrap: nowrap; flex: none; }
+.node .mods .modslot { padding: 0; }
+.node .mods .beaconbadge { margin-left: 4px; padding: 0 4px 0 1px; font-size: 11px; flex: none; }
+.node.hand { box-shadow: inset 3px 0 0 #f1be64, 0 2px 5px rgba(0,0,0,0.6); }
+.node.hand.sel { box-shadow: inset 3px 0 0 #f1be64, inset 0 0 0 2px #f1be64, 0 2px 5px rgba(0,0,0,0.6); }
