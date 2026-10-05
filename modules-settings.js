@@ -10,6 +10,7 @@ import { spec } from "./factory.js"
 import { mountModuleEditor } from "./modules-editor.js"
 import { moduleFor, num, planFromStrategy, strategyOf, summarySentence, withKind } from "./modules-core.js"
 import { beaconBadge, moduleStrip } from "./modules-strip.js"
+import { addQualityBadge, tierPicker } from "./quality-ui.js"
 import { registerRenderer } from "./render.js"
 
 const MAX_BEACONS = 16
@@ -106,6 +107,8 @@ function strategyGroup(totals) {
         tiers.appendChild(b)
     }
     box.appendChild(kv("Tier", tiers))
+    box.appendChild(kv("Module quality", tierPicker(plan.defaultModuleTier,
+        tier => spec.commitModules(() => spec.setPlanModuleTier(tier)), {label: "Module quality", id: "ms-mtier"})))
 
     if (s.kind === "productivity") {
         box.appendChild(kv("If a recipe can't take productivity",
@@ -129,12 +132,16 @@ function strategyGroup(totals) {
     let pickBeacon = beacon => apply({...s, beacon, beaconCount: beacon !== "none" && s.beaconCount === 0 ? 8 : s.beaconCount})
     box.appendChild(kv("Beacons", seg("ms-beacon", BEACONS, s.beacon, pickBeacon),
         minus, el("span", "num ms-count", String(shown)), plus, el("span", "muted", "around each machine")))
+    box.appendChild(kv("Beacon quality", tierPicker(plan.defaultBeaconTier,
+        tier => spec.commitModules(() => spec.setDefaultBeaconTier(tier)), {label: "Beacon quality", id: "ms-btier"})))
 
     if (!s.exact) {
         // A link the buttons can't say all of (dm=p3&dm2=e1): its real modules.
         let real = el("span", "ms-real")
-        real.appendChild(moduleStrip([plan.defaultModule, plan.secondaryDefaultModule].filter(m => m), 20))
-        let badge = beaconBadge(plan.defaultBeacon, plan.defaultBeaconCount, 20)
+        let linked = [[plan.defaultModule, plan.defaultModuleTier], [plan.secondaryDefaultModule, plan.secondaryDefaultModuleTier]]
+            .filter(([module]) => module)
+        real.appendChild(moduleStrip(linked.map(([module]) => module), 20, linked.map(([, tier]) => tier)))
+        let badge = beaconBadge(plan.defaultBeacon, plan.defaultBeaconCount, 20, true, plan.defaultBeaconTiers, plan.defaultBeaconTier)
         if (badge) {
             real.appendChild(badge)
         }
@@ -157,12 +164,12 @@ function machineGroup(totals) {
     for (let machine of machines) {
         let row = el("div", "ms-row")
         row.dataset.machine = machine.key
-        row.appendChild(slotIcon(machine.icon))
+        row.appendChild(addQualityBadge(slotIcon(machine.icon), spec.machineTier(machine), 12))
         let text = el("span", "ms-text")
         text.append(el("span", "ms-name", machine.name), el("span", "muted", ` ${machine.moduleSlots} slot${machine.moduleSlots === 1 ? "" : "s"}`))
         row.appendChild(text)
         let resolved = spec.resolveFor(null, machine)
-        row.appendChild(moduleStrip(resolved.modules, 20))
+        row.appendChild(moduleStrip(resolved.modules, 20, resolved.moduleTiers))
         let count = num(resolved.beaconCount)
         if (count > 0 && resolved.beaconModules.some(m => m)) {
             row.appendChild(el("span", "muted", `+ ${count} beacon${count === 1 ? "" : "s"}`))
@@ -206,8 +213,8 @@ function handGroup(totals) {
         row.appendChild(slotIcon(recipe.icon))
         row.appendChild(el("span", "ms-name", recipe.name))
         let moduleSpec = spec.getModuleSpec(recipe)
-        row.appendChild(moduleStrip(moduleSpec.modules, 20))
-        let badge = beaconBadge(moduleSpec.beaconModules, moduleSpec.beaconCount, 16)
+        row.appendChild(moduleStrip(moduleSpec.modules, 20, moduleSpec.moduleTiers))
+        let badge = beaconBadge(moduleSpec.beaconModules, moduleSpec.beaconCount, 16, true, moduleSpec.beaconModuleTiers, moduleSpec.beaconTier)
         if (badge) {
             row.appendChild(badge)
         }
