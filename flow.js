@@ -52,7 +52,23 @@ function renderKey() {
     // when only speed/power moved (no re-solve), so without this a module
     // edit that doesn't change machine counts enough to move the totals
     // would leave stale cards -- see modules-editor.js's commit path.
-    return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}:${spec.beltStack}:${spec.format.beltFormat}:${spec.modulesVersion}:${tightGraph()}`
+    return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}:${spec.beltStack}:${spec.format.beltFormat}:${spec.modulesVersion}:${tightGraph()}:${graphDirection()}`
+}
+
+// At phone width (responsive.css's 640px breakpoint) the graph runs top to
+// bottom: the same cards, lines and chips (flow-core's layered() with
+// direction "TB"), one stage per row, as wide as the screen and as tall as
+// the plan, so the page scrolls through it instead of panning a box.
+const COLUMN_BELOW = 640
+
+function graphDirection() {
+    return window.innerWidth <= COLUMN_BELOW ? "TB" : "LR"
+}
+
+// Click chips wrap narrow only where they sit between columns; between the
+// rows of a top-to-bottom graph they have the screen's width.
+function wrapChips() {
+    return tightGraph() && graphDirection() === "LR"
 }
 
 // Below this width the graph is always tight, whatever Display -> Layout says.
@@ -660,24 +676,29 @@ function restack() {
     // until the hover ends and this runs again for all of them.
     let hovering = document.querySelector("#flow-container")?.classList.contains("hovering")
     let labels = [...document.querySelectorAll("#flow-nodes .elbl")].filter(el => !hovering || el.classList.contains("lit"))
-    let ys = stackLabels(labels.map((el, id) => ({id, x: Number(el.dataset.lx), y: Number(el.dataset.ly), h: el.offsetHeight || PLAIN_LABEL_H})), 3)
-    labels.forEach((el, id) => { el.style.top = ys.get(id) + "px" })
+    // Chips share a gap between columns stacked downward, or a gap between
+    // a top-to-bottom graph's rows spread sideways.
+    let sideways = lastLayout?.direction === "TB"
+    let at = stackLabels(labels.map((el, id) => ({id, x: Number(el.dataset.lx), y: Number(el.dataset.ly), h: el.offsetHeight || PLAIN_LABEL_H, w: el.offsetWidth})), 3, sideways ? "x" : "y")
+    labels.forEach((el, id) => { el.style[sideways ? "left" : "top"] = at.get(id) + "px" })
 }
 
-// The gap between columns that fits the widest chip any line of this plan
+// The gap between ranks that fits the biggest chip any line of this plan
 // could show, measured off-screen before layout so hovering or clicking
 // never has to lay the graph out again (and chips never reach into the
-// stage columns).
-function chipGap(edges) {
+// stage columns): the widest chip between columns, the tallest between
+// the rows of a top-to-bottom graph.
+function chipGap(edges, direction) {
     // On <body>, not in #flow-nodes: zoomed out, #flow-nodes.small hides
     // every label that isn't hot, and a hidden chip measures 0 wide.
     let probe = document.createElement("div")
     // cb-probe: measured with the colour-blind words showing, so turning
     // the mode on later never makes a chip outgrow its gap.
-    probe.className = "cb-probe" + (tightGraph() ? " graph-tight" : "")
+    probe.className = "cb-probe" + (wrapChips() ? " graph-tight" : "")
     probe.style.cssText = "position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none;"
     document.body.appendChild(probe)
     let widest = 0
+    let tallest = 0
     for (let edge of edges) {
         let line = lineMachines(edge)
         if (!line) continue
@@ -695,10 +716,13 @@ function chipGap(edges) {
             chip.append(...lineChip(line.item, line.rate, machines))
             probe.appendChild(chip)
             widest = Math.max(widest, chip.offsetWidth)
+            tallest = Math.max(tallest, chip.offsetHeight)
         }
     }
     probe.remove()
-    return Math.max(BASE_COL_GAP, Math.ceil(widest + CHIP_MARGIN))
+    return direction === "TB"
+        ? Math.max(BASE_ROW_GAP, Math.ceil(tallest + CHIP_MARGIN))
+        : Math.max(BASE_COL_GAP, Math.ceil(widest + CHIP_MARGIN))
 }
 
 // The selected item's node(s) get their edges/labels marked "hot" -- there
@@ -727,7 +751,7 @@ function containerSize() {
 }
 
 // Fits the whole graph inside the container, centred (against the left edge
-// when tightGraph(); a phone has its own rule below), never scaling nodes
+// when tightGraph(); top-to-bottom has fitColumn()), never scaling nodes
 // above their natural size. A hidden/zero-size container can't be fitted;
 // leave needsFit set so the next render or resize tries again. The 40/190px
 // margins (not a symmetric pad) are pinned: they keep the graph clear of the
@@ -735,20 +759,14 @@ function containerSize() {
 // canvas rather than reserving layout space. #graph-side (details.js) and
 // #flow-fit sit on top of the canvas as absolute overlays, not reserved
 // width -- the graph always fits the whole #flow-container.
-export function fitToView({all = false} = {}) {
+export function fitToView() {
     if (lastLayout === null || zoomBehavior === null) return
+    if (lastLayout.direction === "TB") return fitColumn()
     let {width: W, height: H} = containerSize()
     if (W === 0 || H === 0) return
     let k = Math.min(1, (W - 40) / lastLayout.width, (H - 190) / lastLayout.height)
     if (!isFinite(k) || k <= 0) return
-    // On a phone a whole plan shrunk to the screen is unreadable: stop at
-    // MIN_PHONE_SCALE and start on the targets, the right-hand end of the
-    // graph; dragging pans to the rest and Fit still shows all of it.
-    let phone = W < PHONE_WIDTH
-    if (phone && !all) k = Math.max(k, MIN_PHONE_SCALE)
-    let tx = phone && lastLayout.width * k > W - 40
-        ? W - 20 - lastLayout.width * k
-        : tightGraph() ? 20 : (W - lastLayout.width * k) / 2
+    let tx = tightGraph() ? 20 : (W - lastLayout.width * k) / 2
     // Below SHEET_WIDTH the side card opens as a sheet over the bottom half
     // (responsive.css), so the graph starts at the top instead of the middle.
     let ty = window.innerWidth <= SHEET_WIDTH ? 20 : 96 + Math.max(0, (H - 190 - lastLayout.height * k) / 2)
@@ -760,11 +778,51 @@ export function fitToView({all = false} = {}) {
     restack()
 }
 
+// A top-to-bottom graph fills the screen's width, and its frame takes the
+// graph's height so the page itself scrolls through the plan (ensureZoom()
+// leaves dragging to the page there). A plan with a stage too wide to read
+// at that width stops at MIN_COLUMN_SCALE and scrolls sideways in its frame
+// (responsive.css), the SVG widened so its lines aren't clipped.
+function fitColumn() {
+    let container = document.querySelector("#flow-container")
+    let W = container ? container.clientWidth : 0
+    if (W === 0) return
+    let k = Math.max(MIN_COLUMN_SCALE, Math.min(1, (W - 2 * COLUMN_PAD) / lastLayout.width))
+    let contentWidth = lastLayout.width * k + 2 * COLUMN_PAD
+    let frame = document.querySelector("#graph-frame")
+    if (frame) frame.style.height = Math.ceil(lastLayout.height * k + 2 * COLUMN_PAD) + "px"
+    let svg = document.querySelector("svg#flow")
+    if (svg) svg.style.width = contentWidth > W ? Math.ceil(contentWidth) + "px" : ""
+    let tx = contentWidth > W ? COLUMN_PAD : (W - lastLayout.width * k) / 2
+    d3.select(container).call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, COLUMN_PAD).scale(k))
+    needsFit = false
+    isFitted = true
+    restack()
+}
+
 // Pans (keeping scale) so `item`'s node card sits at the container's centre.
+// A top-to-bottom graph doesn't pan: the page scrolls the card to near the
+// top of the screen instead, clear of the details sheet over the bottom.
 export function focusNode(item) {
     if (lastLayout === null || zoomBehavior === null) return
     let node = lastLayout.nodes.find(n => n.itemKey === item)
     if (!node) return
+    if (lastLayout.direction === "TB") {
+        // A tick later: details.js opens the sheet off the same calc:select,
+        // and the room it adds under the page (responsive.css) is what lets
+        // a card near the end scroll this far up.
+        setTimeout(() => {
+            let card = document.querySelector(`#flow-nodes .node[data-node="${CSS.escape(node.id)}"]`)
+            if (!card) return
+            let rect = card.getBoundingClientRect()
+            window.scrollBy({top: rect.top - FOCUS_TOP, behavior: "smooth"})
+            // and sideways, for a stage wider than the screen
+            let container = document.querySelector("#flow-container")
+            let box = container.getBoundingClientRect()
+            container.scrollBy({left: rect.left + rect.width / 2 - (box.left + box.width / 2), behavior: "smooth"})
+        }, 0)
+        return
+    }
     let {width, height} = containerSize()
     if (width === 0 || height === 0) return
     let transform = d3.zoomTransform(document.querySelector("#flow-container"))
@@ -794,6 +852,9 @@ function ensureZoom() {
             // clutter on a wide graph; hide the non-hot ones (see calc.css).
             nodesLayer.classList.toggle("small", t.k < 0.6)
         })
+    // A top-to-bottom graph doesn't pan or zoom: a drag scrolls the page.
+    // Otherwise d3-zoom's own default (no ctrl-drag, no right button).
+    zoomBehavior.filter(event => lastLayout?.direction !== "TB" && (!event.ctrlKey || event.type === "wheel") && !event.button)
     d3.select("#flow-container").call(zoomBehavior).on("dblclick.zoom", null)
 }
 
@@ -807,13 +868,15 @@ function renderColumns(laidOut) {
     let container = document.querySelector("#flow-columns")
     if (!container) return
     container.replaceChildren()
+    container.classList.toggle("tb", laidOut.direction === "TB")
     let lastRank = laidOut.columns.length - 1
     for (let col of laidOut.columns) {
         let stage = document.createElement("div")
         stage.className = "stage"
         stage.style.left = col.x + "px"
+        stage.style.top = col.y + "px"
         stage.style.width = col.w + "px"
-        stage.style.height = laidOut.height + "px"
+        stage.style.height = col.h + "px"
         let label = document.createElement("div")
         label.className = "stage-label"
         label.textContent = stageLabel(col.rank, lastRank)
@@ -927,9 +990,15 @@ function lineSwatch(color, dash) {
 // either side of it (see chipGap()).
 const BASE_COL_GAP = 96
 const CHIP_MARGIN = 32
-// fitToView()'s phone rule: narrower than this, never shrink below the scale.
-const PHONE_WIDTH = 600
-const MIN_PHONE_SCALE = 0.75
+// A top-to-bottom graph's least gap between rows, and its stage header strip.
+const BASE_ROW_GAP = 56
+const ROW_HEADER = 36
+// fitColumn()'s margin around a top-to-bottom graph and the least it
+// shrinks one, and where focusNode() scrolls a selected card to (px from
+// the top of the screen).
+const COLUMN_PAD = 8
+const MIN_COLUMN_SCALE = 0.75
+const FOCUS_TOP = 72
 // responsive.css's 1000px breakpoint, where the side card becomes a sheet.
 const SHEET_WIDTH = 1000
 const PLAIN_LABEL_H = 18
@@ -965,12 +1034,25 @@ function draw(totals) {
     // size dead.
     let ranks = rankNodes(model).rank
     ensureZoom()
-    document.querySelector("#flow-container")?.classList.toggle("graph-tight", tightGraph())
+    let direction = graphDirection()
+    let container = document.querySelector("#flow-container")
+    container?.classList.toggle("graph-tight", wrapChips())
+    container?.classList.toggle("graph-tb", direction === "TB")
+    // fitColumn() sizes the frame to a top-to-bottom graph; any other
+    // layout goes back to the stylesheet's height.
+    if (direction !== "TB") {
+        document.querySelector("#graph-frame")?.style.removeProperty("height")
+        document.querySelector("svg#flow")?.style.removeProperty("width")
+    }
     // Wide enough for any line's chip, decided once per solve (chipGap);
     // as tall as the module strip needs, decided once per solve too
     // (cardHeight). The strip is never part of a chip or of the machine
     // line answerOnCard swaps, so neither measurement changes on hover.
-    let laidOut = layered(model, {nodeWidth: 210, nodeHeight: cardHeight(model.nodes), ranks, colGap: chipGap(model.edges)})
+    let laidOut = layered(model, {
+        nodeWidth: 210, nodeHeight: cardHeight(model.nodes), ranks, direction,
+        colGap: chipGap(model.edges, direction),
+        ...(direction === "TB" ? {headerHeight: ROW_HEADER} : {}),
+    })
     lastLayout = laidOut
     focusUndo = []
     restoreLine = []
@@ -1041,6 +1123,7 @@ export function initFlow() {
         updateSelectionClasses()
         setLineHover(null)
         applyFocus()
+        if (lastLayout?.direction === "TB" && spec.whereItem !== null) focusNode(spec.whereItem)
     })
 
     // The container is hidden (0-size) until the view actually switches to
@@ -1059,19 +1142,19 @@ export function initFlow() {
         }
     })
 
-    // Crossing TIGHT_BELOW, or switching Display -> Layout, changes the
-    // column gap, which only a fresh layout can apply.
-    let redrawIfTightChanged = () => {
+    // Crossing TIGHT_BELOW or COLUMN_BELOW, or switching Display -> Layout,
+    // changes the gaps or the direction, which only a fresh layout applies.
+    let redrawIfLayoutChanged = () => {
         if (spec.view === "graph" && lastTotals && renderKey() !== lastDrawnKey) {
             draw(lastTotals)
             fitToView()
         }
     }
     window.addEventListener("resize", () => {
-        redrawIfTightChanged()
+        redrawIfLayoutChanged()
         if (needsFit) fitToView()
     })
-    document.addEventListener("calc:layout", redrawIfTightChanged)
+    document.addEventListener("calc:layout", redrawIfLayoutChanged)
     // This observer catches every way #flow-container's box changes size
     // (window resize is also covered by the listener above, but a
     // ResizeObserver additionally fires for layout-only changes with no
@@ -1082,5 +1165,5 @@ export function initFlow() {
             if (isFitted) fitToView()
         }).observe(container)
     }
-    document.querySelector("#flow-fit")?.addEventListener("click", () => fitToView({all: true}))
+    document.querySelector("#flow-fit")?.addEventListener("click", () => fitToView())
 }

@@ -73,6 +73,20 @@
     .detail { grid-template-columns: minmax(0, 1fr); padding: 10px; gap: 14px; }
     #modules-bar { padding: 8px 10px; }
 
+    /* The graph runs top to bottom here (flow.js's graphDirection()): one
+       stage per row, its label at the row's top left, the frame as tall as
+       the plan so a drag scrolls the page rather than panning the graph. */
+    #flow-container.graph-tb { touch-action: pan-x pan-y; cursor: default; overflow-x: auto; overflow-y: hidden; }
+    #flow-container.graph-tb + #flow-fit { display: none; }
+    #flow-columns.tb .stage { box-shadow: inset 0 1px 0 rgba(255, 230, 192, 0.06); }
+    #flow-columns.tb .stage-label, #flow-columns.tb .stage-sub { left: 10px; right: 10px; text-align: left; }
+    /* The tall frame scrolls with the page, so the details sheet is pinned
+       to the screen rather than to the frame's bottom. */
+    #graph-side { position: fixed; max-height: 60vh; z-index: 40; }
+    /* ...and while it's open the page gets that much room underneath, so
+       the last cards can still scroll up above it (flow.js's focusNode()). */
+    #page:has(#graph-side:not([hidden])) { padding-bottom: 60vh; }
+
 
     #settings-panel { padding: 10px; }
     #settings-panel > .titlebar { top: -10px; margin: -10px -10px 0; padding: 10px; }

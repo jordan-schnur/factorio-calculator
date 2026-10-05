@@ -164,8 +164,20 @@ function pinSinks(ids, rank, rankEdges) {
 // ranks every node instead of recursing forever. Column 0 is everything
 // brought in (sources); the last column is every sink (targets and anything
 // else nothing consumes), pinned there even if its longest path is shorter.
-export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 10, rowGap = 22, colGap = 96, headerHeight = 46, ranks = null} = {}) {
-    if (model.nodes.length === 0) return {nodes: [], edges: [], columns: [], width: 0, height: 0}
+//
+// direction "TB" lays the same ranks out top to bottom instead (a phone's
+// graph): each rank is a row, its cards side by side, with a headerHeight
+// strip above them for the stage label. Steps 1-4 never see the direction;
+// placement works in rank ("main") and across-rank ("cross") coordinates
+// and toXY() turns them into x/y at the end. colGap is the gap between
+// ranks and rowGap the gap between cards in a rank, whichever way they run.
+export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 10, rowGap = 22, colGap = 96, headerHeight = 46, ranks = null, direction = "LR"} = {}) {
+    if (model.nodes.length === 0) return {nodes: [], edges: [], columns: [], width: 0, height: 0, direction}
+    const tb = direction === "TB"
+    // A card's length along the ranks and across them.
+    const mainSize = tb ? nodeHeight : nodeWidth
+    const crossSize = tb ? nodeWidth : nodeHeight
+    const toXY = (m, c) => tb ? [c, m] : [m, c]
     const ids = model.nodes.map(n => n.id)
     const nodeById = new Map(model.nodes.map(n => [n.id, n]))
 
@@ -189,7 +201,7 @@ export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 
     for (let c = 0; c < ncols; c++) cols.push([])
     const items = new Map()
     for (const id of ids) {
-        const it = {id, col: rank.get(id), h: nodeHeight, real: true, left: [], right: []}
+        const it = {id, col: rank.get(id), h: crossSize, real: true, left: [], right: []}
         items.set(id, it)
         cols[it.col].push(it)
     }
@@ -238,7 +250,11 @@ export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 
         }
     }
 
-    // 5. Placement: stack each column with rowGap, centred on the tallest column.
+    // 5. Placement: stack each rank with rowGap, centred on the longest
+    // rank. `h` is an item's length across the ranks (a dummy's is
+    // dummyHeight); main is where its rank starts along them. LR keeps the
+    // header above every column on the cross axis; TB gives each rank row
+    // its own header strip on the main axis.
     let maxColH = 0
     for (const col of cols) {
         let h = 0
@@ -247,19 +263,25 @@ export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 
         col.h = h
         maxColH = Math.max(maxColH, h)
     }
+    const crossStart = tb ? 0 : headerHeight
+    const pitch = mainSize + colGap + (tb ? headerHeight : 0)
+    const mainStart = c => c * pitch + (tb ? headerHeight : 0)
     cols.forEach((col, c) => {
-        let y = headerHeight + (maxColH - col.h) / 2
+        let y = crossStart + (maxColH - col.h) / 2
         for (const it of col) {
-            it.x = c * (nodeWidth + colGap)
-            it.y = y
-            it.cy = y + it.h / 2
+            it.m = mainStart(c)
+            it.c = y
+            it.cc = y + it.h / 2
+            ;[it.x, it.y] = toXY(it.m, it.c)
             y += it.h + rowGap
         }
     })
-    const width = ncols ? ncols * nodeWidth + (ncols - 1) * colGap : 0
-    const height = headerHeight + maxColH
+    const mainLength = ncols ? ncols * pitch - colGap : 0
+    const crossLength = crossStart + maxColH
+    const [width, height] = tb ? [crossLength, mainLength] : [mainLength, crossLength]
 
-    // 6. Column headers: the distinct kinds present, in first-seen order.
+    // 6. Stage headers: the distinct kinds present, in first-seen order. A
+    // stage is a column (LR) or a row with its header strip (TB).
     const kindOf = (n) => {
         if (n.kind === "input") return "brought in"
         if (n.kind === "mined") return n.machine && n.machine.key && n.machine.key.includes("pump") ? "pipes" : "drills"
@@ -276,7 +298,10 @@ export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 
             const k = kindOf(nodeById.get(it.id))
             if (!kinds.includes(k)) kinds.push(k)
         }
-        return {rank: c, x: c * (nodeWidth + colGap), w: nodeWidth, kinds}
+        const band = tb
+            ? {x: 0, y: c * pitch, w: width, h: headerHeight + mainSize}
+            : {x: c * pitch, y: 0, w: nodeWidth, h: height}
+        return {rank: c, ...band, kinds}
     })
 
     // 7. Node output: original model fields plus layout geometry.
@@ -286,31 +311,34 @@ export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 
     })
 
     // 8. Edge paths: a polyline through any dummy points, straight (L) inside
-    // a dummy column, cubic (C) between columns.
+    // a dummy's rank, cubic (C) between ranks, built along the main axis and
+    // turned into x/y by toXY().
     const edges = chains.map(({seq, edge}) => {
         const pts = []
         seq.forEach((it, i) => {
-            if (i === 0) pts.push([it.x + nodeWidth, it.cy])
-            else if (i === seq.length - 1) pts.push([it.x, it.cy])
-            else { pts.push([it.x, it.cy]); pts.push([it.x + nodeWidth, it.cy]) }
+            if (i === 0) pts.push([it.m + mainSize, it.cc])
+            else if (i === seq.length - 1) pts.push([it.m, it.cc])
+            else { pts.push([it.m, it.cc]); pts.push([it.m + mainSize, it.cc]) }
         })
-        let d = "M" + pts[0][0] + " " + pts[0][1]
+        const xy = ([m, c]) => toXY(m, c).join(" ")
+        let d = "M" + xy(pts[0])
         for (let i = 1; i < pts.length; i++) {
-            const [xa, ya] = pts[i - 1]
-            const [xb, yb] = pts[i]
-            if (ya === yb) d += " L" + xb + " " + yb
-            else { const mx = (xa + xb) / 2; d += " C" + mx + " " + ya + " " + mx + " " + yb + " " + xb + " " + yb }
+            const [ma, ca] = pts[i - 1]
+            const [mb, cb] = pts[i]
+            if (ca === cb) d += " L" + xy(pts[i])
+            else { const mm = (ma + mb) / 2; d += " C" + xy([mm, ca]) + " " + xy([mm, cb]) + " " + xy([mb, cb]) }
         }
+        const [lx, ly] = toXY(pts[0][0] + colGap / 2, (pts[0][1] + pts[1][1]) / 2)
         return {
             ...edge,
             d,
-            lx: pts[0][0] + colGap / 2,
-            ly: (pts[0][1] + pts[1][1]) / 2,
-            points: pts,
+            lx,
+            ly,
+            points: pts.map(([m, c]) => toXY(m, c)),
         }
     })
 
-    return {nodes, edges, columns, width, height}
+    return {nodes, edges, columns, width, height, direction}
 }
 
 // "assembler" | "furnace" | "drill" | "chem plant" | the building's own name lower-cased
@@ -370,7 +398,12 @@ export function cardHeight(nodes) {
     return nodes.some(n => n.machine && n.machine.moduleSlots > 0) ? CARD_HEIGHT_WITH_MODULES : CARD_HEIGHT
 }
 
-export function stackLabels(labels, gap = 4) {
+//
+// axis "x" does the same sideways, for a top-to-bottom graph whose chips
+// share a row gap: grouped by y, spread along x by width w, and the Map
+// holds new centre x values.
+export function stackLabels(labels, gap = 4, axis = "y") {
+    if (axis === "x") return stackLabels(labels.map(l => ({id: l.id, x: l.y, y: l.x, h: l.w})), gap)
     const out = new Map()
     const groups = new Map()
     for (const l of labels) {
