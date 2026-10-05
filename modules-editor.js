@@ -13,11 +13,10 @@
 // across those re-renders; picking a slot or flipping the radio re-renders
 // only the editor. Styles: calc/modules-editor.css.
 import { spec } from "./factory.js"
-import { isOwnHash } from "./fragment.js"
 import { sprites } from "./icon.js"
 import { beaconData } from "./module.js"
 import {
-    beaconWhyNot, effectsOf, kindOf, moduleFor, moduleLabel, num, paletteRows, percentWords,
+    MAX_BEACONS, beaconWhyNot, effectsOf, kindOf, moduleFor, moduleLabel, num, paletteRows, percentWords,
     powerWords, resolveModules, rowMachines, tierOf, whyNot,
 } from "./modules-core.js"
 import { handTag } from "./modules-strip.js"
@@ -25,7 +24,6 @@ import { beaconPowerMultiplier, isNormal, tierOf as qualityTier } from "./qualit
 import { addQualityBadge, tierPicker, withQualityBadge } from "./quality-ui.js"
 import { RATE_LABEL } from "./table-core.js"
 
-const MAX_BEACONS = 16
 // A module going into a beacon slot while the count is 0 brings this many
 // beacons, Settings' rule for the plan (modules-settings.js's pickBeacon).
 const FIRST_BEACONS = 8
@@ -41,16 +39,13 @@ const selection = new Map()
 // editing the plan rather than resetting on every re-render -- until the
 // row closes: cleared wholesale on "calc:select" (dispatched only when the
 // open/selected row changes, never by an edit inside this editor), so
-// reopening any row re-seeds it fresh. Also cleared when Back/Forward or a
-// pasted link reloads the page from the fragment (init.js's hashchange
-// listener), which never fires "calc:select".
+// reopening any row re-seeds it fresh. Also cleared on "calc:reload", when
+// the page reloads itself from the fragment: Back/Forward, a pasted link,
+// or a write of its own through init.js's navigateToHash ("Restore the last
+// factory", a save merge), none of which fires "calc:select".
 const chosenTarget = new Map()
 document.addEventListener("calc:select", () => chosenTarget.clear())
-window.addEventListener("hashchange", () => {
-    if (!isOwnHash(window.location.hash)) {
-        chosenTarget.clear()
-    }
-})
+document.addEventListener("calc:reload", () => chosenTarget.clear())
 
 // Mount key -> the quality tier the next picked module goes in at (the
 // "Module quality" picker above the palette, calculator 1.3.0). Normal
@@ -192,6 +187,7 @@ function pick(opts, module) {
     let entry = currentEntry(opts, target)
     let sel = selection.get(key)
     let tier = module ? nextTier(opts) : "normal"
+    let beaconsEmpty = !entry.beaconModules[0] && !entry.beaconModules[1]
     if (sel && sel.kind === "beacon") {
         if (target === "plan") {
             entry.beaconModules = [module, module]
@@ -200,7 +196,9 @@ function pick(opts, module) {
             entry.beaconModules[sel.index] = module
             entry.beaconModuleTiers[sel.index] = tier
         }
-        if (module && entry.beaconCount === 0) {
+        // Only the first module into empty beacons brings them; a swap
+        // keeps a count the player set to 0.
+        if (module && beaconsEmpty && entry.beaconCount === 0) {
             entry.beaconCount = FIRST_BEACONS
         }
     } else if (sel && sel.kind === "slot" && target !== "plan") {

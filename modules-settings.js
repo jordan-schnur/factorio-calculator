@@ -8,12 +8,11 @@
 // calc/modules-settings.css.
 import { spec } from "./factory.js"
 import { mountModuleEditor } from "./modules-editor.js"
-import { moduleFor, num, planFromStrategy, strategyOf, summarySentence, withKind } from "./modules-core.js"
+import { MAX_BEACONS, moduleFor, num, planFromStrategy, strategyOf, summarySentence, withKind } from "./modules-core.js"
 import { beaconBadge, moduleStrip } from "./modules-strip.js"
 import { addQualityBadge, tierPicker } from "./quality-ui.js"
 import { registerRenderer } from "./render.js"
 
-const MAX_BEACONS = 16
 const KINDS = [["none", "None"], ["productivity", "Productivity"], ["speed", "Speed"], ["efficiency", "Efficiency"]]
 const FALLBACKS = [["speed", "Speed"], ["efficiency", "Efficiency"], ["none", "Leave empty"]]
 const BEACONS = [["none", "None"], ["speed", "Speed"], ["efficiency", "Efficiency"]]

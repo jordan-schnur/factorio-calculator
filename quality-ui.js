@@ -53,6 +53,29 @@ export function withQualityBadge(icon, tierKey, size) {
     return addQualityBadge(wrap, tierKey, size)
 }
 
+function pickersLabelled(label) {
+    return [...document.querySelectorAll(".tierpick")].filter(p => p.getAttribute("aria-label") === label)
+}
+
+// A pick usually re-renders the picker's panel, which drops the button that
+// had keyboard focus. Focus the same tier on the picker that replaced it:
+// the one with the same label at the same place on the page. Tried at once
+// and again after the renders a pick queues.
+function refocus(old, label, index, tierKey) {
+    let attempt = () => {
+        if (old.isConnected) {
+            return
+        }
+        let picker = pickersLabelled(label)[index]
+        let button = picker && picker.querySelector(`button[data-tier="${tierKey}"]`)
+        if (button && !picker.contains(document.activeElement)) {
+            button.focus()
+        }
+    }
+    attempt()
+    setTimeout(attempt, 0)
+}
+
 // Five buttons, normal to legendary, each the tier's icon; the current one
 // lit the way calc.css lights a .seg button. A click never reaches the
 // row or card underneath (stopPropagation), then calls onPick(tierKey).
@@ -81,7 +104,12 @@ export function tierPicker(current, onPick, {label = "Quality", id = null} = {})
         button.appendChild(img)
         button.addEventListener("click", event => {
             event.stopPropagation()
+            let focused = wrap.contains(document.activeElement)
+            let index = pickersLabelled(label).indexOf(wrap)
             onPick(tier.key)
+            if (focused) {
+                refocus(wrap, label, index, tier.key)
+            }
         })
         wrap.appendChild(button)
     }

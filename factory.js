@@ -604,7 +604,7 @@ class FactorySpecification {
     initModuleSpec(recipe, building) {
         if (!this.spec.has(recipe) && building !== null && building.canBeacon()) {
             let m = new ModuleSpec(recipe, this)
-            m.applyResolved(building, this.resolveFor(recipe, building))
+            m.applyResolved(building, this.bareModules ? BARE_MODULES : this.resolveFor(recipe, building))
             this.spec.set(recipe, m)
             return m
         }
@@ -829,6 +829,25 @@ class FactorySpecification {
         }
         return parts.join(",")
     }
+    // Runs `count` against the plan as it would be with no modules or
+    // beacons in any machine (the footer's "Without modules" line): empty
+    // ModuleSpecs stand in for every row while `count` solves and counts,
+    // then the real ones, and everything solve() writes, are put back.
+    // Machine quality and a machine's own productivity still count.
+    withoutModules(count) {
+        let saved = [this.spec, this.targetNotes, this.lastTableau, this.lastMetadata, this.lastPartial, this.lastSolution]
+        let ignored = new Set(this.ignore)
+        this.spec = new Map()
+        this.bareModules = true
+        try {
+            return count()
+        } finally {
+            this.bareModules = false
+            for (let item of [...this.ignore]) if (!ignored.has(item)) this.toggleIgnore(item)
+            for (let item of ignored) if (!this.ignore.has(item)) this.toggleIgnore(item)
+            ;[this.spec, this.targetNotes, this.lastTableau, this.lastMetadata, this.lastPartial, this.lastSolution] = saved
+        }
+    }
     // Runs `change` (any of the layer edits above, or a machine's quality),
     // then re-solves when solveInputs() moved -- productivity changes the
     // recipe ratios the solver works out, burner fuel its coal -- and
@@ -1025,6 +1044,16 @@ class FactorySpecification {
     display() {
         renderAll(this, this.lastTotals)
     }
+}
+
+// What withoutModules() puts in every machine.
+const BARE_MODULES = {
+    modules: [],
+    moduleTiers: [],
+    beaconModules: [null, null],
+    beaconModuleTiers: ["normal", "normal"],
+    beaconCount: zero,
+    beaconTier: "normal",
 }
 
 export function resetSpec() {

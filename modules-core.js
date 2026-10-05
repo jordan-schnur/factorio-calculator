@@ -26,6 +26,20 @@ const WORD = {speed: "speed", productivity: "productivity", quality: "quality", 
 
 const KIND_LABEL = {productivity: "Productivity", speed: "Speed", efficiency: "Efficiency", quality: "Quality"}
 
+// The most beacons the page lets one machine have, in a link or the
+// editors' steppers.
+export const MAX_BEACONS = 16
+
+// A beacon count from a link, as a whole number 0 to MAX_BEACONS. Kirk's
+// calculator took fractions (an average over shared beacons) and any size:
+// a fraction rounds to the nearest whole beacon and a count above the
+// limit is clamped to it. Anything that isn't a number reads as 0, the
+// same backstop as an unknown module key.
+export function beaconCountFrom(text) {
+    let n = /^\d+(\.\d+)?$/.test(String(text ?? "")) ? Number(text) : 0
+    return Math.min(MAX_BEACONS, Math.round(n))
+}
+
 // The palette's row order.
 export const KINDS = ["productivity", "speed", "efficiency", "quality"]
 

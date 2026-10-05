@@ -345,7 +345,13 @@ html:not([data-companion="yes"]) .needs-companion { display: none !important; }
 #belt_selector, #fuel_selector { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
 /* one span.radio per planet, run together with no gap between one planet's
    name and the next planet's checkbox. */
-#planet_selector { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+/* The planet picker in the top bar: one icon button per planet, the
+   planets the plan builds on lit; the name of the lit ones beside it. */
+#planet_setting_row { display: flex; align-items: center; gap: 8px; }
+#planet_setting_row[hidden] { display: none; }
+.planet-seg button { padding: 3px 5px; line-height: 0; }
+.planet-seg button .icon { display: block; }
+#planet-name { font-weight: 700; white-space: nowrap; }
 .adv summary { cursor: pointer; }
 #targets { list-style-type: none; margin: 0; padding: 0; }
 #target-search, #scratch-input { width: 100%; box-sizing: border-box; }

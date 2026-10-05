@@ -20,7 +20,7 @@ import { Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { markOverride, clearOverrides } from "./savesettings.js"
 import { excludedMachines, parseRecipeMachines } from "./machines-core.js"
-import { canBeacon, canUse, parseModuleList } from "./modules-core.js"
+import { beaconCountFrom, canBeacon, canUse, parseModuleList } from "./modules-core.js"
 import { parseMachineQuality, qualityFromSave, splitModuleToken, tierOf as qualityTier } from "./quality-core.js"
 import { addQualityBadge, tierPicker } from "./quality-ui.js"
 import { sorted } from "./sort.js"
@@ -196,23 +196,17 @@ function getModuleToken(token) {
     return {module, tier: module === null ? "normal" : tier}
 }
 
-const MAX_BEACONS = 16
-
-// A beacon count from a link: a whole number 0-16. Anything else reads as
-// 0, the same backstop as an unknown module key, so a bad link can't stop
-// the page from rendering.
-function parseBeaconCount(text, max = MAX_BEACONS) {
-    let n = /^\d+$/.test(text ?? "") ? Number(text) : NaN
-    return n <= max ? Rational.from_float(n) : zero
+// A beacon count from a link (modules-core.js' beaconCountFrom).
+function parseBeaconCount(text) {
+    return Rational.from_float(beaconCountFrom(text))
 }
 
 // Kirk's legacy one-module beacon form, "module:count": an even count
 // means that module in both slots and half the count.
 function legacyBeaconCount(text) {
-    let n = /^\d+$/.test(text) ? Number(text) : 0
+    let n = /^\d+(\.\d+)?$/.test(text) ? Number(text) : 0
     let both = n % 2 === 0
-    let count = both ? n / 2 : n
-    return {both, count: count <= MAX_BEACONS ? Rational.from_float(count) : zero}
+    return {both, count: parseBeaconCount(String(both ? n / 2 : n))}
 }
 
 // NOTE: Buildings must be configured before modules! And the plan (dm,
@@ -829,13 +823,63 @@ function renderMachineQuality(settings) {
     spec.setMachineQualityMap(parseMachineQuality(settings.get("mq")))
 }
 
+// The planet picker in the top bar (calc.html's #planet_setting_row): an
+// icon button per planet, lit for each the plan builds on, and their names
+// beside it. A click plans for that one planet; shift-click adds or drops
+// one, for a plan spread over several.
+function renderPlanetPicker(havePlanets) {
+    let picker = document.getElementById("planet_selector")
+    let nameSpan = document.getElementById("planet-name")
+    picker.replaceChildren()
+    nameSpan.textContent = ""
+    if (!havePlanets) {
+        return
+    }
+    let planets = sorted(spec.planets.values(), p => p.order)
+    let refresh = () => {
+        for (let button of picker.children) {
+            let on = spec.selectedPlanets.has(spec.planets.get(button.dataset.planet))
+            button.classList.toggle("on", on)
+            button.setAttribute("aria-pressed", String(on))
+        }
+        nameSpan.textContent = planets.filter(p => spec.selectedPlanets.has(p)).map(p => p.name).join(" + ")
+    }
+    for (let planet of planets) {
+        let button = document.createElement("button")
+        button.type = "button"
+        button.dataset.planet = planet.key
+        button.title = `${planet.name} (shift-click to plan across more than one planet)`
+        button.setAttribute("aria-label", planet.name)
+        button.appendChild(planet.icon.make(20, true))
+        button.addEventListener("click", event => {
+            if (event.shiftKey) {
+                if (!spec.selectedPlanets.has(planet)) {
+                    spec.selectPlanet(planet)
+                } else if (spec.selectedPlanets.size > 1) {
+                    spec.unselectPlanet(planet)
+                }
+            } else {
+                spec.selectOnePlanet(planet)
+            }
+            refresh()
+            d3.selectAll("#recipe_toggles .toggle")
+                .classed("selected", d => !spec.disable.has(d))
+            syncMachinesToPlanet()
+            syncQualityToPlanet()
+            markOverride("planet")
+            spec.updateSolution()
+        })
+        picker.appendChild(button)
+    }
+    refresh()
+}
+
 // recipe disabling
 
 function renderRecipes(settings) {
     let havePlanets = spec.planets && spec.planets.size > 1
-    let planetRow = d3.select("#planet_setting_row")
+    let planetRow = document.getElementById("planet_setting_row")
     if (havePlanets) {
-        planetRow.style("display", null)
         let planetKeys = []
         if (settings.has("planet")) {
             let s = settings.get("planet")
@@ -850,9 +894,8 @@ function renderRecipes(settings) {
                 spec.selectPlanet(spec.planets.get(key))
             }
         }
-    } else {
-        planetRow.style("display", "none")
     }
+    planetRow.hidden = !havePlanets
 
     if (settings.has("disable") || settings.has("enable")) {
         if (settings.has("disable")) {
@@ -877,43 +920,7 @@ function renderRecipes(settings) {
         spec.setDefaultDisable()
     }
 
-    let planetDiv = d3.select("#planet_selector")
-    planetDiv.selectAll("*").remove()
-    if (havePlanets) {
-        let planets = sorted(spec.planets.values(), p => p.order)
-        planetDiv.selectAll("span.radio")
-            .data(planets)
-            .join("span")
-                .attr("class", "radio")
-                .style("cursor", "pointer")
-                .each(function(d) {
-                    d3.select(this).append("span")
-                        .classed("check", true)
-                        .text(spec.selectedPlanets.has(d) ? "✓" : "")
-                    d3.select(this).append(() => new Text(" " + d.name))
-                })
-                .on("click", function(event, d) {
-                    if (event.shiftKey) {
-                        event.preventDefault()
-                        let selected = spec.selectedPlanets.has(d)
-                        if (selected) {
-                            spec.unselectPlanet(d)
-                        } else {
-                            spec.selectPlanet(d)
-                        }
-                    } else {
-                        spec.selectOnePlanet(d)
-                    }
-                    d3.selectAll("#planet_selector span.check")
-                        .text(dd => spec.selectedPlanets.has(dd) ? "✓" : "")
-                    d3.selectAll("#recipe_toggles .toggle")
-                        .classed("selected", d => !spec.disable.has(d))
-                    syncMachinesToPlanet()
-                    syncQualityToPlanet()
-                    markOverride("planet")
-                    spec.updateSolution()
-                })
-    }
+    renderPlanetPicker(havePlanets)
 
     let allGroups = getRecipeGroups(new Set(spec.recipes.values()))
     let groups = []

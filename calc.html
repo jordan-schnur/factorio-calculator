@@ -78,6 +78,7 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
 <div id="page">
   <div class="frame" id="topbar">
     <span class="title">Factorio Calculator</span>
+    <div id="planet_setting_row" hidden><span class="muted">Planet</span><div class="seg planet-seg" id="planet_selector" role="group" aria-label="Planet"></div><span id="planet-name"></span></div>
     <span class="muted needs-companion" id="save-line"></span>
     <select id="save-picker" class="needs-companion"></select>
     <span id="save-status" class="muted needs-companion"></span>
@@ -123,6 +124,7 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
 
   <div class="frame" id="footer">
     <span class="num" id="footer-totals"></span>
+    <span class="muted num" id="footer-bare" hidden></span>
     <div class="spacer"></div>
     <span class="muted" id="footer-bring"></span>
     <span id="footer-sendout" hidden></span>
@@ -158,7 +160,6 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
 
         <div class="sec">Recipes</div>
         <div class="deep">
-          <div class="kv" id="planet_setting_row"><span class="muted" style="width: 110px;">Planets</span><div id="planet_selector"></div></div>
           <div class="kv"><span class="muted" style="width: 110px;">Preferred fuel</span><span id="fuel_selector" class="radio-setting"></span></div>
           <span class="muted">Which recipe makes each item is picked on its row in the table.</span>
         </div>

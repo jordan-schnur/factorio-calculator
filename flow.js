@@ -559,7 +559,9 @@ function answerOnCard(nodeId, recipe, machines, verb, undo = restoreLine) {
     let node = [...document.querySelectorAll("#flow-nodes .node")].find(n => n.dataset.node === nodeId)
     let sub = node && node.querySelector(".sub")
     if (!sub) return
-    swapChildren(sub, [spec.getBuilding(recipe).icon.make(16, true), textSpan(machineWords(machines, verb))], "answer", undo)
+    let building = spec.getBuilding(recipe)
+    let icon = withQualityBadge(building.icon.make(16, true), spec.machineTier(building), 9)
+    swapChildren(sub, [icon, textSpan(machineWords(machines, verb))], "answer", undo)
     if (!node.classList.contains("answering")) {
         node.classList.add("answering")
         if (undo) undo.push(() => node.classList.remove("answering"))

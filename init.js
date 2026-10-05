@@ -65,6 +65,9 @@ export function reloadFromHash() {
     // Counted so the page tests can prove our own setHash() writes never
     // bounce back through the hashchange listener as a reload.
     window.__calcReloads = (window.__calcReloads || 0) + 1
+    // Page state that outlives a solve but not a reload (modules-editor.js's
+    // "Use these modules for" choice) clears on this.
+    document.dispatchEvent(new Event("calc:reload"))
     let settings = loadSettings(window.location.hash)
     resetSpec()
     applyPageState(settings)
