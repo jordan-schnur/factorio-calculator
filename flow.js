@@ -15,7 +15,8 @@ import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, l
 import { beaconBadge, moduleStrip } from "./modules-strip.js"
 import { withQualityBadge } from "./quality-ui.js"
 import { RATE_LABEL } from "./table-core.js"
-import { isMultiOutput, outputsOf } from "./byproduct-core.js"
+import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
+import { showByproducts } from "./byproducts.js"
 import { linkMachines } from "./details.js"
 import { beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
 import { tierWord } from "./colorblind.js"
@@ -77,6 +78,9 @@ function nodeRate(totals, node, itemKey) {
     return (producerMap && producerMap.get(recipe)) || zero
 }
 
+const LEFT_OVER = "__leftover"
+const SEND_OUT = "__sendout"
+
 function buildModel(totals) {
     let isTargetRecipe = new Set()
     for (let [recipe] of totals.rates) {
@@ -106,17 +110,30 @@ function buildModel(totals) {
         }
     })
 
-    // Drop links into/out of those same sentinels: they have no `.key`, so
-    // they can't be represented as a flow-core node or link endpoint. `from`
-    // may legitimately be `null` (flow-core's own "no producer" case), so
-    // check that before touching `.key`.
+    // What the solver leaves over runs into a sink card in the last column:
+    // "Left over" (the Byproducts bar's problem) or "Send out" (sent out on
+    // purpose, the mirror of a Bring in card).
+    let sinkOf = item => spec.sendOut.has(item.key) ? SEND_OUT : LEFT_OVER
+    for (let item of totals.surplus.keys()) {
+        let key = sinkOf(item)
+        if (!recipes.some(r => r.key === key)) {
+            recipes.push({key, name: key === SEND_OUT ? "Send out" : "Left over", isReal: true, isDisable: false,
+                isResource: false, isTarget: false, sink: true, count: 0, machine: null})
+        }
+    }
+
+    // Drop links into/out of the other sentinels (the target's OutputRecipe):
+    // they have no `.key`, so they can't be a flow-core node or link endpoint.
+    // `from` may legitimately be `null` (flow-core's own "no producer" case),
+    // so check that before touching `.key`.
+    let isSurplus = to => to.key === undefined && to.name === "surplus"
     let links = totals.proportionate
-        .filter(({from, to}) => (from === null || from.key !== undefined) && to.key !== undefined)
+        .filter(({from, to}) => (from === null || from.key !== undefined) && (to.key !== undefined || isSurplus(to)))
         .map(({item, from, to, rate}) => ({
             item: item.key,
             itemName: item.name,
             from: from === null ? null : from.key,
-            to: to.key,
+            to: isSurplus(to) ? sinkOf(item) : to.key,
             rate: rate.toFloat(),
             rateExact: rate,
             belts: item.phase === "solid" ? spec.getBeltCount(rate).toFloat() : 0,
@@ -159,6 +176,64 @@ function cardModules(recipe, node) {
     return line
 }
 
+// Recipes the Byproducts bar has a block for; set by draw().
+let stalledNow = new Set()
+
+const MARKER_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3z"></path><path d="M12 10v5"></path></svg>'
+
+// "backs up" on a card whose recipe would stop: scrolls to the Byproducts
+// bar instead of selecting the card.
+function backsUpMarker() {
+    let marker = document.createElement("span")
+    marker.className = "bp-marker"
+    marker.title = "Something it makes has nowhere to go: see the fixes above"
+    marker.innerHTML = MARKER_SVG
+    marker.appendChild(document.createTextNode("backs up"))
+    marker.addEventListener("click", event => {
+        event.stopPropagation()
+        event.preventDefault()
+        showByproducts()
+    })
+    return marker
+}
+
+// The Left over / Send out card: what runs into it, how many things.
+function sinkCard(node, div, body) {
+    let out = node.id === SEND_OUT
+    div.classList.add("sink", out ? "out" : "left")
+    let items = [...new Set((lastLayout ? lastLayout.edges : []).filter(e => e.target === node.id).map(e => e.item))]
+        .map(key => spec.items.get(key)).filter(Boolean)
+    let slot = document.createElement("span")
+    slot.className = "slot slot-sm"
+    let tank = spec.items.get("storage-tank") || items[0]
+    if (tank) slot.appendChild(tank.icon.make(20, true))
+    body.appendChild(slot)
+    let mid = document.createElement("span")
+    mid.className = "mid"
+    let name = document.createElement("span")
+    name.className = "name"
+    name.textContent = node.label
+    mid.appendChild(name)
+    let sub = document.createElement("span")
+    sub.className = "sub"
+    sub.textContent = out ? "To storage or another build" : "Nothing here uses it"
+    mid.appendChild(sub)
+    body.appendChild(mid)
+    let right = document.createElement("span")
+    right.className = "right outs"
+    let icons = document.createElement("span")
+    icons.className = "out-icons"
+    for (let item of items) {
+        let icon = item.icon.make(14, true)
+        icon.title = item.name
+        icons.appendChild(icon)
+    }
+    right.appendChild(icons)
+    if (!out) right.appendChild(backsUpMarker())
+    body.appendChild(right)
+    if (!out) body.addEventListener("click", () => showByproducts())
+}
+
 function nodeMarkup(node) {
     let item = node.itemKey ? spec.items.get(node.itemKey) : null
 
@@ -179,9 +254,16 @@ function nodeMarkup(node) {
     body.type = "button"
     body.className = "nbody"
 
+    if (node.kind === "sink") {
+        sinkCard(node, div, body)
+        div.appendChild(body)
+        div.addEventListener("mouseenter", () => hoverIntent(() => showCardHover(node.id)))
+        div.addEventListener("mouseleave", () => hoverIntent(null))
+        return div
+    }
+
     let recipe = node.kind === "input" ? null : spec.recipes.get(node.id)
-    let outputs = recipe && lastDrawnTotals ? outputsOf(lastDrawnTotals, recipe) : null
-    let multi = outputs !== null && isMultiOutput(recipe)
+    let multi = Boolean(recipe && lastDrawnTotals && isMultiOutput(recipe))
 
     let slot = document.createElement("span")
     slot.className = "slot slot-sm"
@@ -196,8 +278,8 @@ function nodeMarkup(node) {
     // A single-product recipe's card is titled by its item (e.g. "Petroleum gas"),
     // not the recipe name, which can run long and get clipped ("Light oil
     // cracking to…"). Multi-product recipes (advanced oil processing, coal
-    // liquefaction) keep the recipe name, with the recipe's icon and every
-    // output's rate on the right.
+    // liquefaction) keep the recipe name and icon, with an icon per output on
+    // the right.
     if (recipe && spec.handSet.has(recipe.key)) div.classList.add("hand")
     let title = node.label
     if (item && recipe && recipe.products.length === 1) title = item.name
@@ -222,18 +304,24 @@ function nodeMarkup(node) {
     let right = document.createElement("span")
     right.className = "right"
     let unit = RATE_LABEL[spec.format.rateName] || "/min"
+    let stalled = recipe !== null && stalledNow.has(recipe)
     if (multi) {
         // Every output, not just the first: the refinery stops when any one
-        // of them backs up, so a card that says only "heavy oil" hides two
-        // thirds of what has to leave it.
+        // of them backs up. Their rates are in the side panel and on the lines.
         right.classList.add("outs")
-        for (let out of outputs) {
-            let line = document.createElement("span")
-            line.className = "out num" + (out.leftover.isZero() ? "" : " left")
-            line.title = out.item.name
-            line.appendChild(out.item.icon.make(14, true))
-            line.appendChild(document.createTextNode(`${spec.format.rate(out.rate)}${unit}`))
-            right.appendChild(line)
+        let icons = document.createElement("span")
+        icons.className = "out-icons"
+        for (let {item: out} of outputsOf(lastDrawnTotals, recipe)) {
+            let icon = out.icon.make(14, true)
+            icon.title = out.name
+            icons.appendChild(icon)
+        }
+        right.appendChild(icons)
+        if (!stalled) {
+            let count = document.createElement("span")
+            count.className = "rate num"
+            count.textContent = `${recipe.products.length} outputs`
+            right.appendChild(count)
         }
     } else {
         let rateSpan = document.createElement("span")
@@ -245,13 +333,8 @@ function nodeMarkup(node) {
         rateSpan.textContent = `${spec.format.rate(node.rate)}${unit}`
         right.appendChild(rateSpan)
     }
+    if (stalled) right.appendChild(backsUpMarker())
     body.appendChild(right)
-    let left = (outputs || []).filter(out => !out.leftover.isZero())
-    if (left.length > 0) {
-        div.classList.add("leftover")
-        let words = left.map(out => `${out.item.name.toLowerCase()} ${spec.format.rate(out.leftover)}${unit}`)
-        div.title = `Left over: ${words.join(", ")}. Nothing here uses it, so it backs up and these machines stop.`
-    }
 
     body.addEventListener("click", event => {
         // d3-zoom sets defaultPrevented on the click that ends a drag, so a
@@ -837,6 +920,7 @@ function draw(totals) {
     lastDrawnKey = renderKey()
 
     let model = buildModel(totals)
+    stalledNow = new Set(stalls(totals, spec.sendOut).map(b => b.recipe).filter(Boolean))
 
     // 210x58: the prototype's .gcard size, which calc.css's .node now
     // matches exactly -- these are the inline width/height nodeMarkup()

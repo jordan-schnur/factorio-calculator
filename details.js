@@ -387,7 +387,6 @@ function buildGoesToCol(rows, item, totals, isTarget) {
 // backs up, so a leftover is a plan that won't run as drawn.
 function buildMakesCol(rows, row, totals) {
     let children = [lbl("Makes")]
-    let building = spec.getBuilding(row.recipe)
     for (let { item, rate, leftover } of outputsOf(totals, row.recipe)) {
         let head = drow(item.icon, item.name, null, numSpan(rateText(rate)))
         head.classList.add("out-head")
@@ -403,8 +402,9 @@ function buildMakesCol(rows, row, totals) {
             children.push(to)
         }
         if (!leftover.isZero()) {
-            let machines = building ? ` every ${building.name.toLowerCase()} here stops` : " this stops"
-            children.push(mutedSpan(`${rateText(leftover)} left over: nothing here uses it. When it backs up,${machines}.`, "left-note"))
+            let text = spec.sendOut.has(item.key) ? `${rateText(leftover)} sent out.` :
+                `${rateText(leftover)} nothing here uses: see the fixes above.`
+            children.push(mutedSpan(text, "left-note"))
         } else if (links.length === 0 && spec.buildTargets.some(t => t.item === item)) {
             children.push(mutedSpan("This is what you asked for.", "out-to"))
         }

@@ -2,7 +2,8 @@
 // current solution, grouped Build here / Bring in from another build / Mine
 // or pipe in, replacing the old Ledger side panel. A row expands into a
 // detail panel (calc/details.js) in place instead of opening a side card.
-import { isMultiOutput, leftovers, outputsOf } from "./byproduct-core.js"
+import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
+import { showByproducts } from "./byproducts.js"
 import { spec } from "./factory.js"
 import { sprites } from "./icon.js"
 import { beaconPhrase, fallbackNote, planSentence } from "./modules-core.js"
@@ -85,30 +86,50 @@ function makeBadge(cls, text) {
     return badge
 }
 
-// Under a multi-output row's name: every output with what this row makes
-// of it, any part nothing uses marked "left over" -- one output backing up
-// stops the whole machine.
-function outputsLine(row, totals) {
-    const line = document.createElement("span")
-    line.className = "outs num"
-    for (const { item, rate, leftover } of outputsOf(totals, row.recipe)) {
+// Beside a multi-output row's name: one small icon per output, each with
+// that item's tooltip (where it goes, in what belts). The rates live in the
+// row's details; the Byproducts bar says what is left over.
+function outputIcons(row, totals, rows) {
+    const strip = document.createElement("span")
+    strip.className = "outs"
+    for (const { item } of outputsOf(totals, row.recipe)) {
         const out = document.createElement("span")
-        out.className = "out" + (leftover.isZero() ? "" : " left")
-        out.title = item.name
+        out.className = "out"
+        out.dataset.output = item.key
         out.appendChild(item.icon.make(16, true))
-        out.appendChild(document.createTextNode(rateText(rate)))
-        if (!leftover.isZero()) {
-            const note = document.createElement("span")
-            note.className = "left-note"
-            note.textContent = `${spec.format.rate(leftover)} left over`
-            out.appendChild(note)
+        if (totals.items.has(item)) {
+            itemTooltip(out, totals, rows, item)
         }
-        line.appendChild(out)
+        strip.appendChild(out)
     }
-    return line
+    return strip
 }
 
-function itemCell(row, totals) {
+const MARKER_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3z"></path><path d="M12 10v5"></path></svg>'
+
+// A row whose recipe would stop (the Byproducts bar has a block for it):
+// "backs up", which scrolls to the bar rather than opening the row.
+function backsUpMarker() {
+    const marker = document.createElement("span")
+    marker.className = "bp-marker"
+    marker.title = "Something it makes has nowhere to go: see the fixes above"
+    marker.innerHTML = MARKER_SVG
+    marker.appendChild(document.createTextNode("backs up"))
+    marker.addEventListener("click", event => {
+        event.stopPropagation()
+        showByproducts()
+    })
+    return marker
+}
+
+// Recipes the Byproducts bar has a block for; set by renderTable.
+let stalledNow = new Set()
+
+function sentOutCount(row, totals) {
+    return row.recipe.products.filter(p => spec.sendOut.has(p.item.key) && totals.surplus.has(p.item)).length
+}
+
+function itemCell(row, totals, rows) {
     const cell = document.createElement("span")
     cell.className = "item"
     const multi = row.isReal && isMultiOutput(row.recipe)
@@ -119,18 +140,20 @@ function itemCell(row, totals) {
     const name = document.createElement("span")
     name.className = "name"
     name.textContent = row.name
-    if (multi) {
-        const words = document.createElement("span")
-        words.className = "words"
-        words.appendChild(name)
-        words.appendChild(outputsLine(row, totals))
-        cell.appendChild(words)
-    } else {
-        cell.appendChild(name)
-    }
+    cell.appendChild(name)
     const badge = badgeFor(row)
     if (badge) {
         cell.appendChild(badge)
+    }
+    if (multi) {
+        cell.appendChild(outputIcons(row, totals, rows))
+    }
+    if (row.isReal && stalledNow.has(row.recipe)) {
+        cell.appendChild(backsUpMarker())
+    }
+    const out = row.isReal ? sentOutCount(row, totals) : 0
+    if (out > 0) {
+        cell.appendChild(makeBadge("out", `sends out ${out}`))
     }
     return cell
 }
@@ -138,6 +161,10 @@ function itemCell(row, totals) {
 function needCell(row, totals, rows) {
     const cell = document.createElement("span")
     cell.className = "need num"
+    if (row.isReal && isMultiOutput(row.recipe)) {
+        cell.appendChild(document.createTextNode(`${row.recipe.products.length} outputs`))
+        return cell
+    }
     cell.appendChild(document.createTextNode(rateText(row.itemRate)))
     const belts = document.createElement("span")
     belts.className = "belts"
@@ -270,7 +297,7 @@ function renderRowButton(row, totals, rows) {
     btn.type = "button"
     btn.className = "lrow" + (open ? " open" : "") + (!row.isReal ? " dim" : "") + (isHandSet(row) ? " hand" : "")
     btn.dataset.item = key
-    btn.appendChild(itemCell(row, totals))
+    btn.appendChild(itemCell(row, totals, rows))
     btn.appendChild(needCell(row, totals, rows))
     btn.appendChild(machinesCell(row))
     btn.appendChild(modulesCell(row))
@@ -305,55 +332,6 @@ function sectHeader(group) {
     return sect
 }
 
-// The Left over section: what the solver could place nowhere (no cracking
-// allowed, say). Each row names what makes it and opens that maker's row.
-function leftoverSection(totals, container) {
-    const list = leftovers(totals)
-    if (list.length === 0) {
-        return
-    }
-    const sect = document.createElement("div")
-    sect.className = "sect leftover"
-    const lbl = document.createElement("span")
-    lbl.className = "lbl"
-    lbl.textContent = "Left over · nothing here uses it, so it backs up"
-    sect.appendChild(lbl)
-    container.appendChild(sect)
-    for (const { item, rate, makers } of list) {
-        const btn = document.createElement("button")
-        btn.type = "button"
-        btn.className = "lrow leftover"
-        btn.dataset.leftover = item.key
-        const cell = document.createElement("span")
-        cell.className = "item"
-        const slot = document.createElement("span")
-        slot.className = "slot sm"
-        slot.appendChild(item.icon.make(24, true))
-        cell.appendChild(slot)
-        const name = document.createElement("span")
-        name.className = "name"
-        name.textContent = item.name
-        cell.appendChild(name)
-        cell.appendChild(makeBadge("left", "left over"))
-        btn.appendChild(cell)
-        const need = document.createElement("span")
-        need.className = "need num"
-        need.textContent = rateText(rate)
-        btn.appendChild(need)
-        const from = document.createElement("span")
-        from.className = "machines muted"
-        from.textContent = makers.length === 0 ? "" : "from " + makers.map(m => m.name.toLowerCase()).join(", ")
-        btn.appendChild(from)
-        btn.appendChild(document.createElement("span"))
-        btn.appendChild(document.createElement("span"))
-        const maker = makers[0]
-        if (maker) {
-            btn.addEventListener("click", () => toggleOpen(maker.products[0].item.key, false))
-        }
-        container.appendChild(btn)
-    }
-}
-
 function renderTable(_spec, totals) {
     lastTotals = totals
     const container = document.getElementById("item-table")
@@ -366,6 +344,7 @@ function renderTable(_spec, totals) {
     }
     const rows = buildRows(totals)
     const ranks = itemDepths(totals)
+    stalledNow = new Set(stalls(totals, spec.sendOut).map(b => b.recipe).filter(Boolean))
     container.appendChild(modulesBar(rows))
     for (const group of groupForTable(rows, ranks)) {
         if (group.rows.length === 0) {
@@ -383,7 +362,6 @@ function renderTable(_spec, totals) {
             }
         }
     }
-    leftoverSection(totals, container)
 }
 
 export function initItemTable() {

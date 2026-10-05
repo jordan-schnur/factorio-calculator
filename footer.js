@@ -1,8 +1,8 @@
 // calc/footer.js — the bottom bar: whole-factory machine/power totals
 // (#footer-totals) and a summary of what's brought in from elsewhere
-// (#footer-bring), replacing the old bring-in bar, and a warning for
-// anything the plan makes that nothing uses (#footer-leftover).
-import { leftovers, leftoverSentence } from "./byproduct-core.js"
+// (#footer-bring), replacing the old bring-in bar, and what is sent out on
+// purpose (#footer-sendout, the Byproducts bar's "Send out" fix).
+import { sentOut } from "./byproduct-core.js"
 import { spec } from "./factory.js"
 import { zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
@@ -16,14 +16,14 @@ function formatRate(rate) {
 function renderFooter(spec, totals) {
     let totalsSpan = document.getElementById("footer-totals")
     let bringSpan = document.getElementById("footer-bring")
-    let leftoverSpan = document.getElementById("footer-leftover")
+    let sendOutSpan = document.getElementById("footer-sendout")
     if (!totalsSpan && !bringSpan) {
         return
     }
     if (!totals || spec.buildTargets.length === 0) {
         if (totalsSpan) totalsSpan.textContent = ""
         if (bringSpan) bringSpan.textContent = ""
-        if (leftoverSpan) leftoverSpan.hidden = true
+        if (sendOutSpan) sendOutSpan.hidden = true
         return
     }
 
@@ -52,10 +52,10 @@ function renderFooter(spec, totals) {
         }
     }
 
-    if (leftoverSpan) {
-        let text = leftoverSentence(leftovers(totals), formatRate)
-        leftoverSpan.textContent = text ? "⚠ " + text : ""
-        leftoverSpan.hidden = !text
+    if (sendOutSpan) {
+        let parts = sentOut(totals, spec.sendOut).map(({item, rate}) => `${item.name.toLowerCase()} ${formatRate(rate)}`)
+        sendOutSpan.textContent = parts.length ? "Sent out: " + parts.join(", ") : ""
+        sendOutSpan.hidden = parts.length === 0
     }
 }
 

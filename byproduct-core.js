@@ -156,9 +156,15 @@ export function cheapest(fixes) {
     return fixes.reduce((a, b) => (b.result.machines < a.result.machines ? b : a))
 }
 
+// A recipe's name without its "to ..." tail, lower case: "Light oil
+// cracking to petroleum gas" -> "light oil cracking".
+export function shortName(recipe) {
+    return recipe.name.replace(/ to .*$/, "").toLowerCase()
+}
+
 // "Allow cracking" when every recipe shares its last word, else each name.
 export function allowLabel(recipes) {
-    const names = recipes.map(r => r.name.toLowerCase())
+    const names = recipes.map(shortName)
     const last = names.map(n => n.split(" ").pop())
     if (names.length > 1 && last.every(w => w === last[0])) return `Allow ${last[0]}`
     return "Allow " + joinWords(names)

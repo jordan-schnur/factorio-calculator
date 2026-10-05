@@ -152,6 +152,9 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     if (ignore.length > 0) {
         settings += "&ignore=" + ignore.join(",")
     }
+    if (spec.sendOut.size > 0) {
+        settings += "&out=" + [...spec.sendOut].sort().join(",")
+    }
 
     // An empty save name means "whichever save is newest", so it is written
     // out as `save=` rather than omitted.

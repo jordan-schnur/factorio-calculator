@@ -184,6 +184,9 @@ class FactorySpecification {
         this.miningProd = null
 
         this.ignore = new Set()
+        // Item keys whose leftover is sent out on purpose (`out=`): they leave
+        // the Byproducts bar and the footer lists them (byproducts.js).
+        this.sendOut = new Set()
         this.targetNotes = []
         this.disable = new Set()
         this.selectedPlanets = new Set()

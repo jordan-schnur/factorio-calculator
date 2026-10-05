@@ -351,6 +351,19 @@ function renderIgnore(settings) {
     }
 }
 
+// out: leftovers sent out on purpose (byproducts.js). Kept as item keys,
+// not items, so a key the plan no longer leaves over just does nothing.
+
+function renderSendOut(settings) {
+    spec.sendOut.clear()
+    let setting = settings.get("out")
+    if (setting !== undefined && setting !== "") {
+        for (let key of setting.split(",")) {
+            if (spec.items.has(key)) spec.sendOut.add(key)
+        }
+    }
+}
+
 // title
 
 export const DEFAULT_TITLE = "Factorio Calculator"
@@ -1201,6 +1214,7 @@ export function renderSettings(settings) {
     spec.roundMachines = roundMachinesChoice
     renderTitle(settings)
     renderIgnore(settings)
+    renderSendOut(settings)
     renderRateOptions(settings)
     renderPrecisions(settings)
     renderValueFormat(settings)

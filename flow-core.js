@@ -18,14 +18,16 @@ export function edgeWidth(belts) {
 // (skipped entirely, not even drawn as an edge endpoint by the caller);
 // isDisable: true is the `D-` stand-in for a supplied/ignored item (real,
 // but not a production step) -- a link sourced from one is folded into a
-// synthetic "input" node keyed by item instead.
+// synthetic "input" node keyed by item instead. `sink: true` is the caller's
+// stand-in for what the solver leaves over (a "Left over" or "Send out"
+// card); it becomes a node of kind "sink".
 export function buildFlowModel({recipes, links}) {
     const recipeByKey = new Map(recipes.map(r => [r.key, r]))
     const nodes = new Map()
 
     for (const r of recipes) {
         if (!r.isReal || r.isDisable) continue
-        const kind = r.isResource ? "mined" : r.isTarget ? "target" : "recipe"
+        const kind = r.sink ? "sink" : r.isResource ? "mined" : r.isTarget ? "target" : "recipe"
         nodes.set(r.key, {id: r.key, kind, label: r.name, count: r.count, machine: r.machine})
     }
 
