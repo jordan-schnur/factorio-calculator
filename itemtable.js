@@ -6,6 +6,7 @@ import { spec } from "./factory.js"
 import { sprites } from "./icon.js"
 import { beaconPhrase, fallbackNote, planSentence } from "./modules-core.js"
 import { beaconBadge, handTag, moduleStrip } from "./modules-strip.js"
+import { addQualityBadge } from "./quality-ui.js"
 import { beltWords } from "./ratio-core.js"
 import { registerRenderer } from "./render.js"
 import { buildRows, buildingCount } from "./table.js"
@@ -126,6 +127,7 @@ function machinesCell(row) {
     const slot = document.createElement("span")
     slot.className = "slot xs"
     slot.appendChild(building.icon.make(18, true))
+    addQualityBadge(slot, spec.machineTier(building), 9)
     cell.appendChild(slot)
     const count = document.createElement("span")
     count.className = "cnt"
@@ -155,8 +157,8 @@ function modulesCell(row) {
     const moduleSpec = spec.getModuleSpec(row.recipe)
     const line = document.createElement("span")
     line.className = "mods-line"
-    line.appendChild(moduleStrip(moduleSpec.modules, 24))
-    const badge = beaconBadge(moduleSpec.beaconModules, moduleSpec.beaconCount, 18)
+    line.appendChild(moduleStrip(moduleSpec.modules, 24, moduleSpec.moduleTiers))
+    const badge = beaconBadge(moduleSpec.beaconModules, moduleSpec.beaconCount, 18, true, moduleSpec.beaconModuleTiers, moduleSpec.beaconTier)
     if (badge) {
         line.appendChild(badge)
     }
@@ -194,6 +196,7 @@ function modulesBar(rows) {
     const icon = document.createElement("span")
     icon.className = "slot sm"
     icon.appendChild(plan.defaultModule ? plan.defaultModule.icon.make(24, true) : sprites.get("slot_icon_module").icon.make(24, true))
+    addQualityBadge(icon, plan.defaultModule ? plan.defaultModuleTier : "normal", 12)
     bar.appendChild(icon)
     const words = document.createElement("span")
     words.className = "mb-words"
