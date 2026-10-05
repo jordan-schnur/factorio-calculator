@@ -199,7 +199,7 @@ export class BuildTarget {
         let n = Number(this.numInput.value) || 0
         let unit = this.unitSelect.value
         if (unit === "belts") {
-            this.setRate(Rational.from_float(beltsToRate(n, spec.belt.rate.toFloat())))
+            this.setRate(Rational.from_float(beltsToRate(n, spec.beltRate().toFloat())))
         } else {
             let seconds = UNIT_SECONDS.get(unit) || UNIT_SECONDS.get("/min")
             this.setRate(Rational.from_float(n / seconds))

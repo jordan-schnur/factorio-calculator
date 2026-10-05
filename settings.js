@@ -688,7 +688,19 @@ function syncQualityToPlanet() {
 // belt
 
 function beltSummaryText() {
-    return `${spec.belt.name} · ${spec.format.rate(spec.belt.rate)}/${spec.format.longRate} · ${spec.format.rate(spec.belt.rate.div(Rational.from_float(2)))} per lane`
+    let rate = spec.beltRate()
+    let name = spec.beltStack > 1 ? `${spec.belt.name}, stacked ${spec.beltStack}` : spec.belt.name
+    return `${name} · ${spec.format.rate(rate)}/${spec.format.longRate} · ${spec.format.rate(rate.div(Rational.from_float(2)))} per lane`
+}
+
+// The game's limit: belt stacks stop at 4 items, however much is researched.
+const BELT_STACKS = [1, 2, 3, 4]
+
+function beltStackHandler(stack) {
+    spec.beltStack = stack
+    d3.selectAll("#belt_stack button").classed("on", d => d === stack)
+    d3.select("#belt_selector span.belt-summary").text(beltSummaryText)
+    spec.display()
 }
 
 function beltHandler(belt) {
@@ -712,6 +724,9 @@ function renderBelts(settings) {
         }
     }
     spec.belt = spec.belts.get(beltKey)
+    // Anything but a whole 1-4 (a typo, an edited link) reads as unstacked.
+    let stack = Number(settings.get("bs"))
+    spec.beltStack = BELT_STACKS.includes(stack) ? stack : 1
 
     let belts = []
     for (let [beltKey, belt] of spec.belts) {
@@ -727,6 +742,26 @@ function renderBelts(settings) {
             .attr("title", d => d.name)
             .on("click", (event, d) => beltHandler(d))
             .append(d => d.icon.make(28, false))
+    let stackRow = form.append("span")
+        .classed("belt-stack", true)
+    stackRow.append("span")
+        .classed("muted", true)
+        .attr("id", "belt_stack_label")
+        .attr("title", "Items a stack inserter puts in each spot on the belt: 2 after the Stack inserter research, up to 4 after Transport belt capacity 1 and 2")
+        .text("Stacked")
+    stackRow.append("span")
+        .classed("seg", true)
+        .attr("id", "belt_stack")
+        .attr("role", "group")
+        .attr("aria-labelledby", "belt_stack_label")
+        .selectAll("button")
+        .data(BELT_STACKS)
+        .join("button")
+            .attr("type", "button")
+            .classed("on", d => d === spec.beltStack)
+            .attr("title", d => d === 1 ? "Not stacked" : `${d} items per spot`)
+            .text(d => d === 1 ? "No" : `×${d}`)
+            .on("click", (event, d) => beltStackHandler(d))
     form.append("span")
         .classed("muted belt-summary", true)
         .style("margin-left", "10px")

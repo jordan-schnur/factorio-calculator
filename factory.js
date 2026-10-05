@@ -178,6 +178,12 @@ class FactorySpecification {
         this.modulesVersion = 0
 
         this.belt = null
+        // Items per belt spot, 1 to 4: Space Age's stack inserters build
+        // stacks on belts (2 after the Stack inserter research, up to 4 after
+        // the Transport belt capacity ones), multiplying what one belt carries.
+        // Kept on its own rather than folded into belt.rate, so the Belt's
+        // tooltip and the save's belt choice still mean the bare belt.
+        this.beltStack = 1
 
         this.fuel = null
 
@@ -884,8 +890,11 @@ class FactorySpecification {
         }
         return building.getCount(this, recipe, rate)
     }
+    beltRate() {
+        return this.belt.rate.mul(Rational.from_float(this.beltStack))
+    }
     getBeltCount(rate) {
-        return rate.div(this.belt.rate)
+        return rate.div(this.beltRate())
     }
     getPowerUsage(recipe, rate) {
         let building = this.getBuilding(recipe)

@@ -99,6 +99,9 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     if (spec.belt.key !== DEFAULT_BELT) {
         settings += "belt=" + spec.belt.key + "&"
     }
+    if (spec.beltStack !== 1) {
+        settings += "bs=" + spec.beltStack + "&"
+    }
     if (spec.fuel.key !== DEFAULT_FUEL) {
         settings += "fuel=" + spec.fuel.key + "&"
     }

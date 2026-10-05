@@ -52,7 +52,7 @@ function renderKey() {
     // when only speed/power moved (no re-solve), so without this a module
     // edit that doesn't change machine counts enough to move the totals
     // would leave stale cards -- see modules-editor.js's commit path.
-    return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}:${spec.format.beltFormat}:${spec.modulesVersion}`
+    return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}:${spec.beltStack}:${spec.format.beltFormat}:${spec.modulesVersion}`
 }
 
 function itemKeyFor(node) {
