@@ -4,13 +4,20 @@
 // Styles: calc/modules.css.
 import { spec } from "./factory.js"
 import { sprites } from "./icon.js"
+import { addQualityBadge, withQualityBadge } from "./quality-ui.js"
+
+// A badge half the icon's size, never under 8px.
+function badgeSize(size) {
+    return Math.max(8, Math.round(size / 2))
+}
 
 // One icon per slot, `size` px, in slot order; an empty slot shows the
-// game's empty module-slot icon, dimmed.
-export function moduleStrip(modules, size) {
+// game's empty module-slot icon, dimmed. `tiers` parallels `modules`
+// (calculator 1.3.0): a module above normal carries its tier's badge.
+export function moduleStrip(modules, size, tiers = []) {
     let strip = document.createElement("span")
     strip.className = "modstrip"
-    for (let module of modules) {
+    modules.forEach((module, i) => {
         let slot = document.createElement("span")
         slot.className = module ? "modslot" : "modslot empty"
         let icon = module ? module.icon.make(size, true) : sprites.get("slot_icon_module").icon.make(size, true)
@@ -18,17 +25,21 @@ export function moduleStrip(modules, size) {
             icon.title = "Empty slot"
         }
         slot.appendChild(icon)
+        if (module) {
+            addQualityBadge(slot, tiers[i], badgeSize(size))
+        }
         strip.appendChild(slot)
-    }
+    })
     return strip
 }
 
 // The beacon icon, "×N" and (unless `withModules` is false) the beacon
 // modules' icons. Null when no beacon module is set or the count is 0.
-export function beaconBadge(beaconModules, beaconCount, size, withModules = true) {
+// `tiers` parallels `beaconModules`; `beaconTier` badges the beacon itself.
+export function beaconBadge(beaconModules, beaconCount, size, withModules = true, tiers = [], beaconTier = "normal") {
     let count = typeof beaconCount === "number" ? beaconCount : beaconCount.toFloat()
-    let modules = beaconModules.filter(m => m)
-    if (!(count > 0) || modules.length === 0) {
+    let slots = beaconModules.map((module, i) => [module, tiers[i]]).filter(([module]) => module)
+    if (!(count > 0) || slots.length === 0) {
         return null
     }
     let badge = document.createElement("span")
@@ -36,15 +47,15 @@ export function beaconBadge(beaconModules, beaconCount, size, withModules = true
     badge.title = `${count} beacon${count === 1 ? "" : "s"} around each machine`
     let beacon = spec.items.get("beacon")
     if (beacon) {
-        badge.appendChild(beacon.icon.make(size, true))
+        badge.appendChild(withQualityBadge(beacon.icon.make(size, true), beaconTier, badgeSize(size)))
     }
     let n = document.createElement("span")
     n.className = "num"
     n.textContent = `×${count}`
     badge.appendChild(n)
     if (withModules) {
-        for (let module of modules) {
-            badge.appendChild(module.icon.make(size, true))
+        for (let [module, tier] of slots) {
+            badge.appendChild(withQualityBadge(module.icon.make(size, true), tier, badgeSize(size)))
         }
     }
     return badge
