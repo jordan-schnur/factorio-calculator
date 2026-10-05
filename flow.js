@@ -15,6 +15,7 @@ import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, l
 import { beaconBadge, moduleStrip } from "./modules-strip.js"
 import { withQualityBadge } from "./quality-ui.js"
 import { RATE_LABEL } from "./table-core.js"
+import { isMultiOutput, outputsOf } from "./byproduct-core.js"
 import { linkMachines } from "./details.js"
 import { beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
 import { tierWord } from "./colorblind.js"
@@ -178,9 +179,14 @@ function nodeMarkup(node) {
     body.type = "button"
     body.className = "nbody"
 
+    let recipe = node.kind === "input" ? null : spec.recipes.get(node.id)
+    let outputs = recipe && lastDrawnTotals ? outputsOf(lastDrawnTotals, recipe) : null
+    let multi = outputs !== null && isMultiOutput(recipe)
+
     let slot = document.createElement("span")
     slot.className = "slot slot-sm"
-    if (item) slot.appendChild(item.icon.make(20, true))
+    if (multi) slot.appendChild(recipe.icon.make(20, true))
+    else if (item) slot.appendChild(item.icon.make(20, true))
     body.appendChild(slot)
 
     let mid = document.createElement("span")
@@ -190,9 +196,8 @@ function nodeMarkup(node) {
     // A single-product recipe's card is titled by its item (e.g. "Petroleum gas"),
     // not the recipe name, which can run long and get clipped ("Light oil
     // cracking to…"). Multi-product recipes (advanced oil processing, coal
-    // liquefaction) keep the recipe name since the icon/rate are only the
-    // first product.
-    let recipe = node.kind === "input" ? null : spec.recipes.get(node.id)
+    // liquefaction) keep the recipe name, with the recipe's icon and every
+    // output's rate on the right.
     if (recipe && spec.handSet.has(recipe.key)) div.classList.add("hand")
     let title = node.label
     if (item && recipe && recipe.products.length === 1) title = item.name
@@ -216,16 +221,37 @@ function nodeMarkup(node) {
 
     let right = document.createElement("span")
     right.className = "right"
-    let rateText = spec.format.rate(node.rate)
-    let rateSpan = document.createElement("span")
-    // No data-value here: scratchpad.js's document-wide click delegate
-    // pastes any `.num[data-value]` it catches into the scratch pad, and a
-    // card click already does something else (toggles selection) -- the
-    // graph card's rate isn't click-to-paste.
-    rateSpan.className = "rate num"
-    rateSpan.textContent = `${rateText}${RATE_LABEL[spec.format.rateName] || "/min"}`
-    right.appendChild(rateSpan)
+    let unit = RATE_LABEL[spec.format.rateName] || "/min"
+    if (multi) {
+        // Every output, not just the first: the refinery stops when any one
+        // of them backs up, so a card that says only "heavy oil" hides two
+        // thirds of what has to leave it.
+        right.classList.add("outs")
+        for (let out of outputs) {
+            let line = document.createElement("span")
+            line.className = "out num" + (out.leftover.isZero() ? "" : " left")
+            line.title = out.item.name
+            line.appendChild(out.item.icon.make(14, true))
+            line.appendChild(document.createTextNode(`${spec.format.rate(out.rate)}${unit}`))
+            right.appendChild(line)
+        }
+    } else {
+        let rateSpan = document.createElement("span")
+        // No data-value here: scratchpad.js's document-wide click delegate
+        // pastes any `.num[data-value]` it catches into the scratch pad, and a
+        // card click already does something else (toggles selection) -- the
+        // graph card's rate isn't click-to-paste.
+        rateSpan.className = "rate num"
+        rateSpan.textContent = `${spec.format.rate(node.rate)}${unit}`
+        right.appendChild(rateSpan)
+    }
     body.appendChild(right)
+    let left = (outputs || []).filter(out => !out.leftover.isZero())
+    if (left.length > 0) {
+        div.classList.add("leftover")
+        let words = left.map(out => `${out.item.name.toLowerCase()} ${spec.format.rate(out.leftover)}${unit}`)
+        div.title = `Left over: ${words.join(", ")}. Nothing here uses it, so it backs up and these machines stop.`
+    }
 
     body.addEventListener("click", event => {
         // d3-zoom sets defaultPrevented on the click that ends a drag, so a

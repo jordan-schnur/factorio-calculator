@@ -1,6 +1,8 @@
 // calc/footer.js — the bottom bar: whole-factory machine/power totals
 // (#footer-totals) and a summary of what's brought in from elsewhere
-// (#footer-bring), replacing the old bring-in bar.
+// (#footer-bring), replacing the old bring-in bar, and a warning for
+// anything the plan makes that nothing uses (#footer-leftover).
+import { leftovers, leftoverSentence } from "./byproduct-core.js"
 import { spec } from "./factory.js"
 import { zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
@@ -14,12 +16,14 @@ function formatRate(rate) {
 function renderFooter(spec, totals) {
     let totalsSpan = document.getElementById("footer-totals")
     let bringSpan = document.getElementById("footer-bring")
+    let leftoverSpan = document.getElementById("footer-leftover")
     if (!totalsSpan && !bringSpan) {
         return
     }
     if (!totals || spec.buildTargets.length === 0) {
         if (totalsSpan) totalsSpan.textContent = ""
         if (bringSpan) bringSpan.textContent = ""
+        if (leftoverSpan) leftoverSpan.hidden = true
         return
     }
 
@@ -46,6 +50,12 @@ function renderFooter(spec, totals) {
             let parts = supplied.map(row => `${row.item.name.toLowerCase()} ${formatRate(row.itemRate)}`)
             bringSpan.textContent = "Brought in: " + parts.join(", ")
         }
+    }
+
+    if (leftoverSpan) {
+        let text = leftoverSentence(leftovers(totals), formatRate)
+        leftoverSpan.textContent = text ? "⚠ " + text : ""
+        leftoverSpan.hidden = !text
     }
 }
 

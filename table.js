@@ -1,5 +1,6 @@
 // calc/table.js — builds the row shape used by the Ledger, plus the
 // building-count/power helpers so every panel's totals agree.
+import { isMultiOutput } from "./byproduct-core.js"
 import { spec } from "./factory.js"
 import { formatPower } from "./power.js"
 import { zero } from "./rational.js"
@@ -22,7 +23,10 @@ export function buildRows(totals) {
         const supplied = recipe.isDisable ? recipe.isDisable() : false
         rows.push({
             key: recipe.key,
-            name: item.name,
+            // A recipe with several outputs (advanced oil processing) is
+            // named for itself, not its first output: the row is the
+            // refineries, and its outputs line lists all three fluids.
+            name: isMultiOutput(recipe) ? recipe.name : item.name,
             isReal: !supplied,
             isResource: recipe.isResource(),
             category: recipe.category,

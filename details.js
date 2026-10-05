@@ -4,6 +4,7 @@
 // open row (itemtable.js, `.detail` under the clicked `.lrow`) and the
 // graph view's side card (`#graph-side`, built here since selecting a node
 // does not itself trigger a re-solve).
+import { isMultiOutput, outputsOf } from "./byproduct-core.js"
 import { spec } from "./factory.js"
 import { recipesFor } from "./machines-core.js"
 import { beltWords, destinationLines, flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
@@ -381,6 +382,36 @@ function buildGoesToCol(rows, item, totals, isTarget) {
     return col("goesto", children)
 }
 
+// A multi-output row's "Goes to": every output, where this row's share of
+// it goes, and what nothing uses -- the machine stops when any one output
+// backs up, so a leftover is a plan that won't run as drawn.
+function buildMakesCol(rows, row, totals) {
+    let children = [lbl("Makes")]
+    let building = spec.getBuilding(row.recipe)
+    for (let { item, rate, leftover } of outputsOf(totals, row.recipe)) {
+        let head = drow(item.icon, item.name, null, numSpan(rateText(rate)))
+        head.classList.add("out-head")
+        children.push(head)
+        let links = totals.proportionate
+            .filter(l => l.from === row.recipe && l.item === item && l.to.isReal())
+            .sort((a, b) => b.rate.toFloat() - a.rate.toFloat())
+        for (let link of links) {
+            let share = rate.isZero() ? zero : link.rate.div(rate)
+            let num = flowTooltip(numSpan(rateText(link.rate)), totals, rows, item, link.to, link.rate)
+            let to = drow(link.to.products[0].item.icon, link.to.name, shareSpan(percentText(share)), num)
+            to.classList.add("out-to")
+            children.push(to)
+        }
+        if (!leftover.isZero()) {
+            let machines = building ? ` every ${building.name.toLowerCase()} here stops` : " this stops"
+            children.push(mutedSpan(`${rateText(leftover)} left over: nothing here uses it. When it backs up,${machines}.`, "left-note"))
+        } else if (links.length === 0 && spec.buildTargets.some(t => t.item === item)) {
+            children.push(mutedSpan("This is what you asked for.", "out-to"))
+        }
+    }
+    return col("goesto makes", children)
+}
+
 function buildSourceSeg(item, row) {
     let seg = document.createElement("span")
     seg.className = "seg source"
@@ -528,7 +559,11 @@ export function renderDetail(container, item, totals) {
     let isResource = row ? row.isResource : false
 
     container.appendChild(buildNeedsCol(rows, row, totals))
-    container.appendChild(buildGoesToCol(rows, item, totals, isTarget))
+    if (row && row.isReal && isMultiOutput(row.recipe)) {
+        container.appendChild(buildMakesCol(rows, row, totals))
+    } else {
+        container.appendChild(buildGoesToCol(rows, item, totals, isTarget))
+    }
     container.appendChild(buildSourceCol(item, row, totals, isTarget, isResource))
     // The module editor, a full-width band under the three columns, for a
     // row made here in a machine with module slots.
@@ -555,7 +590,14 @@ function renderGraphSide(_spec, totals) {
 
     side.textContent = ""
     let rate = totals.items.get(item) || zero
-    side.appendChild(buildHead(item, rate, 28))
+    let row = buildRows(totals).find(r => r.item === item)
+    let head = buildHead(item, rate, 28)
+    if (row && row.isReal && isMultiOutput(row.recipe)) {
+        head.querySelector(".slot").replaceChildren(row.recipe.icon.make(28, true))
+        head.querySelector(".title").textContent = row.recipe.name
+        head.querySelector(".muted").textContent = `${row.recipe.products.length} outputs, all of them have to be used`
+    }
+    side.appendChild(head)
     let detail = document.createElement("div")
     detail.className = "detail"
     renderDetail(detail, item, totals)

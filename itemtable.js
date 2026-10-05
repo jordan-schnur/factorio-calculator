@@ -2,6 +2,7 @@
 // current solution, grouped Build here / Bring in from another build / Mine
 // or pipe in, replacing the old Ledger side panel. A row expands into a
 // detail panel (calc/details.js) in place instead of opening a side card.
+import { isMultiOutput, leftovers, outputsOf } from "./byproduct-core.js"
 import { spec } from "./factory.js"
 import { sprites } from "./icon.js"
 import { beaconPhrase, fallbackNote, planSentence } from "./modules-core.js"
@@ -84,17 +85,49 @@ function makeBadge(cls, text) {
     return badge
 }
 
-function itemCell(row) {
+// Under a multi-output row's name: every output with what this row makes
+// of it, any part nothing uses marked "left over" -- one output backing up
+// stops the whole machine.
+function outputsLine(row, totals) {
+    const line = document.createElement("span")
+    line.className = "outs num"
+    for (const { item, rate, leftover } of outputsOf(totals, row.recipe)) {
+        const out = document.createElement("span")
+        out.className = "out" + (leftover.isZero() ? "" : " left")
+        out.title = item.name
+        out.appendChild(item.icon.make(16, true))
+        out.appendChild(document.createTextNode(rateText(rate)))
+        if (!leftover.isZero()) {
+            const note = document.createElement("span")
+            note.className = "left-note"
+            note.textContent = `${spec.format.rate(leftover)} left over`
+            out.appendChild(note)
+        }
+        line.appendChild(out)
+    }
+    return line
+}
+
+function itemCell(row, totals) {
     const cell = document.createElement("span")
     cell.className = "item"
+    const multi = row.isReal && isMultiOutput(row.recipe)
     const slot = document.createElement("span")
     slot.className = "slot sm"
-    slot.appendChild(row.item.icon.make(24, true))
+    slot.appendChild((multi ? row.recipe.icon : row.item.icon).make(24, true))
     cell.appendChild(slot)
     const name = document.createElement("span")
     name.className = "name"
     name.textContent = row.name
-    cell.appendChild(name)
+    if (multi) {
+        const words = document.createElement("span")
+        words.className = "words"
+        words.appendChild(name)
+        words.appendChild(outputsLine(row, totals))
+        cell.appendChild(words)
+    } else {
+        cell.appendChild(name)
+    }
     const badge = badgeFor(row)
     if (badge) {
         cell.appendChild(badge)
@@ -237,7 +270,7 @@ function renderRowButton(row, totals, rows) {
     btn.type = "button"
     btn.className = "lrow" + (open ? " open" : "") + (!row.isReal ? " dim" : "") + (isHandSet(row) ? " hand" : "")
     btn.dataset.item = key
-    btn.appendChild(itemCell(row))
+    btn.appendChild(itemCell(row, totals))
     btn.appendChild(needCell(row, totals, rows))
     btn.appendChild(machinesCell(row))
     btn.appendChild(modulesCell(row))
@@ -272,6 +305,55 @@ function sectHeader(group) {
     return sect
 }
 
+// The Left over section: what the solver could place nowhere (no cracking
+// allowed, say). Each row names what makes it and opens that maker's row.
+function leftoverSection(totals, container) {
+    const list = leftovers(totals)
+    if (list.length === 0) {
+        return
+    }
+    const sect = document.createElement("div")
+    sect.className = "sect leftover"
+    const lbl = document.createElement("span")
+    lbl.className = "lbl"
+    lbl.textContent = "Left over · nothing here uses it, so it backs up"
+    sect.appendChild(lbl)
+    container.appendChild(sect)
+    for (const { item, rate, makers } of list) {
+        const btn = document.createElement("button")
+        btn.type = "button"
+        btn.className = "lrow leftover"
+        btn.dataset.leftover = item.key
+        const cell = document.createElement("span")
+        cell.className = "item"
+        const slot = document.createElement("span")
+        slot.className = "slot sm"
+        slot.appendChild(item.icon.make(24, true))
+        cell.appendChild(slot)
+        const name = document.createElement("span")
+        name.className = "name"
+        name.textContent = item.name
+        cell.appendChild(name)
+        cell.appendChild(makeBadge("left", "left over"))
+        btn.appendChild(cell)
+        const need = document.createElement("span")
+        need.className = "need num"
+        need.textContent = rateText(rate)
+        btn.appendChild(need)
+        const from = document.createElement("span")
+        from.className = "machines muted"
+        from.textContent = makers.length === 0 ? "" : "from " + makers.map(m => m.name.toLowerCase()).join(", ")
+        btn.appendChild(from)
+        btn.appendChild(document.createElement("span"))
+        btn.appendChild(document.createElement("span"))
+        const maker = makers[0]
+        if (maker) {
+            btn.addEventListener("click", () => toggleOpen(maker.products[0].item.key, false))
+        }
+        container.appendChild(btn)
+    }
+}
+
 function renderTable(_spec, totals) {
     lastTotals = totals
     const container = document.getElementById("item-table")
@@ -301,6 +383,7 @@ function renderTable(_spec, totals) {
             }
         }
     }
+    leftoverSection(totals, container)
 }
 
 export function initItemTable() {
