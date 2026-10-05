@@ -22,6 +22,7 @@ import { solve } from "./solve.js"
 import { BuildTarget } from "./target.js"
 import { capableBuildings, pickBuilding } from "./machines-core.js"
 import { canBeacon, canUse, resolveModules } from "./modules-core.js"
+import { isNormal, tierOf as qualityTier } from "./quality-core.js"
 
 const DEFAULT_ITEM_KEY = "advanced-circuit"
 
@@ -62,13 +63,21 @@ function toCount(count) {
     return typeof count === "number" ? Rational.from_float(count) : count
 }
 
-// {modules, beaconModules, beaconCount} with no undefined slots and a
-// Rational count.
+// {modules, moduleTiers, beaconModules, beaconModuleTiers, beaconCount,
+// beaconTier} with no undefined slots, a Rational count and a tier key for
+// every slot: "normal" for an empty one or one the input names no tier for.
 function normalEntry(entry) {
+    let modules = entry.modules.map(m => m ?? null)
+    let tiers = entry.moduleTiers || []
+    let beaconModules = [entry.beaconModules[0] ?? null, entry.beaconModules[1] ?? null]
+    let beaconTiers = entry.beaconModuleTiers || []
     return {
-        modules: entry.modules.map(m => m ?? null),
-        beaconModules: [entry.beaconModules[0] ?? null, entry.beaconModules[1] ?? null],
+        modules,
+        moduleTiers: modules.map((m, i) => m === null ? "normal" : qualityTier(tiers[i]).key),
+        beaconModules,
+        beaconModuleTiers: beaconModules.map((m, i) => m === null ? "normal" : qualityTier(beaconTiers[i]).key),
         beaconCount: toCount(entry.beaconCount),
+        beaconTier: qualityTier(entry.beaconTier).key,
     }
 }
 
@@ -147,6 +156,13 @@ class FactorySpecification {
         this.secondaryDefaultModule = null
         this.defaultBeacon = [null, null]
         this.defaultBeaconCount = zero
+        // Each plan-layer module's quality tier (`dm=p3@legendary`, `db=`'s
+        // tokens) and the plan beacons' own tier (`dbq=`), calculator 1.3.0.
+        // Kept while a module is empty, so a tier picked before a kind sticks.
+        this.defaultModuleTier = "normal"
+        this.secondaryDefaultModuleTier = "normal"
+        this.defaultBeaconTiers = ["normal", "normal"]
+        this.defaultBeaconTier = "normal"
         // The other two module layers (docs/superpowers/specs/
         // 2026-10-04-per-recipe-modules-design.md). Machine key ->
         // {modules, beaconModules, beaconCount} for every recipe made in that
@@ -185,6 +201,11 @@ class FactorySpecification {
         // Recipe key -> machine key, picked by hand in a row's details
         // (`mach=`); wins over the automatic pick above.
         this.recipeBuildings = new Map()
+        // Machine key -> quality tier for crafting machines not at normal
+        // (fragment `mq=`). Building.getRecipeRate reads it through
+        // machineTier(); nothing else does, so it changes counts, never the
+        // solve.
+        this.machineQuality = new Map()
         // The item the "Where it goes" tab is open on. Fragment key item=.
         this.whereItem = null
 
@@ -613,9 +634,13 @@ class FactorySpecification {
     planLayer() {
         return {
             defaultModule: this.defaultModule,
+            defaultModuleTier: this.defaultModuleTier,
             secondaryDefaultModule: this.secondaryDefaultModule,
+            secondaryDefaultModuleTier: this.secondaryDefaultModuleTier,
             defaultBeacon: [this.defaultBeacon[0], this.defaultBeacon[1]],
+            defaultBeaconTiers: [this.defaultBeaconTiers[0], this.defaultBeaconTiers[1]],
             defaultBeaconCount: this.defaultBeaconCount,
+            defaultBeaconTier: this.defaultBeaconTier,
         }
     }
     // What `recipe` gets from the plan and machine layers in `building`,
@@ -647,34 +672,84 @@ class FactorySpecification {
             }
         }
     }
-    setDefaultModule(module) {
+    setDefaultModule(module, tier = "normal") {
         this.defaultModule = module
+        this.defaultModuleTier = qualityTier(tier).key
         this.reapplyModules()
     }
-    setSecondaryDefaultModule(module) {
+    setSecondaryDefaultModule(module, tier = "normal") {
         this.secondaryDefaultModule = module
+        this.secondaryDefaultModuleTier = qualityTier(tier).key
         this.reapplyModules()
     }
     isDefaultDefaultBeacon() {
         return this.defaultBeacon[0] === null && this.defaultBeacon[1] === null
     }
-    setDefaultBeacon(module, i) {
+    setDefaultBeacon(module, i, tier = "normal") {
         this.defaultBeacon[i] = module
+        this.defaultBeaconTiers[i] = qualityTier(tier).key
         this.reapplyModules()
     }
     setDefaultBeaconCount(count) {
         this.defaultBeaconCount = toCount(count)
         this.reapplyModules()
     }
+    // The plan beacons' own quality (`dbq=`): their distribution effectivity.
+    setDefaultBeaconTier(tier) {
+        this.defaultBeaconTier = qualityTier(tier).key
+        this.reapplyModules()
+    }
+    // Settings' "Module quality": one tier for every plan-layer module.
+    setPlanModuleTier(tier) {
+        let t = qualityTier(tier).key
+        this.defaultModuleTier = t
+        this.secondaryDefaultModuleTier = t
+        this.defaultBeaconTiers = [t, t]
+        this.reapplyModules()
+    }
     // The whole plan layer at once (Settings' strategy, the editor's
     // "Every row"): {defaultModule, secondaryDefaultModule, defaultBeacon,
-    // defaultBeaconCount}, the count a number or a Rational.
+    // defaultBeaconCount}, the count a number or a Rational, and optionally
+    // the tier fields planLayer() returns. A tier field left out keeps its
+    // current value, so picking a strategy keeps the chosen quality.
     setPlanLayer(plan) {
         this.defaultModule = plan.defaultModule
+        this.defaultModuleTier = qualityTier(plan.defaultModuleTier ?? this.defaultModuleTier).key
         this.secondaryDefaultModule = plan.secondaryDefaultModule
+        this.secondaryDefaultModuleTier = qualityTier(plan.secondaryDefaultModuleTier ?? this.secondaryDefaultModuleTier).key
         this.defaultBeacon = [plan.defaultBeacon[0], plan.defaultBeacon[1]]
+        let beaconTiers = plan.defaultBeaconTiers ?? this.defaultBeaconTiers
+        this.defaultBeaconTiers = [qualityTier(beaconTiers[0]).key, qualityTier(beaconTiers[1]).key]
         this.defaultBeaconCount = toCount(plan.defaultBeaconCount)
+        this.defaultBeaconTier = qualityTier(plan.defaultBeaconTier ?? this.defaultBeaconTier).key
         this.reapplyModules()
+    }
+    // --- machine quality (calculator 1.3.0) --------------------------------
+    // The tier `building` runs at: its machineQuality entry, else normal;
+    // always normal for a building quality doesn't speed up.
+    machineTier(building) {
+        if (!building || !building.takesQuality) {
+            return "normal"
+        }
+        return this.machineQuality.get(building.key) || "normal"
+    }
+    // One machine's tier. Unknown machines, machines that don't take
+    // quality and normal all leave no entry. Doesn't re-solve: wrap it in
+    // commitModules(), which only redraws since productivity can't move.
+    setMachineQuality(machineKey, tier) {
+        let building = this.buildingKeys ? this.buildingKeys.get(machineKey) : undefined
+        if (!building || !building.takesQuality || isNormal(tier)) {
+            this.machineQuality.delete(machineKey)
+        } else {
+            this.machineQuality.set(machineKey, qualityTier(tier).key)
+        }
+    }
+    // The whole map (a link's `mq=`, the save's default).
+    setMachineQualityMap(map) {
+        this.machineQuality = new Map()
+        for (let [key, tier] of map) {
+            this.setMachineQuality(key, tier)
+        }
     }
     // One machine's entry, or null to drop it ("Use plan").
     setMachineModules(machineKey, entry) {
@@ -702,13 +777,18 @@ class FactorySpecification {
         }
         let e = normalEntry(entry)
         let slots = moduleSpec.building.moduleSlots
-        moduleSpec.modules = e.modules.slice(0, slots)
-        while (moduleSpec.modules.length < slots) {
-            moduleSpec.modules.push(null)
+        let modules = e.modules.slice(0, slots)
+        let tiers = e.moduleTiers.slice(0, slots)
+        while (modules.length < slots) {
+            modules.push(null)
+            tiers.push("normal")
         }
-        moduleSpec.modules = moduleSpec.modules.map(m => canUse(m, recipe, moduleSpec.building) ? m : null)
+        moduleSpec.modules = modules.map(m => canUse(m, recipe, moduleSpec.building) ? m : null)
+        moduleSpec.moduleTiers = tiers.map((t, i) => moduleSpec.modules[i] === null ? "normal" : t)
         moduleSpec.beaconModules = e.beaconModules.map(m => canBeacon(m, beaconData.allowedEffects) ? m : null)
+        moduleSpec.beaconModuleTiers = e.beaconModuleTiers.map((t, i) => moduleSpec.beaconModules[i] === null ? "normal" : t)
         moduleSpec.beaconCount = e.beaconCount
+        moduleSpec.beaconTier = e.beaconTier
         this.handSet.add(recipe.key)
     }
     // "Back to plan default" / Settings' Reset: the row takes the layers again.
