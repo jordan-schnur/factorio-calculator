@@ -13,6 +13,7 @@ import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
 import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, lineStyle, rankNodes, stackLabels } from "./flow-core.js"
 import { beaconBadge, moduleStrip } from "./modules-strip.js"
+import { withQualityBadge } from "./quality-ui.js"
 import { RATE_LABEL } from "./table-core.js"
 import { linkMachines } from "./details.js"
 import { beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
@@ -151,8 +152,8 @@ function cardModules(recipe, node) {
     if (!moduleSpec) return null
     let line = document.createElement("span")
     line.className = "mods"
-    line.appendChild(moduleStrip(moduleSpec.modules, 16))
-    let badge = beaconBadge(moduleSpec.beaconModules, moduleSpec.beaconCount, 14, false)
+    line.appendChild(moduleStrip(moduleSpec.modules, 16, moduleSpec.moduleTiers))
+    let badge = beaconBadge(moduleSpec.beaconModules, moduleSpec.beaconCount, 14, false, moduleSpec.beaconModuleTiers, moduleSpec.beaconTier)
     if (badge) line.appendChild(badge)
     return line
 }
@@ -202,7 +203,7 @@ function nodeMarkup(node) {
     sub.className = "sub num"
     let subInfo = nodeSub(node)
     if (subInfo) {
-        sub.appendChild(subInfo.icon.make(16, true))
+        sub.appendChild(withQualityBadge(subInfo.icon.make(16, true), spec.machineTier(node.machine), 9))
         sub.appendChild(document.createTextNode(subInfo.text))
     }
     mid.appendChild(sub)
