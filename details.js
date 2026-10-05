@@ -4,12 +4,14 @@
 // open row (itemtable.js, `.detail` under the clicked `.lrow`) and the
 // graph view's side card (`#graph-side`, built here since selecting a node
 // does not itself trigger a re-solve).
+import { isMultiOutput, outputsOf } from "./byproduct-core.js"
 import { spec } from "./factory.js"
 import { recipesFor } from "./machines-core.js"
 import { beltWords, destinationLines, flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { mountModuleEditor } from "./modules-editor.js"
+import { tierPicker } from "./quality-ui.js"
 import { relevantRecipes, renderOptions } from "./source.js"
 import { RATE_LABEL } from "./table-core.js"
 import { buildRows, powerRepr } from "./table.js"
@@ -380,6 +382,36 @@ function buildGoesToCol(rows, item, totals, isTarget) {
     return col("goesto", children)
 }
 
+// A multi-output row's "Goes to": every output, where this row's share of
+// it goes, and what nothing uses -- the machine stops when any one output
+// backs up, so a leftover is a plan that won't run as drawn.
+function buildMakesCol(rows, row, totals) {
+    let children = [lbl("Makes")]
+    for (let { item, rate, leftover } of outputsOf(totals, row.recipe)) {
+        let head = drow(item.icon, item.name, null, numSpan(rateText(rate)))
+        head.classList.add("out-head")
+        children.push(head)
+        let links = totals.proportionate
+            .filter(l => l.from === row.recipe && l.item === item && l.to.isReal())
+            .sort((a, b) => b.rate.toFloat() - a.rate.toFloat())
+        for (let link of links) {
+            let share = rate.isZero() ? zero : link.rate.div(rate)
+            let num = flowTooltip(numSpan(rateText(link.rate)), totals, rows, item, link.to, link.rate)
+            let to = drow(link.to.products[0].item.icon, link.to.name, shareSpan(percentText(share)), num)
+            to.classList.add("out-to")
+            children.push(to)
+        }
+        if (!leftover.isZero()) {
+            let text = spec.sendOut.has(item.key) ? `${rateText(leftover)} sent out.` :
+                `${rateText(leftover)} nothing here uses: see the fixes above.`
+            children.push(mutedSpan(text, "left-note"))
+        } else if (links.length === 0 && spec.buildTargets.some(t => t.item === item)) {
+            children.push(mutedSpan("This is what you asked for.", "out-to"))
+        }
+    }
+    return col("goesto makes", children)
+}
+
 function buildSourceSeg(item, row) {
     let seg = document.createElement("span")
     seg.className = "seg source"
@@ -420,12 +452,31 @@ function smallButton(text, className, onClick) {
 // use lit. A click pins this recipe to that machine (factory.js's
 // recipeBuildings, `mach=`); "for everything in this build" pins every
 // recipe in the plan it can make; "Automatic" drops this recipe's pin.
+// The machine's quality picker (calculator 1.3.0): sets the tier for that
+// machine type, so every row using it. Marks the save's "quality" field
+// overridden like Settings' pickers do (savesettings.js's markOverride is
+// not imported here: the commit's render writes the hash anyway).
+function machineQualityPicker(building) {
+    let wrap = document.createElement("div")
+    wrap.className = "machine-quality"
+    wrap.appendChild(tierPicker(spec.machineTier(building), tier => {
+        spec.saveState.overrides.add("quality")
+        spec.commitModules(() => spec.setMachineQuality(building.key, tier))
+    }, {label: `${building.name} quality`}))
+    let note = document.createElement("span")
+    note.className = "muted"
+    note.textContent = `Every ${building.name.toLowerCase()} in this build`
+    wrap.appendChild(note)
+    return wrap
+}
+
 function buildMachinePicker(recipe, totals) {
     let capable = spec.capableBuildings(recipe)
-    if (capable.length < 2) {
-        return []
-    }
     let current = spec.getBuilding(recipe)
+    let quality = current && current.takesQuality ? machineQualityPicker(current) : null
+    if (capable.length < 2) {
+        return quality ? [lbl("Machine"), quality] : []
+    }
     let slots = document.createElement("div")
     slots.className = "machines"
     for (let building of capable) {
@@ -465,7 +516,14 @@ function buildMachinePicker(recipe, totals) {
             spec.updateSolution()
         }))
     }
-    return actions.childElementCount > 0 ? [lbl("Machine"), slots, actions] : [lbl("Machine"), slots]
+    let out = [lbl("Machine"), slots]
+    if (quality) {
+        out.push(quality)
+    }
+    if (actions.childElementCount > 0) {
+        out.push(actions)
+    }
+    return out
 }
 
 function buildSourceCol(item, row, totals, isTarget, isResource) {
@@ -501,7 +559,11 @@ export function renderDetail(container, item, totals) {
     let isResource = row ? row.isResource : false
 
     container.appendChild(buildNeedsCol(rows, row, totals))
-    container.appendChild(buildGoesToCol(rows, item, totals, isTarget))
+    if (row && row.isReal && isMultiOutput(row.recipe)) {
+        container.appendChild(buildMakesCol(rows, row, totals))
+    } else {
+        container.appendChild(buildGoesToCol(rows, item, totals, isTarget))
+    }
     container.appendChild(buildSourceCol(item, row, totals, isTarget, isResource))
     // The module editor, a full-width band under the three columns, for a
     // row made here in a machine with module slots.
@@ -528,7 +590,14 @@ function renderGraphSide(_spec, totals) {
 
     side.textContent = ""
     let rate = totals.items.get(item) || zero
-    side.appendChild(buildHead(item, rate, 28))
+    let row = buildRows(totals).find(r => r.item === item)
+    let head = buildHead(item, rate, 28)
+    if (row && row.isReal && isMultiOutput(row.recipe)) {
+        head.querySelector(".slot").replaceChildren(row.recipe.icon.make(28, true))
+        head.querySelector(".title").textContent = row.recipe.name
+        head.querySelector(".muted").textContent = `${row.recipe.products.length} outputs, all of them have to be used`
+    }
+    side.appendChild(head)
     let detail = document.createElement("div")
     detail.className = "detail"
     renderDetail(detail, item, totals)

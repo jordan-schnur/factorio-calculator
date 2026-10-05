@@ -133,6 +133,13 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 .node .sub { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #d8c7a6; white-space: nowrap; overflow: hidden; }
 .node .right { text-align: right; }
 .node .rate { display: block; font-weight: 700; white-space: nowrap; }
+.node .right.outs { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-wrap: nowrap; }
+.node .out-icons { display: flex; gap: 2px; }
+.node .bp-marker { font-size: 11px; padding: 0 5px; }
+/* what the solver leaves over runs into a sink card in the last column:
+   amber "Left over", or blue "Send out" (the mirror of a Bring in card) */
+.node.sink.left { background: #3a2a1c; box-shadow: inset 0 0 0 2px #ff9a4d, 0 2px 5px rgba(0,0,0,0.6); }
+.node.sink.out { background: #26313a; box-shadow: inset 0 0 0 1px #4f8fc0, 0 2px 5px rgba(0,0,0,0.6); }
 #flow path.edge { stroke: #8a7040; fill: none; opacity: 0.9; }
 #flow path.edge.in { stroke: #4f8fc0; }
 /* a line keeps its item colour (flow-core lineStyle); selected and lit
@@ -167,6 +174,35 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 .lrow .machines .cnt { font-size: 17px; }
 .lrow .chev { color: #7d7d7d; text-align: center; font-size: 13px; }
 .lrow.open .chev { color: #f1be64; }
+/* byproducts (byproducts.js): a multi-output row shows an icon per output;
+   a row or card whose recipe would stop carries a "backs up" marker that
+   scrolls to the Byproducts bar, the one place that says what to do. */
+.lrow .outs { display: inline-flex; gap: 2px; padding: 1px 5px; background: #262626; }
+.lrow .outs .out { display: inline-flex; cursor: help; }
+.bp-marker { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; background: #3a2a1c; box-shadow: inset 0 0 0 1px #ff9a4d; color: #ffcf9e; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.bp-marker:hover { background: #4a3522; }
+.badge.out { background: #3d4a5e; color: #d5e3f3; }
+.badge.best { background: #2f5a31; color: #d8f2d9; }
+.detail .out-head { font-weight: 700; }
+.detail .out-to { padding-left: 26px; }
+.detail .left-note { padding-left: 26px; }
+
+/* the Byproducts bar (#byproducts), between the Make panel and the plan */
+#byproducts { display: flex; flex-direction: column; gap: 12px; }
+#byproducts[hidden] { display: none; }
+.bp-bar { display: flex; flex-direction: column; gap: 18px; padding: 14px 16px 16px; background: #3a2a1c; box-shadow: inset 0 0 0 1px #ff9a4d, 0 2px 6px rgba(0,0,0,0.6); }
+.bp-block { display: flex; flex-direction: column; gap: 10px; }
+.bp-head { display: flex; align-items: center; gap: 10px; color: #ff9a4d; }
+.bp-title { font-size: 18px; font-weight: 700; color: #ffcf9e; }
+.bp-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; line-height: 1.4; }
+.bp-rate { font-weight: 700; }
+.bp-fixes { display: flex; flex-direction: column; gap: 6px; }
+.bp-fix { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 10px; background: #2a2a2a; }
+.bp-btn { min-height: 44px; min-width: 230px; display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; text-align: left; }
+.bp-what { flex: 1 1 380px; }
+.bp-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 16px; background: #24331f; box-shadow: inset 0 0 0 1px #5eb663; }
+.bp-ok { display: inline-flex; color: #8fd693; }
+.bp-done-text { flex: 1 1 400px; }
 .slot.sm { width: 30px; height: 30px; }
 .slot.sm .icon, .slot.sm img { width: 24px; height: 24px; }
 
@@ -295,7 +331,8 @@ html:not([data-companion="yes"]) .needs-companion { display: none !important; }
 #consent-banner[hidden] { display: none; }
 #analytics-settings { display: block; margin-top: 6px; cursor: pointer; }
 #analytics-settings[hidden] { display: none; }
-#footer { display: flex; align-items: center; gap: 18px; }
+#footer { display: flex; align-items: center; gap: 4px 18px; flex-wrap: wrap; }
+#footer-sendout { flex-basis: 100%; color: #b9d3ee; }
 .column { display: flex; flex-direction: column; gap: 12px; }
 #settings-drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 50; display: flex; justify-content: flex-end; }
 #settings-drawer[hidden] { display: none; }

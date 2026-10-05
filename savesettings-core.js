@@ -2,8 +2,9 @@
 // savesettings unit. No DOM, no fetch: savesettings.js wraps these with the
 // network call and the page's element ids.
 import { excludedMachines } from "./machines-core.js"
+import { formatMachineQuality, qualityFromSave } from "./quality-core.js"
 
-export const FIELDS = ["belt", "buildings", "machines", "mprod", "planet", "recipes"]
+export const FIELDS = ["belt", "buildings", "machines", "mprod", "planet", "quality", "recipes"]
 
 // fragment.js's formatSettings() OMITS each of these keys when the spec is
 // at its engine default rather than writing the default out -- so merging
@@ -63,6 +64,19 @@ export function mergeFragment(settings, fetched, overrides) {
             out.set("nomach", excluded.join(","))
         }
     }
+    // `quality` maps onto `mq`: each crafting machine at the tier most of
+    // its copies are built at on the merged fragment's planet(s)
+    // (quality-core.js's qualityFromSave; a tie goes to the lower tier).
+    // Normal is never written, so an all-normal save deletes the key.
+    if (!overrides.has("quality") && fetched.machine_quality) {
+        let planets = (out.get("planet") || DEFAULTS.planet).split(",")
+        let mq = formatMachineQuality(qualityFromSave(fetched.machine_quality, planets))
+        if (mq === "") {
+            out.delete("mq")
+        } else {
+            out.set("mq", mq)
+        }
+    }
     return out
 }
 
@@ -93,6 +107,7 @@ export function signatureOf(fetched) {
         planet: fetched.planet,
         disabled: [...(fetched.disabled_recipes || [])].sort(),
         machines: fetched.machines || null,
+        quality: fetched.machine_quality || null,
     })
 }
 

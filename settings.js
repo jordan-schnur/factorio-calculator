@@ -21,6 +21,8 @@ import { registerRenderer } from "./render.js"
 import { markOverride, clearOverrides } from "./savesettings.js"
 import { excludedMachines, parseRecipeMachines } from "./machines-core.js"
 import { canBeacon, canUse, parseModuleList } from "./modules-core.js"
+import { parseMachineQuality, qualityFromSave, splitModuleToken, tierOf as qualityTier } from "./quality-core.js"
+import { addQualityBadge, tierPicker } from "./quality-ui.js"
 import { sorted } from "./sort.js"
 
 // Category keys (spec.buildings' Map keys, also the C5 payload's
@@ -178,6 +180,22 @@ function getModule(moduleKey) {
     return module
 }
 
+const NO_MODULE = {module: null, tier: "normal"}
+
+// A module token from a link, "p3" or "p3@legendary" (calculator 1.3.0):
+// the module (getModule's backstops apply) and its quality tier, normal
+// when the token names none, names an unknown tier, or the module is empty.
+// A field a malformed link leaves out (`modules=r:p3;s3`) is an empty slot,
+// as getModule read it in 1.2.0.
+function getModuleToken(token) {
+    if (token === undefined || token === null) {
+        return NO_MODULE
+    }
+    let {key, tier} = splitModuleToken(token)
+    let module = getModule(key)
+    return {module, tier: module === null ? "normal" : tier}
+}
+
 const MAX_BEACONS = 16
 
 // A beacon count from a link: a whole number 0-16. Anything else reads as
@@ -216,7 +234,8 @@ function renderModules(settings) {
         }
         for (let i = 0; i < entry.slots.length; i++) {
             if (entry.slots[i] !== "") {
-                moduleSpec.setModule(i, getModule(entry.slots[i]))
+                let {module, tier} = getModuleToken(entry.slots[i])
+                moduleSpec.setModule(i, module, tier)
             }
         }
         if (entry.beacon !== null) {
@@ -224,24 +243,29 @@ function renderModules(settings) {
             // "module:count". If the count is even, then it is adapted to
             // the new format by dividing it by two and placing the
             // specified module in both slots. Otherwise, a single slot is
-            // filled and the count is used as the beacon count.
-            let module1
-            let module2
+            // filled and the count is used as the beacon count. The new
+            // form is "b1:b2:count", with a 4th field for the beacon's own
+            // quality when it isn't normal.
+            let first
+            let second
             let count
+            let beaconTier = "normal"
             if (entry.beacon.length === 2) {
-                let module = getModule(entry.beacon[0])
+                let single = getModuleToken(entry.beacon[0])
                 let legacy = legacyBeaconCount(entry.beacon[1])
-                module1 = module
-                module2 = legacy.both ? module : null
+                first = single
+                second = legacy.both ? single : NO_MODULE
                 count = legacy.count
             } else {
-                module1 = getModule(entry.beacon[0])
-                module2 = getModule(entry.beacon[1])
+                first = getModuleToken(entry.beacon[0])
+                second = getModuleToken(entry.beacon[1])
                 count = parseBeaconCount(entry.beacon[2])
+                beaconTier = qualityTier(entry.beacon[3]).key
             }
-            moduleSpec.setBeaconModule(module1, 0)
-            moduleSpec.setBeaconModule(module2, 1)
+            moduleSpec.setBeaconModule(first.module, 0, first.tier)
+            moduleSpec.setBeaconModule(second.module, 1, second.tier)
             moduleSpec.setBeaconCount(count)
+            moduleSpec.setBeaconTier(beaconTier)
         }
         // A hand-written link can name a module the recipe or machine can't
         // take (no productivity on this recipe, a kind this machine
@@ -253,7 +277,7 @@ function renderModules(settings) {
             let module = moduleSpec.modules[i]
             if (module !== null && !canUse(module, recipe, moduleSpec.building)) {
                 resolved = resolved || spec.resolveFor(recipe, moduleSpec.building)
-                moduleSpec.setModule(i, resolved.modules[i] ?? null)
+                moduleSpec.setModule(i, resolved.modules[i] ?? null, resolved.moduleTiers[i])
             }
         }
         for (let i = 0; i < moduleSpec.beaconModules.length; i++) {
@@ -266,9 +290,10 @@ function renderModules(settings) {
     }
 }
 
-// The machine layer, `mm=<machine>:<m>:...;<b1>:<b2>:<count>,...`. Every
-// slot is listed ("null" for empty); slots past the machine's own count are
-// dropped, missing ones are empty. Runs after the plan layer, before rows.
+// The machine layer, `mm=<machine>:<m>:...;<b1>:<b2>:<count>[:<tier>],...`.
+// Every slot is listed ("null" for empty, "p3@legendary" with a tier);
+// slots past the machine's own count are dropped, missing ones are empty.
+// Runs after the plan layer, before rows.
 function renderMachineModules(settings) {
     let layer = new Map()
     for (let entry of parseModuleList(settings.get("mm"))) {
@@ -282,19 +307,27 @@ function renderMachineModules(settings) {
         // machine's own check applies), or a beacon module beacons refuse:
         // checked once on load, the same backstop as `modules=` above.
         let modules = []
+        let moduleTiers = []
         for (let i = 0; i < building.moduleSlots; i++) {
             let key = entry.slots[i]
-            let module = key === undefined || key === "" ? null : getModule(key)
-            modules.push(module !== null && !canUse(module, null, building) ? null : module)
+            let token = key === undefined || key === "" ? NO_MODULE : getModuleToken(key)
+            let ok = token.module !== null && canUse(token.module, null, building)
+            modules.push(ok ? token.module : null)
+            moduleTiers.push(ok ? token.tier : "normal")
         }
         let beaconModules = [null, null]
+        let beaconModuleTiers = ["normal", "normal"]
         let beaconCount = zero
-        if (entry.beacon !== null && entry.beacon.length === 3) {
-            beaconModules = [getModule(entry.beacon[0]), getModule(entry.beacon[1])]
-                .map(m => m !== null && !canBeacon(m, beaconData.allowedEffects) ? null : m)
+        let beaconTier = "normal"
+        if (entry.beacon !== null && entry.beacon.length >= 3) {
+            let tokens = [getModuleToken(entry.beacon[0]), getModuleToken(entry.beacon[1])]
+                .map(t => t.module !== null && !canBeacon(t.module, beaconData.allowedEffects) ? NO_MODULE : t)
+            beaconModules = tokens.map(t => t.module)
+            beaconModuleTiers = tokens.map(t => t.tier)
             beaconCount = parseBeaconCount(entry.beacon[2])
+            beaconTier = qualityTier(entry.beacon[3]).key
         }
-        layer.set(building.key, {modules, beaconModules, beaconCount})
+        layer.set(building.key, {modules, moduleTiers, beaconModules, beaconModuleTiers, beaconCount, beaconTier})
     }
     spec.setMachineLayer(layer)
 }
@@ -314,6 +347,19 @@ function renderIgnore(settings) {
                 continue
             }
             spec.ignore.add(item)
+        }
+    }
+}
+
+// out: leftovers sent out on purpose (byproducts.js). Kept as item keys,
+// not items, so a key the plan no longer leaves over just does nothing.
+
+function renderSendOut(settings) {
+    spec.sendOut.clear()
+    let setting = settings.get("out")
+    if (setting !== undefined && setting !== "") {
+        for (let key of setting.split(",")) {
+            if (spec.items.has(key)) spec.sendOut.add(key)
         }
     }
 }
@@ -574,6 +620,77 @@ function syncMachinesToPlanet() {
     renderMachineAllow()
 }
 
+// Settings -> Machines -> Quality (calculator 1.3.0): one row per crafting
+// machine the plan uses, plus any machine whose tier is set, each with a
+// tier picker. A pick sets that machine's tier for every row
+// (spec.machineQuality, `mq=`) and marks the save's "quality" field
+// overridden. Redrawn on every render (renderSettingsTab).
+function renderMachineQualityRows() {
+    let host = document.getElementById("machine_quality")
+    if (!host || !spec.buildingKeys) {
+        return
+    }
+    host.textContent = ""
+    let machines = new Map()
+    let totals = spec.lastTotals
+    if (totals) {
+        for (let [recipe] of totals.rates) {
+            if (!recipe.isReal() || recipe.isDisable()) {
+                continue
+            }
+            let building = spec.getBuilding(recipe)
+            if (building && building.takesQuality) {
+                machines.set(building.key, building)
+            }
+        }
+    }
+    for (let key of spec.machineQuality.keys()) {
+        let building = spec.buildingKeys.get(key)
+        if (building) {
+            machines.set(key, building)
+        }
+    }
+    let list = [...machines.values()].sort((a, b) => a.name.localeCompare(b.name))
+    if (list.length === 0) {
+        let none = document.createElement("span")
+        none.className = "muted"
+        none.textContent = "No machines in this plan."
+        host.appendChild(none)
+        return
+    }
+    for (let building of list) {
+        let tier = spec.machineTier(building)
+        let row = document.createElement("div")
+        row.className = "mq-row"
+        row.dataset.machine = building.key
+        let slot = document.createElement("span")
+        slot.className = "slot slot-sm"
+        slot.appendChild(building.icon.make(20, true))
+        addQualityBadge(slot, tier, 10)
+        let name = document.createElement("span")
+        name.className = "mq-name"
+        name.textContent = building.name
+        row.append(slot, name, tierPicker(tier, picked => setMachineTierByHand(building, picked), {label: `${building.name} quality`}))
+        host.appendChild(row)
+    }
+}
+
+function setMachineTierByHand(building, tier) {
+    markOverride("quality")
+    spec.commitModules(() => spec.setMachineQuality(building.key, tier))
+}
+
+// A planet switch re-derives the save's machine quality for the new planet,
+// unless the user has set it by hand.
+function syncQualityToPlanet() {
+    let fetched = spec.saveState.fetched
+    if (!fetched || !fetched.machine_quality || spec.saveState.overrides.has("quality")) {
+        return
+    }
+    let planets = [...spec.selectedPlanets].map(p => p.key)
+    spec.setMachineQualityMap(qualityFromSave(fetched.machine_quality, planets))
+}
+
 // belt
 
 function beltSummaryText() {
@@ -665,14 +782,16 @@ function renderFuel(settings) {
 // (modules-settings.js) draws it on every render.
 
 function renderDefaultModule(settings) {
-    spec.setDefaultModule(settings.has("dm") ? getModule(settings.get("dm")) : null)
-    spec.setSecondaryDefaultModule(settings.has("dm2") ? getModule(settings.get("dm2")) : null)
+    let dm = settings.has("dm") ? getModuleToken(settings.get("dm")) : NO_MODULE
+    let dm2 = settings.has("dm2") ? getModuleToken(settings.get("dm2")) : NO_MODULE
+    spec.setDefaultModule(dm.module, dm.tier)
+    spec.setSecondaryDefaultModule(dm2.module, dm2.tier)
 }
 
 // A one-module legacy `db=` with an even `dbc` means that module in both
-// beacon slots and half the count.
+// beacon slots and half the count. `dbq=` is the beacons' own quality.
 function renderDefaultBeacon(settings) {
-    let defaultBeacon = [null, null]
+    let defaultBeacon = [NO_MODULE, NO_MODULE]
     let defaultCount = zero
     let legacy = false
     if (settings.has("db")) {
@@ -680,8 +799,8 @@ function renderDefaultBeacon(settings) {
         if (keys.length === 1) {
             legacy = true
         }
-        for (let i = 0; i < keys.length; i++) {
-            defaultBeacon[i] = getModule(keys[i])
+        for (let i = 0; i < keys.length && i < 2; i++) {
+            defaultBeacon[i] = getModuleToken(keys[i])
         }
     }
     if (legacy) {
@@ -695,11 +814,19 @@ function renderDefaultBeacon(settings) {
     }
     // A hand-written `db=` can name a module beacons refuse (productivity,
     // quality): checked once here too, the same backstop as `modules=`/`mm=`.
-    defaultBeacon = defaultBeacon.map(m => m !== null && !canBeacon(m, beaconData.allowedEffects) ? null : m)
+    defaultBeacon = defaultBeacon.map(t => t.module !== null && !canBeacon(t.module, beaconData.allowedEffects) ? NO_MODULE : t)
     for (let i = 0; i < defaultBeacon.length; i++) {
-        spec.setDefaultBeacon(defaultBeacon[i], i)
+        spec.setDefaultBeacon(defaultBeacon[i].module, i, defaultBeacon[i].tier)
     }
     spec.setDefaultBeaconCount(defaultCount)
+    spec.setDefaultBeaconTier(settings.get("dbq"))
+}
+
+// Machine quality, `mq=<machine>:<tier>,...` (calculator 1.3.0). Unknown
+// machines, machines quality doesn't speed up and unknown tiers are dropped
+// (factory.js's setMachineQuality), so a bad link still renders.
+function renderMachineQuality(settings) {
+    spec.setMachineQualityMap(parseMachineQuality(settings.get("mq")))
 }
 
 // recipe disabling
@@ -782,6 +909,7 @@ function renderRecipes(settings) {
                     d3.selectAll("#recipe_toggles .toggle")
                         .classed("selected", d => !spec.disable.has(d))
                     syncMachinesToPlanet()
+                    syncQualityToPlanet()
                     markOverride("planet")
                     spec.updateSolution()
                 })
@@ -928,6 +1056,11 @@ function renderFromSave() {
         let planet = spec.planets && spec.planets.get(fetched.planet)
         appendKV(container, "Planet", row => row.append("span").text(planet ? planet.name : fetched.planet))
         appendKV(container, "Recipes", row => row.append("span").text(`${fetched.disabled_recipes.length} recipes locked`))
+        let saved = fetched.machine_quality
+            ? qualityFromSave(fetched.machine_quality, [...spec.selectedPlanets].map(p => p.key))
+            : new Map()
+        let words = [...saved].map(([key, tier]) => `${(spec.buildingKeys.get(key) || {name: key}).name}: ${qualityTier(tier).name}`)
+        appendKV(container, "Quality", row => row.append("span").text(words.length === 0 ? "every machine normal" : words.join(", ")))
     }
 
     appendKV(container, "", row => {
@@ -1003,6 +1136,7 @@ const OVERRIDE_ANCHORS = [
     [() => document.getElementById("belt_selector"), "belt"],
     [() => document.getElementById("building_selector"), "buildings"],
     [() => document.getElementById("machine_allow")?.parentElement, "machines"],
+    [() => document.getElementById("machine_quality")?.parentElement, "quality"],
     [() => document.getElementById("mprod")?.parentElement, "mprod"],
     [() => document.getElementById("planet_setting_row"), "planet"],
     [() => document.getElementById("recipe_toggles")?.closest("details")?.querySelector(":scope > summary"), "recipes"],
@@ -1059,6 +1193,7 @@ function ensureResetAllButton() {
 function renderSettingsTab(spec) {
     spec.roundMachines = roundMachinesChoice
     renderFromSave()
+    renderMachineQualityRows()
     renderMachinesToggle()
     ensureResetAllButton()
     refreshOverrideTags()
@@ -1079,12 +1214,14 @@ export function renderSettings(settings) {
     spec.roundMachines = roundMachinesChoice
     renderTitle(settings)
     renderIgnore(settings)
+    renderSendOut(settings)
     renderRateOptions(settings)
     renderPrecisions(settings)
     renderValueFormat(settings)
     renderBeltFormat(settings)
     renderMiningProd(settings)
     renderBuildings(settings)
+    renderMachineQuality(settings)
     renderBelts(settings)
     renderFuel(settings)
     renderDefaultModule(settings)

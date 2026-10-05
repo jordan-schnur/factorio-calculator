@@ -13,7 +13,10 @@ import { spec } from "./factory.js"
 import { Rational, zero } from "./rational.js"
 import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, lineStyle, rankNodes, stackLabels } from "./flow-core.js"
 import { beaconBadge, moduleStrip } from "./modules-strip.js"
+import { withQualityBadge } from "./quality-ui.js"
 import { RATE_LABEL } from "./table-core.js"
+import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
+import { showByproducts } from "./byproducts.js"
 import { linkMachines } from "./details.js"
 import { beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
 import { tierWord } from "./colorblind.js"
@@ -75,6 +78,9 @@ function nodeRate(totals, node, itemKey) {
     return (producerMap && producerMap.get(recipe)) || zero
 }
 
+const LEFT_OVER = "__leftover"
+const SEND_OUT = "__sendout"
+
 function buildModel(totals) {
     let isTargetRecipe = new Set()
     for (let [recipe] of totals.rates) {
@@ -104,17 +110,30 @@ function buildModel(totals) {
         }
     })
 
-    // Drop links into/out of those same sentinels: they have no `.key`, so
-    // they can't be represented as a flow-core node or link endpoint. `from`
-    // may legitimately be `null` (flow-core's own "no producer" case), so
-    // check that before touching `.key`.
+    // What the solver leaves over runs into a sink card in the last column:
+    // "Left over" (the Byproducts bar's problem) or "Send out" (sent out on
+    // purpose, the mirror of a Bring in card).
+    let sinkOf = item => spec.sendOut.has(item.key) ? SEND_OUT : LEFT_OVER
+    for (let item of totals.surplus.keys()) {
+        let key = sinkOf(item)
+        if (!recipes.some(r => r.key === key)) {
+            recipes.push({key, name: key === SEND_OUT ? "Send out" : "Left over", isReal: true, isDisable: false,
+                isResource: false, isTarget: false, sink: true, count: 0, machine: null})
+        }
+    }
+
+    // Drop links into/out of the other sentinels (the target's OutputRecipe):
+    // they have no `.key`, so they can't be a flow-core node or link endpoint.
+    // `from` may legitimately be `null` (flow-core's own "no producer" case),
+    // so check that before touching `.key`.
+    let isSurplus = to => to.key === undefined && to.name === "surplus"
     let links = totals.proportionate
-        .filter(({from, to}) => (from === null || from.key !== undefined) && to.key !== undefined)
+        .filter(({from, to}) => (from === null || from.key !== undefined) && (to.key !== undefined || isSurplus(to)))
         .map(({item, from, to, rate}) => ({
             item: item.key,
             itemName: item.name,
             from: from === null ? null : from.key,
-            to: to.key,
+            to: isSurplus(to) ? sinkOf(item) : to.key,
             rate: rate.toFloat(),
             rateExact: rate,
             belts: item.phase === "solid" ? spec.getBeltCount(rate).toFloat() : 0,
@@ -151,10 +170,68 @@ function cardModules(recipe, node) {
     if (!moduleSpec) return null
     let line = document.createElement("span")
     line.className = "mods"
-    line.appendChild(moduleStrip(moduleSpec.modules, 16))
-    let badge = beaconBadge(moduleSpec.beaconModules, moduleSpec.beaconCount, 14, false)
+    line.appendChild(moduleStrip(moduleSpec.modules, 16, moduleSpec.moduleTiers))
+    let badge = beaconBadge(moduleSpec.beaconModules, moduleSpec.beaconCount, 14, false, moduleSpec.beaconModuleTiers, moduleSpec.beaconTier)
     if (badge) line.appendChild(badge)
     return line
+}
+
+// Recipes the Byproducts bar has a block for; set by draw().
+let stalledNow = new Set()
+
+const MARKER_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3z"></path><path d="M12 10v5"></path></svg>'
+
+// "backs up" on a card whose recipe would stop: scrolls to the Byproducts
+// bar instead of selecting the card.
+function backsUpMarker() {
+    let marker = document.createElement("span")
+    marker.className = "bp-marker"
+    marker.title = "Something it makes has nowhere to go: see the fixes above"
+    marker.innerHTML = MARKER_SVG
+    marker.appendChild(document.createTextNode("backs up"))
+    marker.addEventListener("click", event => {
+        event.stopPropagation()
+        event.preventDefault()
+        showByproducts()
+    })
+    return marker
+}
+
+// The Left over / Send out card: what runs into it, how many things.
+function sinkCard(node, div, body) {
+    let out = node.id === SEND_OUT
+    div.classList.add("sink", out ? "out" : "left")
+    let items = [...new Set((lastLayout ? lastLayout.edges : []).filter(e => e.target === node.id).map(e => e.item))]
+        .map(key => spec.items.get(key)).filter(Boolean)
+    let slot = document.createElement("span")
+    slot.className = "slot slot-sm"
+    let tank = spec.items.get("storage-tank") || items[0]
+    if (tank) slot.appendChild(tank.icon.make(20, true))
+    body.appendChild(slot)
+    let mid = document.createElement("span")
+    mid.className = "mid"
+    let name = document.createElement("span")
+    name.className = "name"
+    name.textContent = node.label
+    mid.appendChild(name)
+    let sub = document.createElement("span")
+    sub.className = "sub"
+    sub.textContent = out ? "To storage or another build" : "Nothing here uses it"
+    mid.appendChild(sub)
+    body.appendChild(mid)
+    let right = document.createElement("span")
+    right.className = "right outs"
+    let icons = document.createElement("span")
+    icons.className = "out-icons"
+    for (let item of items) {
+        let icon = item.icon.make(14, true)
+        icon.title = item.name
+        icons.appendChild(icon)
+    }
+    right.appendChild(icons)
+    if (!out) right.appendChild(backsUpMarker())
+    body.appendChild(right)
+    if (!out) body.addEventListener("click", () => showByproducts())
 }
 
 function nodeMarkup(node) {
@@ -177,9 +254,21 @@ function nodeMarkup(node) {
     body.type = "button"
     body.className = "nbody"
 
+    if (node.kind === "sink") {
+        sinkCard(node, div, body)
+        div.appendChild(body)
+        div.addEventListener("mouseenter", () => hoverIntent(() => showCardHover(node.id)))
+        div.addEventListener("mouseleave", () => hoverIntent(null))
+        return div
+    }
+
+    let recipe = node.kind === "input" ? null : spec.recipes.get(node.id)
+    let multi = Boolean(recipe && lastDrawnTotals && isMultiOutput(recipe))
+
     let slot = document.createElement("span")
     slot.className = "slot slot-sm"
-    if (item) slot.appendChild(item.icon.make(20, true))
+    if (multi) slot.appendChild(recipe.icon.make(20, true))
+    else if (item) slot.appendChild(item.icon.make(20, true))
     body.appendChild(slot)
 
     let mid = document.createElement("span")
@@ -189,9 +278,8 @@ function nodeMarkup(node) {
     // A single-product recipe's card is titled by its item (e.g. "Petroleum gas"),
     // not the recipe name, which can run long and get clipped ("Light oil
     // cracking to…"). Multi-product recipes (advanced oil processing, coal
-    // liquefaction) keep the recipe name since the icon/rate are only the
-    // first product.
-    let recipe = node.kind === "input" ? null : spec.recipes.get(node.id)
+    // liquefaction) keep the recipe name and icon, with an icon per output on
+    // the right.
     if (recipe && spec.handSet.has(recipe.key)) div.classList.add("hand")
     let title = node.label
     if (item && recipe && recipe.products.length === 1) title = item.name
@@ -202,7 +290,7 @@ function nodeMarkup(node) {
     sub.className = "sub num"
     let subInfo = nodeSub(node)
     if (subInfo) {
-        sub.appendChild(subInfo.icon.make(16, true))
+        sub.appendChild(withQualityBadge(subInfo.icon.make(16, true), spec.machineTier(node.machine), 9))
         sub.appendChild(document.createTextNode(subInfo.text))
     }
     mid.appendChild(sub)
@@ -215,15 +303,37 @@ function nodeMarkup(node) {
 
     let right = document.createElement("span")
     right.className = "right"
-    let rateText = spec.format.rate(node.rate)
-    let rateSpan = document.createElement("span")
-    // No data-value here: scratchpad.js's document-wide click delegate
-    // pastes any `.num[data-value]` it catches into the scratch pad, and a
-    // card click already does something else (toggles selection) -- the
-    // graph card's rate isn't click-to-paste.
-    rateSpan.className = "rate num"
-    rateSpan.textContent = `${rateText}${RATE_LABEL[spec.format.rateName] || "/min"}`
-    right.appendChild(rateSpan)
+    let unit = RATE_LABEL[spec.format.rateName] || "/min"
+    let stalled = recipe !== null && stalledNow.has(recipe)
+    if (multi) {
+        // Every output, not just the first: the refinery stops when any one
+        // of them backs up. Their rates are in the side panel and on the lines.
+        right.classList.add("outs")
+        let icons = document.createElement("span")
+        icons.className = "out-icons"
+        for (let {item: out} of outputsOf(lastDrawnTotals, recipe)) {
+            let icon = out.icon.make(14, true)
+            icon.title = out.name
+            icons.appendChild(icon)
+        }
+        right.appendChild(icons)
+        if (!stalled) {
+            let count = document.createElement("span")
+            count.className = "rate num"
+            count.textContent = `${recipe.products.length} outputs`
+            right.appendChild(count)
+        }
+    } else {
+        let rateSpan = document.createElement("span")
+        // No data-value here: scratchpad.js's document-wide click delegate
+        // pastes any `.num[data-value]` it catches into the scratch pad, and a
+        // card click already does something else (toggles selection) -- the
+        // graph card's rate isn't click-to-paste.
+        rateSpan.className = "rate num"
+        rateSpan.textContent = `${spec.format.rate(node.rate)}${unit}`
+        right.appendChild(rateSpan)
+    }
+    if (stalled) right.appendChild(backsUpMarker())
     body.appendChild(right)
 
     body.addEventListener("click", event => {
@@ -810,6 +920,7 @@ function draw(totals) {
     lastDrawnKey = renderKey()
 
     let model = buildModel(totals)
+    stalledNow = new Set(stalls(totals, spec.sendOut).map(b => b.recipe).filter(Boolean))
 
     // 210x58: the prototype's .gcard size, which calc.css's .node now
     // matches exactly -- these are the inline width/height nodeMarkup()
