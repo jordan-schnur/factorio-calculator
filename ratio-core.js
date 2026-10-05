@@ -197,3 +197,15 @@ export function lineRatio(from, to, root) {
         : `${ratioNumber(from.count / to.count)} : 1`
     return { from: side(from), to: side(to), ratio }
 }
+
+// How many machines at each end of a line one full belt covers: `from` and
+// `to` are the line's machine counts (null for an end with no machine),
+// `belts` the belts the line fills. 13.33 foundries -> 480 assemblers on
+// 2 2/3 belts is {from: "5", to: "180"}; null when the line fills no belt.
+export function perBelt(from, to, belts) {
+    if (!(belts > 0)) {
+        return null
+    }
+    let each = count => count === null ? null : ratioNumber(count / belts)
+    return { from: each(from), to: each(to) }
+}
