@@ -123,8 +123,10 @@ function currentEntry(opts, target) {
 // every slot (its two beacon slots may differ). A selected slot means a
 // one-slot edit, so it can't.
 function planWritable(opts, sel) {
-    let modules = currentEntry(opts, "plan").modules
-    return !(sel && sel.kind === "slot") && modules.every(m => m === modules[0])
+    let entry = currentEntry(opts, "plan")
+    return !(sel && sel.kind === "slot") &&
+        entry.modules.every(m => m === entry.modules[0]) &&
+        entry.moduleTiers.every(t => t === entry.moduleTiers[0])
 }
 
 // Where edits go: "row" (Just <recipe>), "machine" or "plan". A row's
