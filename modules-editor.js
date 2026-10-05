@@ -13,6 +13,7 @@
 // across those re-renders; picking a slot or flipping the radio re-renders
 // only the editor. Styles: calc/modules-editor.css.
 import { spec } from "./factory.js"
+import { isOwnHash } from "./fragment.js"
 import { sprites } from "./icon.js"
 import { beaconData } from "./module.js"
 import {
@@ -23,6 +24,9 @@ import { handTag } from "./modules-strip.js"
 import { RATE_LABEL } from "./table-core.js"
 
 const MAX_BEACONS = 16
+// A module going into a beacon slot while the count is 0 brings this many
+// beacons, Settings' rule for the plan (modules-settings.js's pickBeacon).
+const FIRST_BEACONS = 8
 
 // Mount key ("row:<recipe key>" / "machine:<machine key>") -> the selected
 // slot, {kind: "slot" | "beacon", index}. Cleared once a module goes in.
@@ -35,9 +39,16 @@ const selection = new Map()
 // editing the plan rather than resetting on every re-render -- until the
 // row closes: cleared wholesale on "calc:select" (dispatched only when the
 // open/selected row changes, never by an edit inside this editor), so
-// reopening any row re-seeds it fresh.
+// reopening any row re-seeds it fresh. Also cleared when Back/Forward or a
+// pasted link reloads the page from the fragment (init.js's hashchange
+// listener), which never fires "calc:select".
 const chosenTarget = new Map()
 document.addEventListener("calc:select", () => chosenTarget.clear())
+window.addEventListener("hashchange", () => {
+    if (!isOwnHash(window.location.hash)) {
+        chosenTarget.clear()
+    }
+})
 
 function el(tag, className, text) {
     let node = document.createElement(tag)
@@ -109,6 +120,10 @@ function currentTarget(opts) {
     if (!chosenTarget.has(key)) {
         let source = spec.moduleSource(opts.recipe)
         chosenTarget.set(key, source === "machine" ? "machine" : "row")
+    } else if (chosenTarget.get(key) === "plan" && !planWritable(opts, null)) {
+        // A choice made before the row's state changed under it (a link,
+        // say) must not send its mixed modules to the plan.
+        chosenTarget.set(key, "row")
     }
     return chosenTarget.get(key)
 }
@@ -155,6 +170,9 @@ function pick(opts, module) {
             entry.beaconModules = [module, module]
         } else {
             entry.beaconModules[sel.index] = module
+        }
+        if (module && entry.beaconCount === 0) {
+            entry.beaconCount = FIRST_BEACONS
         }
     } else if (sel && sel.kind === "slot" && target !== "plan") {
         entry.modules[sel.index] = module

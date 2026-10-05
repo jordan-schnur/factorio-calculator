@@ -178,13 +178,31 @@ function getModule(moduleKey) {
     return module
 }
 
+const MAX_BEACONS = 16
+
+// A beacon count from a link: a whole number 0-16. Anything else reads as
+// 0, the same backstop as an unknown module key, so a bad link can't stop
+// the page from rendering.
+function parseBeaconCount(text, max = MAX_BEACONS) {
+    let n = /^\d+$/.test(text ?? "") ? Number(text) : NaN
+    return n <= max ? Rational.from_float(n) : zero
+}
+
+// Kirk's legacy one-module beacon form, "module:count": an even count
+// means that module in both slots and half the count.
+function legacyBeaconCount(text) {
+    let n = /^\d+$/.test(text) ? Number(text) : 0
+    let both = n % 2 === 0
+    let count = both ? n / 2 : n
+    return {both, count: count <= MAX_BEACONS ? Rational.from_float(count) : zero}
+}
+
 // NOTE: Buildings must be configured before modules! And the plan (dm,
 // dm2, db, dbc) and machine (mm) layers before the rows: a row's ModuleSpec
 // is created from those layers here, then its listed slots overwrite them,
 // so Kirk's partial lists keep the layers in the slots they leave out.
 // Every entry read marks its recipe as set by hand.
 function renderModules(settings) {
-    let two = Rational.from_float(2)
     for (let entry of parseModuleList(settings.get("modules"))) {
         let recipe = spec.recipes.get(entry.key)
         if (recipe === undefined) {
@@ -212,20 +230,14 @@ function renderModules(settings) {
             let count
             if (entry.beacon.length === 2) {
                 let module = getModule(entry.beacon[0])
-                count = Rational.from_string(entry.beacon[1])
-                let divmod = count.divmod(two)
-                if (divmod.remainder.isZero()) {
-                    module1 = module
-                    module2 = module
-                    count = divmod.quotient
-                } else {
-                    module1 = module
-                    module2 = null
-                }
+                let legacy = legacyBeaconCount(entry.beacon[1])
+                module1 = module
+                module2 = legacy.both ? module : null
+                count = legacy.count
             } else {
                 module1 = getModule(entry.beacon[0])
                 module2 = getModule(entry.beacon[1])
-                count = Rational.from_string(entry.beacon[2])
+                count = parseBeaconCount(entry.beacon[2])
             }
             moduleSpec.setBeaconModule(module1, 0)
             moduleSpec.setBeaconModule(module2, 1)
@@ -280,7 +292,7 @@ function renderMachineModules(settings) {
         if (entry.beacon !== null && entry.beacon.length === 3) {
             beaconModules = [getModule(entry.beacon[0]), getModule(entry.beacon[1])]
                 .map(m => m !== null && !canBeacon(m, beaconData.allowedEffects) ? null : m)
-            beaconCount = Rational.from_string(entry.beacon[2])
+            beaconCount = parseBeaconCount(entry.beacon[2])
         }
         layer.set(building.key, {modules, beaconModules, beaconCount})
     }
@@ -672,16 +684,14 @@ function renderDefaultBeacon(settings) {
             defaultBeacon[i] = getModule(keys[i])
         }
     }
-    if (settings.has("dbc")) {
-        defaultCount = Rational.from_string(settings.get("dbc"))
-    }
     if (legacy) {
-        let two = Rational.from_float(2)
-        let divmod = defaultCount.divmod(two)
-        if (divmod.remainder.isZero()) {
+        let parsed = legacyBeaconCount(settings.get("dbc") ?? "0")
+        if (parsed.both) {
             defaultBeacon = [defaultBeacon[0], defaultBeacon[0]]
-            defaultCount = divmod.quotient
         }
+        defaultCount = parsed.count
+    } else if (settings.has("dbc")) {
+        defaultCount = parseBeaconCount(settings.get("dbc"))
     }
     // A hand-written `db=` can name a module beacons refuse (productivity,
     // quality): checked once here too, the same backstop as `modules=`/`mm=`.
