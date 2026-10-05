@@ -10,6 +10,7 @@ import { beltWords, destinationLines, flowLines, goesToRatio, needsRatio } from 
 import { one, Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { mountModuleEditor } from "./modules-editor.js"
+import { tierPicker } from "./quality-ui.js"
 import { relevantRecipes, renderOptions } from "./source.js"
 import { RATE_LABEL } from "./table-core.js"
 import { buildRows, powerRepr } from "./table.js"
@@ -420,12 +421,31 @@ function smallButton(text, className, onClick) {
 // use lit. A click pins this recipe to that machine (factory.js's
 // recipeBuildings, `mach=`); "for everything in this build" pins every
 // recipe in the plan it can make; "Automatic" drops this recipe's pin.
+// The machine's quality picker (calculator 1.3.0): sets the tier for that
+// machine type, so every row using it. Marks the save's "quality" field
+// overridden like Settings' pickers do (savesettings.js's markOverride is
+// not imported here: the commit's render writes the hash anyway).
+function machineQualityPicker(building) {
+    let wrap = document.createElement("div")
+    wrap.className = "machine-quality"
+    wrap.appendChild(tierPicker(spec.machineTier(building), tier => {
+        spec.saveState.overrides.add("quality")
+        spec.commitModules(() => spec.setMachineQuality(building.key, tier))
+    }, {label: `${building.name} quality`}))
+    let note = document.createElement("span")
+    note.className = "muted"
+    note.textContent = `Every ${building.name.toLowerCase()} in this build`
+    wrap.appendChild(note)
+    return wrap
+}
+
 function buildMachinePicker(recipe, totals) {
     let capable = spec.capableBuildings(recipe)
-    if (capable.length < 2) {
-        return []
-    }
     let current = spec.getBuilding(recipe)
+    let quality = current && current.takesQuality ? machineQualityPicker(current) : null
+    if (capable.length < 2) {
+        return quality ? [lbl("Machine"), quality] : []
+    }
     let slots = document.createElement("div")
     slots.className = "machines"
     for (let building of capable) {
@@ -465,7 +485,14 @@ function buildMachinePicker(recipe, totals) {
             spec.updateSolution()
         }))
     }
-    return actions.childElementCount > 0 ? [lbl("Machine"), slots, actions] : [lbl("Machine"), slots]
+    let out = [lbl("Machine"), slots]
+    if (quality) {
+        out.push(quality)
+    }
+    if (actions.childElementCount > 0) {
+        out.push(actions)
+    }
+    return out
 }
 
 function buildSourceCol(item, row, totals, isTarget, isResource) {
