@@ -21,7 +21,8 @@ import { registerRenderer } from "./render.js"
 import { markOverride, clearOverrides } from "./savesettings.js"
 import { excludedMachines, parseRecipeMachines } from "./machines-core.js"
 import { canBeacon, canUse, parseModuleList } from "./modules-core.js"
-import { parseMachineQuality, splitModuleToken, tierOf as qualityTier } from "./quality-core.js"
+import { parseMachineQuality, qualityFromSave, splitModuleToken, tierOf as qualityTier } from "./quality-core.js"
+import { addQualityBadge, tierPicker } from "./quality-ui.js"
 import { sorted } from "./sort.js"
 
 // Category keys (spec.buildings' Map keys, also the C5 payload's
@@ -606,6 +607,77 @@ function syncMachinesToPlanet() {
     renderMachineAllow()
 }
 
+// Settings -> Machines -> Quality (calculator 1.3.0): one row per crafting
+// machine the plan uses, plus any machine whose tier is set, each with a
+// tier picker. A pick sets that machine's tier for every row
+// (spec.machineQuality, `mq=`) and marks the save's "quality" field
+// overridden. Redrawn on every render (renderSettingsTab).
+function renderMachineQualityRows() {
+    let host = document.getElementById("machine_quality")
+    if (!host || !spec.buildingKeys) {
+        return
+    }
+    host.textContent = ""
+    let machines = new Map()
+    let totals = spec.lastTotals
+    if (totals) {
+        for (let [recipe] of totals.rates) {
+            if (!recipe.isReal() || recipe.isDisable()) {
+                continue
+            }
+            let building = spec.getBuilding(recipe)
+            if (building && building.takesQuality) {
+                machines.set(building.key, building)
+            }
+        }
+    }
+    for (let key of spec.machineQuality.keys()) {
+        let building = spec.buildingKeys.get(key)
+        if (building) {
+            machines.set(key, building)
+        }
+    }
+    let list = [...machines.values()].sort((a, b) => a.name.localeCompare(b.name))
+    if (list.length === 0) {
+        let none = document.createElement("span")
+        none.className = "muted"
+        none.textContent = "No machines in this plan."
+        host.appendChild(none)
+        return
+    }
+    for (let building of list) {
+        let tier = spec.machineTier(building)
+        let row = document.createElement("div")
+        row.className = "mq-row"
+        row.dataset.machine = building.key
+        let slot = document.createElement("span")
+        slot.className = "slot slot-sm"
+        slot.appendChild(building.icon.make(20, true))
+        addQualityBadge(slot, tier, 10)
+        let name = document.createElement("span")
+        name.className = "mq-name"
+        name.textContent = building.name
+        row.append(slot, name, tierPicker(tier, picked => setMachineTierByHand(building, picked), {label: `${building.name} quality`}))
+        host.appendChild(row)
+    }
+}
+
+function setMachineTierByHand(building, tier) {
+    markOverride("quality")
+    spec.commitModules(() => spec.setMachineQuality(building.key, tier))
+}
+
+// A planet switch re-derives the save's machine quality for the new planet,
+// unless the user has set it by hand.
+function syncQualityToPlanet() {
+    let fetched = spec.saveState.fetched
+    if (!fetched || !fetched.machine_quality || spec.saveState.overrides.has("quality")) {
+        return
+    }
+    let planets = [...spec.selectedPlanets].map(p => p.key)
+    spec.setMachineQualityMap(qualityFromSave(fetched.machine_quality, planets))
+}
+
 // belt
 
 function beltSummaryText() {
@@ -824,6 +896,7 @@ function renderRecipes(settings) {
                     d3.selectAll("#recipe_toggles .toggle")
                         .classed("selected", d => !spec.disable.has(d))
                     syncMachinesToPlanet()
+                    syncQualityToPlanet()
                     markOverride("planet")
                     spec.updateSolution()
                 })
@@ -970,6 +1043,11 @@ function renderFromSave() {
         let planet = spec.planets && spec.planets.get(fetched.planet)
         appendKV(container, "Planet", row => row.append("span").text(planet ? planet.name : fetched.planet))
         appendKV(container, "Recipes", row => row.append("span").text(`${fetched.disabled_recipes.length} recipes locked`))
+        let saved = fetched.machine_quality
+            ? qualityFromSave(fetched.machine_quality, [...spec.selectedPlanets].map(p => p.key))
+            : new Map()
+        let words = [...saved].map(([key, tier]) => `${(spec.buildingKeys.get(key) || {name: key}).name}: ${qualityTier(tier).name}`)
+        appendKV(container, "Quality", row => row.append("span").text(words.length === 0 ? "every machine normal" : words.join(", ")))
     }
 
     appendKV(container, "", row => {
@@ -1045,6 +1123,7 @@ const OVERRIDE_ANCHORS = [
     [() => document.getElementById("belt_selector"), "belt"],
     [() => document.getElementById("building_selector"), "buildings"],
     [() => document.getElementById("machine_allow")?.parentElement, "machines"],
+    [() => document.getElementById("machine_quality")?.parentElement, "quality"],
     [() => document.getElementById("mprod")?.parentElement, "mprod"],
     [() => document.getElementById("planet_setting_row"), "planet"],
     [() => document.getElementById("recipe_toggles")?.closest("details")?.querySelector(":scope > summary"), "recipes"],
@@ -1101,6 +1180,7 @@ function ensureResetAllButton() {
 function renderSettingsTab(spec) {
     spec.roundMachines = roundMachinesChoice
     renderFromSave()
+    renderMachineQualityRows()
     renderMachinesToggle()
     ensureResetAllButton()
     refreshOverrideTags()
