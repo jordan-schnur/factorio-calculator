@@ -21,6 +21,8 @@ import {
     powerWords, resolveModules, rowMachines, tierOf, whyNot,
 } from "./modules-core.js"
 import { handTag } from "./modules-strip.js"
+import { beaconPowerMultiplier, isNormal, tierOf as qualityTier } from "./quality-core.js"
+import { addQualityBadge, tierPicker, withQualityBadge } from "./quality-ui.js"
 import { RATE_LABEL } from "./table-core.js"
 
 const MAX_BEACONS = 16
@@ -49,6 +51,15 @@ window.addEventListener("hashchange", () => {
         chosenTarget.clear()
     }
 })
+
+// Mount key -> the quality tier the next picked module goes in at (the
+// "Module quality" picker above the palette, calculator 1.3.0). Normal
+// until picked; kept across re-renders like `selection`.
+const pickTier = new Map()
+
+function nextTier(opts) {
+    return pickTier.get(mountKey(opts)) || "normal"
+}
 
 function el(tag, className, text) {
     let node = document.createElement(tag)
@@ -88,14 +99,23 @@ function currentEntry(opts, target) {
         let plan = spec.planLayer()
         source = {
             modules: new Array(opts.machine.moduleSlots).fill(plan.defaultModule),
+            moduleTiers: new Array(opts.machine.moduleSlots).fill(plan.defaultModuleTier),
             beaconModules: plan.defaultBeacon,
+            beaconModuleTiers: plan.defaultBeaconTiers,
             beaconCount: plan.defaultBeaconCount,
+            beaconTier: plan.defaultBeaconTier,
         }
     }
+    let tiers = source.moduleTiers || []
+    let beaconTiers = source.beaconModuleTiers || []
+    let beaconModules = [source.beaconModules[0] ?? null, source.beaconModules[1] ?? null]
     return {
         modules: source.modules.slice(),
-        beaconModules: [source.beaconModules[0] ?? null, source.beaconModules[1] ?? null],
+        moduleTiers: source.modules.map((m, i) => m ? qualityTier(tiers[i]).key : "normal"),
+        beaconModules,
+        beaconModuleTiers: beaconModules.map((m, i) => m ? qualityTier(beaconTiers[i]).key : "normal"),
         beaconCount: num(source.beaconCount),
+        beaconTier: qualityTier(source.beaconTier).key,
     }
 }
 
@@ -152,9 +172,13 @@ function write(opts, target, entry) {
             let module = entry.modules[0] ?? null
             spec.setPlanLayer({
                 defaultModule: module,
+                defaultModuleTier: entry.moduleTiers[0] ?? "normal",
                 secondaryDefaultModule: module && kindOf(module) === "productivity" ? plan.secondaryDefaultModule : null,
+                secondaryDefaultModuleTier: plan.secondaryDefaultModuleTier,
                 defaultBeacon: entry.beaconModules,
+                defaultBeaconTiers: entry.beaconModuleTiers,
                 defaultBeaconCount: entry.beaconCount,
+                defaultBeaconTier: entry.beaconTier,
             })
         }
     })
@@ -165,19 +189,49 @@ function pick(opts, module) {
     let target = currentTarget(opts)
     let entry = currentEntry(opts, target)
     let sel = selection.get(key)
+    let tier = module ? nextTier(opts) : "normal"
     if (sel && sel.kind === "beacon") {
         if (target === "plan") {
             entry.beaconModules = [module, module]
+            entry.beaconModuleTiers = [tier, tier]
         } else {
             entry.beaconModules[sel.index] = module
+            entry.beaconModuleTiers[sel.index] = tier
         }
         if (module && entry.beaconCount === 0) {
             entry.beaconCount = FIRST_BEACONS
         }
     } else if (sel && sel.kind === "slot" && target !== "plan") {
         entry.modules[sel.index] = module
+        entry.moduleTiers[sel.index] = tier
     } else {
         entry.modules = entry.modules.map(() => module)
+        entry.moduleTiers = entry.modules.map(() => tier)
+    }
+    selection.delete(key)
+    write(opts, target, entry)
+}
+
+// The "Module quality" picker: sets the tier of the next module picked;
+// with a slot (or beacon slot) selected it also re-tiers that slot now.
+function chooseTier(opts, render, tier) {
+    let key = mountKey(opts)
+    pickTier.set(key, tier)
+    let sel = selection.get(key)
+    if (!sel) {
+        render()
+        return
+    }
+    let target = currentTarget(opts)
+    let entry = currentEntry(opts, target)
+    if (sel.kind === "beacon") {
+        for (let i of target === "plan" ? [0, 1] : [sel.index]) {
+            if (entry.beaconModules[i]) {
+                entry.beaconModuleTiers[i] = tier
+            }
+        }
+    } else if (target !== "plan" && entry.modules[sel.index]) {
+        entry.moduleTiers[sel.index] = tier
     }
     selection.delete(key)
     write(opts, target, entry)
@@ -252,9 +306,13 @@ function machineSlots(opts, entry, target, sel, render) {
         let on = sel && sel.kind === "slot" && sel.index === i
         let b = button("slot slot-lg me-slot" + (on ? " sel" : ""), undefined, () => select(opts, render, "slot", i))
         b.dataset.slot = String(i)
-        b.title = `Slot ${i + 1}: ${moduleLabel(module)}`
+        let tier = entry.moduleTiers[i]
+        b.title = `Slot ${i + 1}: ${moduleLabel(module)}` + (module && !isNormal(tier) ? ` (${qualityTier(tier).name})` : "")
         b.disabled = target === "plan"
         b.appendChild(slotIcon(module, 34))
+        if (module) {
+            addQualityBadge(b, tier, 14)
+        }
         row.appendChild(b)
     })
     box.appendChild(row)
@@ -292,7 +350,7 @@ function beaconSlots(opts, entry, disp, target, sel, render) {
     row.append(minus, el("span", "num me-count", String(disp.beaconCount)), plus)
     let beacon = spec.items.get("beacon")
     if (beacon) {
-        row.appendChild(beacon.icon.make(28, true))
+        row.appendChild(withQualityBadge(beacon.icon.make(28, true), disp.beaconTier, 12))
     }
     disp.beaconModules.forEach((module, i) => {
         let on = sel && sel.kind === "beacon" && sel.index === i
@@ -300,9 +358,16 @@ function beaconSlots(opts, entry, disp, target, sel, render) {
         b.dataset.beacon = String(i)
         b.title = `Beacon slot ${i + 1}: ${moduleLabel(module)}`
         b.appendChild(slotIcon(module, 28))
+        if (module) {
+            addQualityBadge(b, disp.beaconModuleTiers[i], 12)
+        }
         row.appendChild(b)
     })
     box.appendChild(row)
+    let quality = el("div", "me-tierpick me-beacon-tier")
+    quality.appendChild(el("span", "muted", "Beacon quality"))
+    quality.appendChild(tierPicker(disp.beaconTier, tier => write(opts, target, {...entry, beaconTier: tier}), {label: "Beacon quality"}))
+    box.appendChild(quality)
     return box
 }
 
@@ -312,8 +377,12 @@ function beaconSlots(opts, entry, disp, target, sel, render) {
 // irrelevant there (productivity can go into a layer from pipe's row; the
 // row itself still falls back, same as any other row that can't use it).
 // Only "row" filters by this row's own recipe too.
-function palette(opts, sel, target) {
+function palette(opts, sel, target, render) {
     let box = el("div", "me-block me-palette")
+    let quality = el("div", "me-tierpick me-module-tier")
+    quality.appendChild(el("span", "muted", "Module quality"))
+    quality.appendChild(tierPicker(nextTier(opts), tier => chooseTier(opts, render, tier), {label: "Module quality"}))
+    box.appendChild(quality)
     let forBeacon = sel && sel.kind === "beacon"
     let reasonFor = module => forBeacon
         ? beaconWhyNot(module, beaconData.allowedEffects)
@@ -325,6 +394,9 @@ function palette(opts, sel, target) {
         b.disabled = reason !== null
         b.title = reason || title
         b.appendChild(slotIcon(module, 28))
+        if (module) {
+            addQualityBadge(b, nextTier(opts), 12)
+        }
         row.appendChild(b)
     }
     for (let line of paletteRows(spec.modules.values())) {
@@ -339,7 +411,7 @@ function palette(opts, sel, target) {
     empty.appendChild(el("span", "muted me-plabel", "Empty"))
     addPick(empty, null, "Empty slot")
     box.appendChild(empty)
-    box.appendChild(el("div", "muted me-note", "Quality modules only slow the machine here; quality itself isn't planned yet."))
+    box.appendChild(el("div", "muted me-note", "Quality modules only slow the machine here; planning for quality output isn't supported yet."))
     return box
 }
 
@@ -406,7 +478,8 @@ function compareBlock(opts, entry) {
         row.appendChild(cell)
     }
     box.appendChild(row)
-    box.appendChild(el("div", "muted me-note", `Machines on this row, and their power. Beacons draw their own ${powerWords(beaconData.powerW)} each on top.`))
+    let beaconWatts = beaconData.powerW * beaconPowerMultiplier(entry.beaconTier).toFloat()
+    box.appendChild(el("div", "muted me-note", `Machines on this row, and their power. Beacons draw their own ${powerWords(beaconWatts)} each on top.`))
     return box
 }
 
@@ -501,7 +574,7 @@ export function mountModuleEditor(container, opts) {
         root.appendChild(header(opts))
         let body = el("div", "me-body")
         let left = el("div", "me-col")
-        left.append(machineSlots(opts, disp, target, sel, render), beaconSlots(opts, entry, disp, target, sel, render), palette(opts, sel, target))
+        left.append(machineSlots(opts, disp, target, sel, render), beaconSlots(opts, entry, disp, target, sel, render), palette(opts, sel, target, render))
         let right = el("div", "me-col")
         right.appendChild(effectsBlock(opts, disp))
         if (opts.scope === "row") {
