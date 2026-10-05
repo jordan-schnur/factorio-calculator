@@ -14,6 +14,7 @@ limitations under the License.*/
 import { powerRepr } from "./power.js"
 import { Icon } from "./icon.js"
 import { allowedEffectsOf } from "./modules-core.js"
+import { speedMultiplier } from "./quality-core.js"
 import { Rational, zero, one } from "./rational.js"
 
 let thirty = Rational.from_float(30)
@@ -31,6 +32,10 @@ class Building {
         // The data's allowed_effects as a Set (modules-core.js's
         // allowedEffectsOf); null when it names none, which allows all.
         this.allowedEffects = null
+        // Quality speeds up crafting machines only (calculator 1.3.0):
+        // getBuildings sets this for the data's crafting_machines, never for
+        // drills, offshore pumps, boilers, the reactor or the rocket silo.
+        this.takesQuality = false
 
         this.icon_col = col
         this.icon_row = row
@@ -53,7 +58,13 @@ class Building {
         } else {
             speedEffect = one
         }
-        return recipe.time.reciprocate().mul(this.speed).mul(speedEffect)
+        let rate = recipe.time.reciprocate().mul(this.speed).mul(speedEffect)
+        // A crafting machine's quality multiplies its crafting speed
+        // (spec.machineQuality, `mq=`).
+        if (this.takesQuality && spec.machineTier) {
+            rate = rate.mul(speedMultiplier(spec.machineTier(this)))
+        }
+        return rate
     }
     canBeacon() {
         return this.moduleSlots > 0
@@ -274,7 +285,7 @@ export function getBuildings(data, items) {
         if (d.prod_bonus) {
             prod = Rational.from_float_approximate(d.prod_bonus)
         }
-        buildings.push(new Building(
+        let building = new Building(
             d.key,
             d.localized_name.en,
             d.icon_col,
@@ -285,7 +296,9 @@ export function getBuildings(data, items) {
             d.module_slots,
             Rational.from_float_approximate(d.energy_usage),
             fuel
-        ))
+        )
+        building.takesQuality = true
+        buildings.push(building)
     }
     for (let d of data.rocket_silo) {
         buildings.push(new RocketSilo(

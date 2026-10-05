@@ -16,28 +16,31 @@ import { DEFAULT_TAB, currentTab } from "./events.js"
 import { spec, DEFAULT_BELT, DEFAULT_FUEL } from "./factory.js"
 import { formatRecipeMachines } from "./machines-core.js"
 import { formatModuleList } from "./modules-core.js"
+import { formatMachineQuality, isNormal, joinModuleToken, tierOf as qualityTier } from "./quality-core.js"
 import { Rational } from "./rational.js"
 import { currentMod, customTitle } from "./settings.js"
 import { sorted } from "./sort.js"
 
 // One `mm=`/`modules=` entry with every slot listed in order, so slot
-// positions survive a round trip.
-function moduleEntry(key, modules, beaconModules, beaconCount) {
-    return {
-        key,
-        slots: modules.map(getModuleKey),
-        beacon: [getModuleKey(beaconModules[0]), getModuleKey(beaconModules[1]), beaconCount.toString()],
+// positions survive a round trip. Each module token carries its tier
+// ("p3@legendary"); the beacon part gains a 4th field, the beacon's own
+// tier, only when that isn't normal (calculator 1.3.0).
+function moduleEntry(key, modules, moduleTiers, beaconModules, beaconModuleTiers, beaconCount, beaconTier) {
+    let beacon = [
+        moduleToken(beaconModules[0], beaconModuleTiers[0]),
+        moduleToken(beaconModules[1], beaconModuleTiers[1]),
+        beaconCount.toString(),
+    ]
+    if (!isNormal(beaconTier)) {
+        beacon.push(qualityTier(beaconTier).key)
     }
+    return {key, slots: modules.map((m, i) => moduleToken(m, moduleTiers[i])), beacon}
 }
 
-function getModuleKey(module) {
-    let moduleKey
-    if (module === null) {
-        moduleKey = "null"
-    } else {
-        moduleKey = module.shortName()
-    }
-    return moduleKey
+// "null" for an empty slot, else the module's short name with "@<tier>"
+// when it isn't normal.
+function moduleToken(module, tier) {
+    return module === null || module === undefined ? "null" : joinModuleToken(module.shortName(), tier)
 }
 
 export function formatSettings(excludeTitle, overrideTab, targets) {
@@ -89,6 +92,10 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     if (spec.recipeBuildings.size > 0) {
         settings += "mach=" + formatRecipeMachines(spec.recipeBuildings) + "&"
     }
+    let mq = formatMachineQuality(spec.machineQuality)
+    if (mq !== "") {
+        settings += "mq=" + mq + "&"
+    }
     if (spec.belt.key !== DEFAULT_BELT) {
         settings += "belt=" + spec.belt.key + "&"
     }
@@ -96,27 +103,24 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
         settings += "fuel=" + spec.fuel.key + "&"
     }
     if (spec.defaultModule !== null) {
-        settings += "dm=" + spec.defaultModule.shortName() + "&"
+        settings += "dm=" + moduleToken(spec.defaultModule, spec.defaultModuleTier) + "&"
     }
     if (spec.secondaryDefaultModule !== null) {
-        settings += "dm2=" + spec.secondaryDefaultModule.shortName() + "&"
+        settings += "dm2=" + moduleToken(spec.secondaryDefaultModule, spec.secondaryDefaultModuleTier) + "&"
     }
     if (!spec.isDefaultDefaultBeacon()) {
-        let parts = []
-        for (let module of spec.defaultBeacon) {
-            if (module === null) {
-                parts.push("null")
-            } else {
-                parts.push(module.shortName())
-            }
-        }
+        let parts = spec.defaultBeacon.map((module, i) => moduleToken(module, spec.defaultBeaconTiers[i]))
         settings += "db=" + parts.join(":") + "&"
     }
     if (!spec.defaultBeaconCount.isZero()) {
         settings += "dbc=" + spec.defaultBeaconCount.toDecimal(0) + "&"
     }
+    if (!isNormal(spec.defaultBeaconTier)) {
+        settings += "dbq=" + qualityTier(spec.defaultBeaconTier).key + "&"
+    }
     if (spec.machineModules.size > 0) {
-        let entries = [...spec.machineModules].map(([key, e]) => moduleEntry(key, e.modules, e.beaconModules, e.beaconCount))
+        let entries = [...spec.machineModules].map(([key, e]) =>
+            moduleEntry(key, e.modules, e.moduleTiers, e.beaconModules, e.beaconModuleTiers, e.beaconCount, e.beaconTier))
         settings += "mm=" + formatModuleList(entries) + "&"
     }
     settings += "items="
@@ -194,7 +198,8 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
     let moduleEntries = []
     for (let [recipe, moduleSpec] of spec.spec) {
         if (spec.handSet.has(recipe.key)) {
-            moduleEntries.push(moduleEntry(recipe.key, moduleSpec.modules, moduleSpec.beaconModules, moduleSpec.beaconCount))
+            moduleEntries.push(moduleEntry(recipe.key, moduleSpec.modules, moduleSpec.moduleTiers,
+                moduleSpec.beaconModules, moduleSpec.beaconModuleTiers, moduleSpec.beaconCount, moduleSpec.beaconTier))
         }
     }
     if (moduleEntries.length > 0) {
