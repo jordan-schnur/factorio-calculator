@@ -63,10 +63,10 @@
         })
     </script>
     <script type="module">
-        import { changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeColorblind, changeMprod, changeTitle } from "./events.js"
+        import { changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeColorblind, changeTableLayout, changeMprod, changeTitle } from "./events.js"
         import { init } from "./init.js"
         // Module scripts are deferred, so this runs before body's onload.
-        window.handlers = { init, changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeColorblind, changeMprod, changeTitle }
+        window.handlers = { init, changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeColorblind, changeTableLayout, changeMprod, changeTitle }
     </script>
 </head>
 
@@ -184,6 +184,10 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
         <div class="kv"><span class="muted" style="width: 90px;">Belts</span><form id="belt_format">
             <input id="fraction_belts" type="radio" name="beltformat" value="fraction" checked onchange="handlers.changeBeltFormat(event)"><label for="fraction_belts">1 1/3 belts</label>
             <input id="decimal_belts" type="radio" name="beltformat" value="decimal" onchange="handlers.changeBeltFormat(event)"><label for="decimal_belts">1.33 belts</label>
+        </form></div>
+        <div class="kv"><span class="muted" style="width: 90px;">Table</span><form id="table_layout">
+            <input id="spread_table" type="radio" name="tablelayout" value="spread" checked onchange="handlers.changeTableLayout(event)"><label for="spread_table">Across the page</label>
+            <input id="packed_table" type="radio" name="tablelayout" value="packed" onchange="handlers.changeTableLayout(event)"><label for="packed_table">Packed to the left</label>
         </form></div>
         <div class="kv"><span class="muted" style="width: 90px;">Colour-blind</span>
             <input id="colorblind_toggle" type="checkbox" onchange="handlers.changeColorblind(event)"><label for="colorblind_toggle">Write the colour on belt, splitter and inserter icons (yellow, red, blue, green)</label>

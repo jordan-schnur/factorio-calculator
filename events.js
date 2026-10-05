@@ -15,6 +15,7 @@ import { spec } from "./factory.js"
 import { Rational } from "./rational.js"
 import { setTitle } from "./settings.js"
 import { setColorblind } from "./colorblind.js"
+import { setTablePacked } from "./tablelayout.js"
 
 // tab events
 //
@@ -78,6 +79,10 @@ export function changeBeltFormat(event) {
 
 export function changeColorblind(event) {
     setColorblind(event.target.checked)
+}
+
+export function changeTableLayout(event) {
+    setTablePacked(event.target.value === "packed")
 }
 
 export function changeMprod(event) {

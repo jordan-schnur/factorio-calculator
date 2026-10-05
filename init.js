@@ -40,6 +40,7 @@ import { initSupplied } from "./supplied.js"
 import { initTargets } from "./targets.js"
 import { reapTooltips } from "./tooltip.js"
 import { applyColorblind } from "./colorblind.js"
+import { applyTableLayout } from "./tablelayout.js"
 
 export function changeMod() {
     let currentSettings = loadSettings("#" + formatSettings())
@@ -200,6 +201,7 @@ function loadData(modName, settings) {
 // browser's back/forward moves the fragment; nothing re-read it.
 export function init() {
     applyColorblind()
+    applyTableLayout()
     window.addEventListener("hashchange", () => {
         if (!isOwnHash(window.location.hash)) {
             reloadFromHash()

@@ -175,6 +175,10 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 .lrow .machines { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; }
 .lrow .machines .cnt { font-size: 17px; }
 .lrow .chev { color: #7d7d7d; text-align: center; font-size: 13px; }
+/* Display -> Table -> Packed to the left (tablelayout.js): the name column
+   is the table's 1fr, so capping the table's width is what pulls Need,
+   Machines and Modules in next to the names on a wide screen. */
+html.table-packed #item-table { max-width: 1040px; }
 .lrow.open .chev { color: #f1be64; }
 /* byproducts (byproducts.js): a multi-output row shows an icon per output;
    a row or card whose recipe would stop carries a "backs up" marker that
