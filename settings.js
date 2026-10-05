@@ -184,7 +184,12 @@ const NO_MODULE = {module: null, tier: "normal"}
 // A module token from a link, "p3" or "p3@legendary" (calculator 1.3.0):
 // the module (getModule's backstops apply) and its quality tier, normal
 // when the token names none, names an unknown tier, or the module is empty.
+// A field a malformed link leaves out (`modules=r:p3;s3`) is an empty slot,
+// as getModule read it in 1.2.0.
 function getModuleToken(token) {
+    if (token === undefined || token === null) {
+        return NO_MODULE
+    }
     let {key, tier} = splitModuleToken(token)
     let module = getModule(key)
     return {module, tier: module === null ? "normal" : tier}

@@ -804,25 +804,39 @@ class FactorySpecification {
         this.handSet.clear()
         this.reapplyModules()
     }
-    // Runs `change` (any of the layer edits above), then re-solves when a
-    // recipe's productivity moved -- that changes the recipe ratios the
-    // solver works out -- and otherwise only re-renders: speed and power
-    // change machine counts and power, which every renderer recomputes from
-    // the ModuleSpecs. Like toggleIgnore(), the edits never solve on their own.
-    commitModules(change) {
-        this.modulesVersion++
-        let before = new Map()
+    // What the solver reads from modules and machine quality: each row's
+    // productivity, and the chemical fuel a burner machine burns per craft
+    // (recipe.fuelIngredient divides its power by its recipe rate, so a
+    // faster stone furnace burns less coal per plate).
+    solveInputs() {
+        let parts = []
         for (let [recipe, moduleSpec] of this.spec) {
-            before.set(recipe, moduleSpec.prodEffect(this).toString())
+            parts.push(`${recipe.key}:${moduleSpec.prodEffect(this).toString()}`)
         }
-        change()
-        let resolve = false
-        for (let [recipe, moduleSpec] of this.spec) {
-            if (before.get(recipe) !== moduleSpec.prodEffect(this).toString()) {
-                resolve = true
-                break
+        if (this.lastTotals) {
+            for (let recipe of this.lastTotals.rates.keys()) {
+                // A DisabledRecipe stand-in has no machine and no fuel.
+                if (!recipe.fuelIngredient) {
+                    continue
+                }
+                for (let fuel of recipe.fuelIngredient()) {
+                    parts.push(`${recipe.key}>${fuel.amount.toString()}`)
+                }
             }
         }
+        return parts.join(",")
+    }
+    // Runs `change` (any of the layer edits above, or a machine's quality),
+    // then re-solves when solveInputs() moved -- productivity changes the
+    // recipe ratios the solver works out, burner fuel its coal -- and
+    // otherwise only re-renders: speed and power change machine counts and
+    // power, which every renderer recomputes from the ModuleSpecs. Like
+    // toggleIgnore(), the edits never solve on their own.
+    commitModules(change) {
+        this.modulesVersion++
+        let before = this.solveInputs()
+        change()
+        let resolve = before !== this.solveInputs()
         if (resolve) {
             this.updateSolution()
         } else {
