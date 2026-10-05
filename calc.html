@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Keep the title in step with settings.js's INTRO_TITLE, which the page
          sets once it boots with nothing planned. -->
     <title>Factorio Calculator – Space Age &amp; 2.0 Production Ratios</title>
@@ -45,6 +46,7 @@
     <link rel="stylesheet" type="text/css" href="modules-editor.css">
     <link rel="stylesheet" type="text/css" href="modules-settings.css">
     <link rel="stylesheet" type="text/css" href="quality.css">
+    <link rel="stylesheet" type="text/css" href="responsive.css">
     <script src="third_party/BigInteger.min.js"></script>
     <script src="third_party/d3.min.js"></script>
     <script src="third_party/pako.min.js"></script>
@@ -185,7 +187,7 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
             <input id="fraction_belts" type="radio" name="beltformat" value="fraction" checked onchange="handlers.changeBeltFormat(event)"><label for="fraction_belts">1 1/3 belts</label>
             <input id="decimal_belts" type="radio" name="beltformat" value="decimal" onchange="handlers.changeBeltFormat(event)"><label for="decimal_belts">1.33 belts</label>
         </form></div>
-        <div class="kv"><span class="muted" style="width: 90px;">Table</span><form id="table_layout">
+        <div class="kv"><span class="muted" style="width: 90px;">Layout</span><form id="table_layout">
             <input id="spread_table" type="radio" name="tablelayout" value="spread" checked onchange="handlers.changeTableLayout(event)"><label for="spread_table">Across the page</label>
             <input id="packed_table" type="radio" name="tablelayout" value="packed" onchange="handlers.changeTableLayout(event)"><label for="packed_table">Packed to the left</label>
         </form></div>

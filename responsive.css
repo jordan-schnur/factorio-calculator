@@ -1,0 +1,76 @@
+/* calc/responsive.css: the page on tablets and phones, plus the tight
+   graph's narrow line chips (flow.js's tightGraph()). Loaded after every
+   other stylesheet, so each rule here only has to override, never fight. */
+
+/* --- tight graph: click chips wrap to fit the narrow column gap ---------- */
+
+.graph-tight .elbl.chip { max-width: 132px; white-space: normal; }
+.graph-tight .elbl.chip .chip-row { flex-wrap: wrap; row-gap: 1px; }
+.graph-tight .elbl.chip .sep { display: none; }
+.elbl.chip .pair { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+
+/* --- tablet: up to 1000px ------------------------------------------------ */
+
+@media (max-width: 1000px) {
+    #topbar { flex-wrap: wrap; row-gap: 8px; }
+    #planet_setting_row { order: 10; flex-basis: 100%; }
+    /* Name, Need, Machines, Modules, chevron: the name gets the room and
+       its badges drop under it rather than over the rate. */
+    .sect, .lrow { grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1.2fr) 150px 24px; }
+    .lrow .item { flex-wrap: wrap; row-gap: 2px; }
+    .lrow .item .badge { order: 3; }
+    /* .machines also names the open row's machine picker, which wraps;
+       a table row's machine line stays on one line and trims the name. */
+    .lrow .machines { flex-wrap: nowrap; min-width: 0; }
+    .lrow .machines .muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    #modules-bar .mb-words { flex: 1 1 260px; }
+    .detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding-left: 14px; }
+    .detail > :nth-child(3) { grid-column: 1 / -1; }
+    #settings-panel { width: 100vw; }
+    /* The graph's side card becomes a sheet over the bottom of the graph
+       (flow.js's fitToView() starts the graph at the top to match). */
+    #graph-side { left: 0; right: 0; top: auto; width: auto; max-height: 55%; box-sizing: border-box; box-shadow: 0 -4px 12px rgba(0,0,0,0.7); }
+}
+
+/* --- phone: up to 640px -------------------------------------------------- */
+
+@media (max-width: 640px) {
+    /* The page scrolls as a whole instead of each frame scrolling inside a
+       screen-high box; the graph keeps a fixed height to pan in. */
+    #page { height: auto; min-height: 100vh; padding: 8px; gap: 8px; }
+    #table-frame { flex: none; overflow: visible; }
+    #graph-frame { flex: none; height: 72vh; }
+
+    #topbar { padding: 8px 10px; gap: 8px; }
+    #topbar .title { font-size: 16px; }
+    #planet_setting_row > .muted:first-child { display: none; }
+    #planet_setting_row .seg { overflow-x: auto; max-width: 100%; }
+
+    #make-panel .make-row { flex-wrap: wrap; }
+    #make-hint { font-size: 13px; }
+    #targets li { flex-wrap: wrap; row-gap: 6px; }
+
+    /* A row is a small card: name and rate on top, the machines under
+       them, the modules under those. */
+    .sect { grid-template-columns: minmax(0, 1fr) auto; padding: 10px 10px 2px; }
+    .sect > :nth-child(n+3) { display: none; }
+    .lrow {
+        grid-template-columns: minmax(0, 1fr) auto 20px;
+        grid-template-areas: "item need chev" "mach mach mach" "mods mods mods";
+        row-gap: 4px; padding: 8px 10px;
+    }
+    .lrow .item { grid-area: item; }
+    .lrow .need { grid-area: need; }
+    .lrow .machines { grid-area: mach; padding-left: 34px; }
+    .lrow .mods { grid-area: mods; padding-left: 34px; }
+    .lrow .mods:empty { display: none; }
+    .lrow .chev { grid-area: chev; }
+
+    .detail { grid-template-columns: minmax(0, 1fr); padding: 10px; gap: 14px; }
+    #modules-bar { padding: 8px 10px; }
+
+
+    #settings-panel { padding: 10px; }
+    #settings-panel .kv { flex-wrap: wrap; }
+    #settings-panel .kv > .muted:first-child { width: 100% !important; }
+}

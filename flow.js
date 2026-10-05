@@ -52,7 +52,19 @@ function renderKey() {
     // when only speed/power moved (no re-solve), so without this a module
     // edit that doesn't change machine counts enough to move the totals
     // would leave stale cards -- see modules-editor.js's commit path.
-    return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}:${spec.beltStack}:${spec.format.beltFormat}:${spec.modulesVersion}`
+    return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}:${spec.beltStack}:${spec.format.beltFormat}:${spec.modulesVersion}:${tightGraph()}`
+}
+
+// Below this width the graph is always tight, whatever Display -> Layout says.
+const TIGHT_BELOW = 1100
+
+// A tight graph sits against the left edge with its columns closer
+// together: a clicked card's line chips wrap to a narrow width
+// (responsive.css's .graph-tight), so chipGap() measures that narrower chip
+// instead of the widest one-line chip. On by Display -> Layout -> Packed,
+// and on any screen too narrow for the spread-out graph to be read.
+function tightGraph() {
+    return document.documentElement.classList.contains("table-packed") || window.innerWidth < TIGHT_BELOW
 }
 
 function itemKeyFor(node) {
@@ -491,35 +503,43 @@ function textSpan(t, className) {
 function lineChip(item, rate, machines = null) {
     let row = document.createElement("div")
     row.className = "chip-row"
-    row.append(...withWord(item, item.icon.make(18, true)), textSpan(`${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`), textSpan("|", "sep"))
+    row.append(pair(...withWord(item, item.icon.make(18, true)), textSpan(`${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`)), textSpan("|", "sep"))
     if (item.phase === "fluid") {
         let pipe = spec.items.get("pipe")
-        if (pipe) row.append(pipe.icon.make(18, true))
-        row.append(textSpan("pipe"))
+        row.append(pair(...(pipe ? [pipe.icon.make(18, true)] : []), textSpan("pipe")))
     } else {
-        row.append(...withWord(spec.belt, spec.belt.icon.make(18, true)), textSpan(beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)))
+        row.append(pair(...withWord(spec.belt, spec.belt.icon.make(18, true)), textSpan(beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat))))
     }
     if (machines === null) return [row]
     let second = document.createElement("div")
     second.className = "chip-row machines"
     if (machines.ratio) {
         second.append(
-            spec.getBuilding(machines.fromRecipe).icon.make(18, true), textSpan(machines.from), textSpan("→"),
-            spec.getBuilding(machines.toRecipe).icon.make(18, true), textSpan(machines.to),
-            textSpan("|", "sep"), textSpan(machines.ratio))
+            pair(spec.getBuilding(machines.fromRecipe).icon.make(18, true), textSpan(machines.from), textSpan("→")),
+            pair(spec.getBuilding(machines.toRecipe).icon.make(18, true), textSpan(machines.to)),
+            textSpan("|", "sep"), pair(textSpan(machines.ratio)))
     } else {
-        second.append(spec.getBuilding(machines.recipe).icon.make(18, true), textSpan(machines.words))
+        second.append(pair(spec.getBuilding(machines.recipe).icon.make(18, true), textSpan(machines.words)))
     }
     if (!machines.belt) return [row, second]
     let {belt} = machines
     let third = document.createElement("div")
     third.className = "chip-row machines"
-    third.append(...withWord(spec.belt, spec.belt.icon.make(18, true)), textSpan("1 belt:"))
-    let end = (recipe, count) => [spec.getBuilding(recipe).icon.make(18, true), textSpan(count)]
-    if (belt.from !== null) third.append(...end(belt.fromRecipe, belt.from))
-    if (belt.from !== null && belt.to !== null) third.append(textSpan("→"))
-    if (belt.to !== null) third.append(...end(belt.toRecipe, belt.to))
+    third.append(pair(...withWord(spec.belt, spec.belt.icon.make(18, true)), textSpan("1 belt:")))
+    let end = (recipe, count, ...after) => pair(spec.getBuilding(recipe).icon.make(18, true), textSpan(count), ...after)
+    let arrow = belt.from !== null && belt.to !== null ? [textSpan("→")] : []
+    if (belt.from !== null) third.append(end(belt.fromRecipe, belt.from, ...arrow))
+    if (belt.to !== null) third.append(end(belt.toRecipe, belt.to))
     return [row, second, third]
+}
+
+// An icon kept on one line with the words that go with it: a tight graph's
+// chip (see tightGraph()) wraps between these, never inside one.
+function pair(...parts) {
+    let span = document.createElement("span")
+    span.className = "pair"
+    span.append(...parts)
+    return span
 }
 
 // An icon followed by its colour word in colour-blind mode (belts,
@@ -654,7 +674,7 @@ function chipGap(edges) {
     let probe = document.createElement("div")
     // cb-probe: measured with the colour-blind words showing, so turning
     // the mode on later never makes a chip outgrow its gap.
-    probe.className = "cb-probe"
+    probe.className = "cb-probe" + (tightGraph() ? " graph-tight" : "")
     probe.style.cssText = "position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none;"
     document.body.appendChild(probe)
     let widest = 0
@@ -706,7 +726,8 @@ function containerSize() {
     return container ? {width: container.clientWidth, height: container.clientHeight} : {width: 0, height: 0}
 }
 
-// Fits the whole graph inside the container, centred, never scaling nodes
+// Fits the whole graph inside the container, centred (against the left edge
+// when tightGraph(); a phone has its own rule below), never scaling nodes
 // above their natural size. A hidden/zero-size container can't be fitted;
 // leave needsFit set so the next render or resize tries again. The 40/190px
 // margins (not a symmetric pad) are pinned: they keep the graph clear of the
@@ -714,14 +735,23 @@ function containerSize() {
 // canvas rather than reserving layout space. #graph-side (details.js) and
 // #flow-fit sit on top of the canvas as absolute overlays, not reserved
 // width -- the graph always fits the whole #flow-container.
-export function fitToView() {
+export function fitToView({all = false} = {}) {
     if (lastLayout === null || zoomBehavior === null) return
     let {width: W, height: H} = containerSize()
     if (W === 0 || H === 0) return
     let k = Math.min(1, (W - 40) / lastLayout.width, (H - 190) / lastLayout.height)
     if (!isFinite(k) || k <= 0) return
-    let tx = (W - lastLayout.width * k) / 2
-    let ty = 96 + Math.max(0, (H - 190 - lastLayout.height * k) / 2)
+    // On a phone a whole plan shrunk to the screen is unreadable: stop at
+    // MIN_PHONE_SCALE and start on the targets, the right-hand end of the
+    // graph; dragging pans to the rest and Fit still shows all of it.
+    let phone = W < PHONE_WIDTH
+    if (phone && !all) k = Math.max(k, MIN_PHONE_SCALE)
+    let tx = phone && lastLayout.width * k > W - 40
+        ? W - 20 - lastLayout.width * k
+        : tightGraph() ? 20 : (W - lastLayout.width * k) / 2
+    // Below SHEET_WIDTH the side card opens as a sheet over the bottom half
+    // (responsive.css), so the graph starts at the top instead of the middle.
+    let ty = window.innerWidth <= SHEET_WIDTH ? 20 : 96 + Math.max(0, (H - 190 - lastLayout.height * k) / 2)
     d3.select("#flow-container").call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
     needsFit = false
     isFitted = true
@@ -897,6 +927,11 @@ function lineSwatch(color, dash) {
 // either side of it (see chipGap()).
 const BASE_COL_GAP = 96
 const CHIP_MARGIN = 32
+// fitToView()'s phone rule: narrower than this, never shrink below the scale.
+const PHONE_WIDTH = 600
+const MIN_PHONE_SCALE = 0.75
+// responsive.css's 1000px breakpoint, where the side card becomes a sheet.
+const SHEET_WIDTH = 1000
 const PLAIN_LABEL_H = 18
 
 // The full draw pass, called whenever the Graph view needs a picture: on a
@@ -930,6 +965,7 @@ function draw(totals) {
     // size dead.
     let ranks = rankNodes(model).rank
     ensureZoom()
+    document.querySelector("#flow-container")?.classList.toggle("graph-tight", tightGraph())
     // Wide enough for any line's chip, decided once per solve (chipGap);
     // as tall as the module strip needs, decided once per solve too
     // (cardHeight). The strip is never part of a chip or of the machine
@@ -1023,9 +1059,19 @@ export function initFlow() {
         }
     })
 
+    // Crossing TIGHT_BELOW, or switching Display -> Layout, changes the
+    // column gap, which only a fresh layout can apply.
+    let redrawIfTightChanged = () => {
+        if (spec.view === "graph" && lastTotals && renderKey() !== lastDrawnKey) {
+            draw(lastTotals)
+            fitToView()
+        }
+    }
     window.addEventListener("resize", () => {
+        redrawIfTightChanged()
         if (needsFit) fitToView()
     })
+    document.addEventListener("calc:layout", redrawIfTightChanged)
     // This observer catches every way #flow-container's box changes size
     // (window resize is also covered by the listener above, but a
     // ResizeObserver additionally fires for layout-only changes with no
@@ -1036,5 +1082,5 @@ export function initFlow() {
             if (isFitted) fitToView()
         }).observe(container)
     }
-    document.querySelector("#flow-fit")?.addEventListener("click", () => fitToView())
+    document.querySelector("#flow-fit")?.addEventListener("click", () => fitToView({all: true}))
 }
