@@ -60,13 +60,12 @@ function mountKey(opts) {
     return opts.scope === "row" ? `row:${opts.recipe.key}` : `machine:${opts.machine.key}`
 }
 
-// The modules `target` shows, with a plain-number beacon count. For
-// "machine"/"plan" this is the shared layer's own entry (what editing it
-// actually changes), not the row's resolved-and-possibly-fallen-back
-// modules -- a beacon-only edit on a row that fell back must not write the
-// fallback values over the layer it didn't touch. Only "row" (and a
-// scope-radio switch away from it, see scopeBlock below) reads the row's
-// own ModuleSpec.
+// What pick()/step() write from: `target`'s own entry, with a plain-number
+// beacon count. For "machine"/"plan" this is the shared layer's own entry
+// (what editing it actually changes), not the row's resolved-and-possibly-
+// fallen-back modules -- a beacon-only edit on a row that fell back must
+// not write the fallback values over the layer it didn't touch. This is
+// never what the editor *shows* (see rowEntry below) except for "row".
 function currentEntry(opts, target) {
     let source
     if (target === "machine") {
@@ -89,22 +88,20 @@ function currentEntry(opts, target) {
     }
 }
 
-// What this row actually gets under `target`'s current entry -- not that
-// entry's raw, unfiltered modules, which a recipe or machine may refuse in
-// whole or in part (no productivity on this recipe, a kind this machine
-// refuses). Nothing is ever uncommitted at render time (every edit commits
-// straight away, see write()), so `target`'s layer already holds `entry`,
-// and this is simply the row's real, current resolution; "row" already is
-// that (its own ModuleSpec). Only `modules` can differ from `entry` --
-// resolveModules never filters beacons by recipe or machine.
-function displayEntry(opts, target, entry) {
-    if (target === "row" || opts.scope !== "row") {
-        return entry
-    }
+// The invariant the first review round broke by mixing sources: what's
+// *shown* (slots, effects, "These modules") is always what this row
+// actually runs right now -- spec.getModuleSpec(recipe), beacons included
+// -- whatever the "Use these modules for" radio is set to and whether the
+// row is set by hand or not. A non-hand-set row is already kept resolved
+// from the layers (reapplyModules), so this needs no resolving of its own;
+// a hand-set row's own modules are exactly this too. Only `currentEntry`
+// above (what pick/step write from) depends on the radio.
+function rowEntry(opts) {
+    let m = spec.getModuleSpec(opts.recipe)
     return {
-        modules: spec.resolveFor(opts.recipe, opts.machine).modules,
-        beaconModules: entry.beaconModules,
-        beaconCount: entry.beaconCount,
+        modules: m.modules.slice(),
+        beaconModules: [m.beaconModules[0], m.beaconModules[1]],
+        beaconCount: num(m.beaconCount),
     }
 }
 
@@ -254,7 +251,11 @@ function machineSlots(opts, entry, target, sel, render) {
     return box
 }
 
-function beaconSlots(opts, entry, target, sel, render) {
+// `entry` is the chosen layer's raw entry: +/- and a pick write from it,
+// unchanged by the radio switch. `disp` is what's shown -- the row's real
+// beacons (rowEntry), per the invariant above; for scope "machine" (no
+// row) the two are the same thing.
+function beaconSlots(opts, entry, disp, target, sel, render) {
     let box = el("div", "me-block me-beacons")
     box.appendChild(el("span", "lbl", "Beacons around each machine"))
     let row = el("div", "me-row")
@@ -264,10 +265,11 @@ function beaconSlots(opts, entry, target, sel, render) {
             return
         }
         let patch = {beaconCount: next}
-        // "Every row": the plan layer only keeps a beacon count alongside a
-        // beacon module (write() below zeroes the count otherwise), so +
-        // from empty needs a module too, or it would silently do nothing.
-        if (target === "plan" && delta > 0 && !entry.beaconModules[0] && !entry.beaconModules[1]) {
+        // Neither the "machine" nor the "plan" layer keeps a beacon count
+        // alongside no beacon module (write() zeroes the count otherwise),
+        // so + from empty needs a module too, or it would silently do
+        // nothing.
+        if ((target === "plan" || target === "machine") && delta > 0 && !entry.beaconModules[0] && !entry.beaconModules[1]) {
             let plan = spec.planLayer()
             let tier = plan.defaultModule ? tierOf(plan.defaultModule) : 3
             let fill = moduleFor(spec.modules.values(), "speed", tier) || moduleFor(spec.modules.values(), "speed", 3)
@@ -276,15 +278,15 @@ function beaconSlots(opts, entry, target, sel, render) {
         write(opts, target, {...entry, ...patch})
     }
     let minus = button("btn btn-sm me-minus", "−", () => step(-1))
-    minus.disabled = entry.beaconCount <= 0
+    minus.disabled = disp.beaconCount <= 0
     let plus = button("btn btn-sm me-plus", "+", () => step(1))
-    plus.disabled = entry.beaconCount >= MAX_BEACONS
-    row.append(minus, el("span", "num me-count", String(entry.beaconCount)), plus)
+    plus.disabled = disp.beaconCount >= MAX_BEACONS
+    row.append(minus, el("span", "num me-count", String(disp.beaconCount)), plus)
     let beacon = spec.items.get("beacon")
     if (beacon) {
         row.appendChild(beacon.icon.make(28, true))
     }
-    entry.beaconModules.forEach((module, i) => {
+    disp.beaconModules.forEach((module, i) => {
         let on = sel && sel.kind === "beacon" && sel.index === i
         let b = button("slot me-bslot" + (on ? " sel" : ""), undefined, () => select(opts, render, "beacon", i))
         b.dataset.beacon = String(i)
@@ -296,12 +298,18 @@ function beaconSlots(opts, entry, target, sel, render) {
     return box
 }
 
-function palette(opts, sel) {
+// `target` decides what the palette greys out: a pick lands on that
+// layer, shared by every row in the machine (or the whole plan), so only
+// the machine's own allowed_effects applies -- this row's recipe is
+// irrelevant there (productivity can go into a layer from pipe's row; the
+// row itself still falls back, same as any other row that can't use it).
+// Only "row" filters by this row's own recipe too.
+function palette(opts, sel, target) {
     let box = el("div", "me-block me-palette")
     let forBeacon = sel && sel.kind === "beacon"
     let reasonFor = module => forBeacon
         ? beaconWhyNot(module, beaconData.allowedEffects)
-        : whyNot(module, opts.scope === "row" ? opts.recipe : null, opts.machine)
+        : whyNot(module, target === "row" ? opts.recipe : null, opts.machine)
     let addPick = (row, module, title) => {
         let reason = reasonFor(module)
         let b = button("slot me-pick", undefined, () => pick(opts, module))
@@ -400,14 +408,27 @@ const SCOPE_NOTE = {
     plan: "Every row without its own setting changes. Machines with their own setting and rows set by hand keep theirs.",
 }
 
-// "Every row" edits the plan only (write() never drops a machine's entry);
-// a machine with its own entry still wins over the plan, so this row would
-// not even change. Null when this row's machine has no entry of its own.
-function planNoteOverride(opts, target) {
-    if (target !== "plan" || !spec.machineModules.has(opts.machine.key)) {
-        return null
+// What an edit on `target` would actually do to this row, since the radio
+// itself never writes: "Every row"/"Every row made in..." on a hand-set
+// row releases it on its next edit there (write()'s "machine"/"plan"
+// branches both call releaseRow) -- a pick looking like it changed nothing
+// otherwise. And "Every row" never drops a machine's own entry, which
+// still wins over the plan once the row is released, so even that release
+// may not change what this row runs.
+function scopeNote(opts, target) {
+    let hasMachineEntry = spec.machineModules.has(opts.machine.key)
+    if (spec.handSet.has(opts.recipe.key) && (target === "machine" || target === "plan")) {
+        let destination = target === "machine" ? `${opts.machine.name}'s setting` : "the plan"
+        let note = `${opts.recipe.name} is set by hand. An edit here goes to ${destination} and this row follows it from then on.`
+        if (target === "plan" && hasMachineEntry) {
+            note += ` ${opts.machine.name} has its own setting, so this row will follow that.`
+        }
+        return note
     }
-    return `${opts.machine.name} has its own setting, so this row keeps it. Change it under Every row made in ${opts.machine.name.toLowerCase()}.`
+    if (target === "plan" && hasMachineEntry) {
+        return `${opts.machine.name} has its own setting, so this row keeps it. Change it under Every row made in ${opts.machine.name.toLowerCase()}.`
+    }
+    return SCOPE_NOTE[target]
 }
 
 function scopeBlock(opts, entry, target, render) {
@@ -445,7 +466,7 @@ function scopeBlock(opts, entry, target, render) {
         label.append(input, document.createTextNode(" " + text))
         box.appendChild(label)
     }
-    box.appendChild(el("div", "muted me-scope-note", planNoteOverride(opts, target) || SCOPE_NOTE[target]))
+    box.appendChild(el("div", "muted me-scope-note", scopeNote(opts, target)))
     return box
 }
 
@@ -461,7 +482,11 @@ export function mountModuleEditor(container, opts) {
         root.textContent = ""
         let target = currentTarget(opts)
         let entry = currentEntry(opts, target)
-        let disp = displayEntry(opts, target, entry)
+        // The invariant (see rowEntry above): everything shown is what this
+        // row actually runs, never the layer `entry` an edit would write to.
+        // Scope "machine" (Settings' By machine, no row) has nothing of its
+        // own to show, so it shows the layer entry as before.
+        let disp = opts.scope === "row" ? rowEntry(opts) : entry
         let sel = selection.get(mountKey(opts)) || null
         if (sel && sel.kind === "slot" && target === "plan") {
             sel = null
@@ -469,10 +494,7 @@ export function mountModuleEditor(container, opts) {
         root.appendChild(header(opts))
         let body = el("div", "me-body")
         let left = el("div", "me-col")
-        // machineSlots shows what the row really gets (disp); beaconSlots
-        // keeps the raw layer entry -- its +/- and pick both write straight
-        // from it, and resolveModules never filters beacons anyway.
-        left.append(machineSlots(opts, disp, target, sel, render), beaconSlots(opts, entry, target, sel, render), palette(opts, sel))
+        left.append(machineSlots(opts, disp, target, sel, render), beaconSlots(opts, entry, disp, target, sel, render), palette(opts, sel, target))
         let right = el("div", "me-col")
         right.appendChild(effectsBlock(opts, disp))
         if (opts.scope === "row") {
