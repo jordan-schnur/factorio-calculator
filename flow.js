@@ -15,7 +15,7 @@ import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, l
 import { beaconBadge, moduleStrip } from "./modules-strip.js"
 import { RATE_LABEL } from "./table-core.js"
 import { linkMachines } from "./details.js"
-import { beltWords, lineEnd, lineRatio } from "./ratio-core.js"
+import { beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
 import { tierWord } from "./colorblind.js"
 
 // The last totals a solve produced, remembered even while the Graph view
@@ -376,7 +376,8 @@ function textSpan(t, className) {
 // A hovered or focused line's chip: item icon, rate, belt icon and belts
 // on the first row; `machines` adds a second row: {recipe, words} for one
 // side's machine icon and share, or bothEnds()'s {from, to, ratio} for the
-// machines at each end and the ratio between them.
+// machines at each end and the ratio between them; its `belt` (beltRow())
+// adds a third row, the machines one full belt covers.
 function lineChip(item, rate, machines = null) {
     let row = document.createElement("div")
     row.className = "chip-row"
@@ -399,7 +400,16 @@ function lineChip(item, rate, machines = null) {
     } else {
         second.append(spec.getBuilding(machines.recipe).icon.make(18, true), textSpan(machines.words))
     }
-    return [row, second]
+    if (!machines.belt) return [row, second]
+    let {belt} = machines
+    let third = document.createElement("div")
+    third.className = "chip-row machines"
+    third.append(...withWord(spec.belt, spec.belt.icon.make(18, true)), textSpan("1 belt:"))
+    let end = (recipe, count) => [spec.getBuilding(recipe).icon.make(18, true), textSpan(count)]
+    if (belt.from !== null) third.append(...end(belt.fromRecipe, belt.from))
+    if (belt.from !== null && belt.to !== null) third.append(textSpan("→"))
+    if (belt.to !== null) third.append(...end(belt.toRecipe, belt.to))
+    return [row, second, third]
 }
 
 // An icon followed by its colour word in colour-blind mode (belts,
@@ -422,7 +432,17 @@ function machineWords(machines, verb) {
 // assembling machines, 1 : 36. Totals are whole, as machineWords' are.
 function bothEnds(line, root) {
     let whole = m => ({count: m.count, total: Math.ceil(m.total - 1e-9)})
-    return {fromRecipe: line.from, toRecipe: line.to, ...lineRatio(whole(line.supplier), whole(line.consumer), root)}
+    return {fromRecipe: line.from, toRecipe: line.to, ...lineRatio(whole(line.supplier), whole(line.consumer), root), belt: beltRow(line)}
+}
+
+// The machines at each end one full belt of the line covers -- copper
+// cable into advanced circuits, 5 foundries -> 180 assemblers per belt;
+// null for a fluid, or when neither end has a machine.
+function beltRow(line) {
+    if (line.item.phase === "fluid" || (!line.supplier && !line.consumer)) return null
+    let belt = perBelt(line.supplier ? line.supplier.count : null, line.consumer ? line.consumer.count : null,
+        spec.getBeltCount(line.rate).toFloat())
+    return belt && {fromRecipe: line.from, toRecipe: line.to, ...belt}
 }
 
 function answerOnCard(nodeId, recipe, machines, verb, undo = restoreLine) {
@@ -481,7 +501,7 @@ function applyFocus() {
         if (line.supplier && line.consumer) {
             machines = bothEnds(line, outgoing ? "from" : "to")
         } else if (mine) {
-            machines = {recipe: outgoing ? line.from : line.to, words: machineWords(mine, outgoing ? "send" : "use")}
+            machines = {recipe: outgoing ? line.from : line.to, words: machineWords(mine, outgoing ? "send" : "use"), belt: beltRow(line)}
         }
         swapChildren(label, lineChip(line.item, line.rate, machines), "chip", focusUndo)
         label.classList.add("pinned")
@@ -533,8 +553,8 @@ function chipGap(edges) {
         let rows = line.supplier && line.consumer
             ? [bothEnds(line, "from"), bothEnds(line, "to")]
             : [
-                line.supplier && {recipe: line.from, words: machineWords(line.supplier, "send")},
-                line.consumer && {recipe: line.to, words: machineWords(line.consumer, "use")},
+                line.supplier && {recipe: line.from, words: machineWords(line.supplier, "send"), belt: beltRow(line)},
+                line.consumer && {recipe: line.to, words: machineWords(line.consumer, "use"), belt: beltRow(line)},
             ].filter(Boolean)
         for (let machines of rows.length ? rows : [null]) {
             let chip = document.createElement("div")
@@ -593,6 +613,9 @@ export function fitToView() {
     d3.select("#flow-container").call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
     needsFit = false
     isFitted = true
+    // A view=graph link draws while the graph is still hidden, where every
+    // chip measures 0 tall; this is the first moment they have real sizes.
+    restack()
 }
 
 // Pans (keeping scale) so `item`'s node card sits at the container's centre.
