@@ -179,3 +179,21 @@ export function lineEnd(count, total, verb) {
     }
     return `${n} of ${t} ${many}`
 }
+
+// A focused line's machine row: how many of the sending recipe's machines
+// (`from`) feed how many of the receiving recipe's (`to`), each {count,
+// total} with `total` the whole machines its card shows, and the ratio
+// between them with the focused card's side (`root`, "from" or "to") as 1:
+// copper cable focused, "13.33 of 134" foundries -> "480" assembling
+// machines, "1 : 36".
+export function lineRatio(from, to, root) {
+    let side = ({ count, total }) => {
+        let n = ratioNumber(count)
+        let t = ratioNumber(total)
+        return n === t ? t : `${n} of ${t}`
+    }
+    let ratio = root === "from"
+        ? `1 : ${ratioNumber(to.count / from.count)}`
+        : `${ratioNumber(from.count / to.count)} : 1`
+    return { from: side(from), to: side(to), ratio }
+}

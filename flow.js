@@ -15,7 +15,7 @@ import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, l
 import { beaconBadge, moduleStrip } from "./modules-strip.js"
 import { RATE_LABEL } from "./table-core.js"
 import { linkMachines } from "./details.js"
-import { beltWords, lineEnd } from "./ratio-core.js"
+import { beltWords, lineEnd, lineRatio } from "./ratio-core.js"
 import { tierWord } from "./colorblind.js"
 
 // The last totals a solve produced, remembered even while the Graph view
@@ -374,8 +374,9 @@ function textSpan(t, className) {
 }
 
 // A hovered or focused line's chip: item icon, rate, belt icon and belts
-// on the first row; `machines` ({recipe, words}) adds a second row with
-// that side's machine icon and share.
+// on the first row; `machines` adds a second row: {recipe, words} for one
+// side's machine icon and share, or bothEnds()'s {from, to, ratio} for the
+// machines at each end and the ratio between them.
 function lineChip(item, rate, machines = null) {
     let row = document.createElement("div")
     row.className = "chip-row"
@@ -390,7 +391,14 @@ function lineChip(item, rate, machines = null) {
     if (machines === null) return [row]
     let second = document.createElement("div")
     second.className = "chip-row machines"
-    second.append(spec.getBuilding(machines.recipe).icon.make(18, true), textSpan(machines.words))
+    if (machines.ratio) {
+        second.append(
+            spec.getBuilding(machines.fromRecipe).icon.make(18, true), textSpan(machines.from), textSpan("→"),
+            spec.getBuilding(machines.toRecipe).icon.make(18, true), textSpan(machines.to),
+            textSpan("|", "sep"), textSpan(machines.ratio))
+    } else {
+        second.append(spec.getBuilding(machines.recipe).icon.make(18, true), textSpan(machines.words))
+    }
     return [row, second]
 }
 
@@ -406,6 +414,15 @@ function withWord(obj, icon) {
 // ("56 × ..."), not the exact 55.8, so the two numbers on one card agree.
 function machineWords(machines, verb) {
     return lineEnd(machines.count, Math.ceil(machines.total - 1e-9), verb)
+}
+
+// A line with machines at both ends: how many of the sender's feed how many
+// of the receiver's, and the ratio with the focused end (`root`, "from" or
+// "to") as 1 -- copper cable focused, 13.33 of 134 foundries -> 480
+// assembling machines, 1 : 36. Totals are whole, as machineWords' are.
+function bothEnds(line, root) {
+    let whole = m => ({count: m.count, total: Math.ceil(m.total - 1e-9)})
+    return {fromRecipe: line.from, toRecipe: line.to, ...lineRatio(whole(line.supplier), whole(line.consumer), root)}
 }
 
 function answerOnCard(nodeId, recipe, machines, verb, undo = restoreLine) {
@@ -460,7 +477,12 @@ function applyFocus() {
         let line = lineMachines(edge)
         if (!label || !line) continue
         let mine = outgoing ? line.supplier : line.consumer
-        let machines = mine ? {recipe: outgoing ? line.from : line.to, words: machineWords(mine, outgoing ? "send" : "use")} : null
+        let machines = null
+        if (line.supplier && line.consumer) {
+            machines = bothEnds(line, outgoing ? "from" : "to")
+        } else if (mine) {
+            machines = {recipe: outgoing ? line.from : line.to, words: machineWords(mine, outgoing ? "send" : "use")}
+        }
         swapChildren(label, lineChip(line.item, line.rate, machines), "chip", focusUndo)
         label.classList.add("pinned")
         focusUndo.push(() => label.classList.remove("pinned"))
@@ -507,17 +529,21 @@ function chipGap(edges) {
     for (let edge of edges) {
         let line = lineMachines(edge)
         if (!line) continue
-        // the longer of the two sides' machine rows, whichever end is focused
-        let sides = [
-            line.supplier && {recipe: line.from, words: machineWords(line.supplier, "send")},
-            line.consumer && {recipe: line.to, words: machineWords(line.consumer, "use")},
-        ].filter(Boolean).sort((a, b) => b.words.length - a.words.length)
-        let chip = document.createElement("div")
-        chip.className = "elbl chip"
-        chip.style.transform = "none"
-        chip.append(...lineChip(line.item, line.rate, sides[0] || null))
-        probe.appendChild(chip)
-        widest = Math.max(widest, chip.offsetWidth)
+        // every machine row applyFocus could give it, whichever end is focused
+        let rows = line.supplier && line.consumer
+            ? [bothEnds(line, "from"), bothEnds(line, "to")]
+            : [
+                line.supplier && {recipe: line.from, words: machineWords(line.supplier, "send")},
+                line.consumer && {recipe: line.to, words: machineWords(line.consumer, "use")},
+            ].filter(Boolean)
+        for (let machines of rows.length ? rows : [null]) {
+            let chip = document.createElement("div")
+            chip.className = "elbl chip"
+            chip.style.transform = "none"
+            chip.append(...lineChip(line.item, line.rate, machines))
+            probe.appendChild(chip)
+            widest = Math.max(widest, chip.offsetWidth)
+        }
     }
     probe.remove()
     return Math.max(BASE_COL_GAP, Math.ceil(widest + CHIP_MARGIN))
