@@ -1,0 +1,30 @@
+/* calc/quality.css — quality tier badges and pickers (calc/quality-ui.js,
+   calculator 1.3.0). The picker reuses calc.css's .seg look; the chosen
+   tier is its orange .on button. */
+
+/* Anything holding an icon plus a badge. */
+.qwrap { position: relative; }
+.qwrap-inline { display: inline-block; line-height: 0; vertical-align: middle; }
+img.qbadge {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    z-index: 1;
+    pointer-events: none;
+    filter: drop-shadow(0 0 1px #000000);
+}
+
+/* The tier picker. */
+.seg.tierpick button { padding: 3px 5px; line-height: 0; }
+.seg.tierpick button img { display: block; width: 18px; height: 18px; }
+
+/* Settings -> Machines -> Quality (settings.js). */
+#machine_quality { display: flex; flex-direction: column; gap: 4px; }
+.mq-row { display: flex; align-items: center; gap: 8px; }
+.mq-name { min-width: 170px; }
+
+/* A row's Machine line (details.js). */
+.machine-quality { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+/* The module editor's "Module quality" / "Beacon quality" lines. */
+.me-tierpick { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
