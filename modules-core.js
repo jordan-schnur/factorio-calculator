@@ -1,6 +1,8 @@
 // calc/modules-core.js — which modules each row gets, and what they do.
-// Pure: no DOM, no spec, no Rational, so tests/js/calc_modules_check.mjs
-// runs it under node. The page's Module/Building/Recipe objects carry the
+// Pure: no DOM, no spec; it reaches rational.js only through
+// quality-core.js, so tests/js/calc_modules_check.mjs imports
+// tests/js/bigint_global.mjs first and runs it under node. The page's
+// Module/Building/Recipe objects carry the
 // fields read here:
 //   module:  {key, name, category, effect: {speed, productivity, consumption, pollution, quality}}
 //   machine: {key, name, moduleSlots, allowedEffects: Set<string> | null}
@@ -11,6 +13,8 @@
 // handed to resolveModules comes back untouched.
 // Layers (docs/superpowers/specs/2026-10-04-per-recipe-modules-design.md):
 // a row set by hand wins over its machine's entry, which wins over the plan.
+
+import { beaconEffectivityNumber, scaledEffectNumber, tierOf as qualityTier } from "./quality-core.js"
 
 // The direction in which each effect helps. The game checks only the
 // effects a module improves against allowed_effects: a speed module's -10%
@@ -115,15 +119,21 @@ export function canBeacon(module, beaconAllowed) {
 // it can; else empty. Beacons come whole from the machine's entry if it has
 // one, else from the plan. `fellBack` says why the first choice was
 // refused somewhere: "recipe" (no productivity on this recipe), "machine",
-// or null.
+// or null. Every module comes with its quality tier (calculator 1.3.0):
+// the layer's own, the secondary's for a fallback slot, "normal" for an
+// empty slot or a layer that names none.
 export function resolveModules({recipe, machine, plan, machineLayer}) {
     let entry = machineLayer ? machineLayer.get(machine.key) : undefined
+    let tiers = (entry && entry.moduleTiers) || []
     let modules = []
+    let moduleTiers = []
     let fellBack = null
     for (let i = 0; i < machine.moduleSlots; i++) {
         let first = entry ? (entry.modules[i] ?? null) : plan.defaultModule
+        let firstTier = entry ? tiers[i] : plan.defaultModuleTier
         if (first === null || canUse(first, recipe, machine)) {
             modules.push(first)
+            moduleTiers.push(first === null ? "normal" : qualityTier(firstTier).key)
             continue
         }
         if (fellBack === null) {
@@ -131,13 +141,25 @@ export function resolveModules({recipe, machine, plan, machineLayer}) {
             fellBack = noProd ? "recipe" : "machine"
         }
         let second = plan.secondaryDefaultModule
-        modules.push(second !== null && canUse(second, recipe, machine) ? second : null)
+        let ok = second !== null && canUse(second, recipe, machine)
+        modules.push(ok ? second : null)
+        moduleTiers.push(ok ? qualityTier(plan.secondaryDefaultModuleTier).key : "normal")
     }
-    let beacons = entry || {beaconModules: plan.defaultBeacon, beaconCount: plan.defaultBeaconCount}
+    let beacons = entry || {
+        beaconModules: plan.defaultBeacon,
+        beaconModuleTiers: plan.defaultBeaconTiers,
+        beaconCount: plan.defaultBeaconCount,
+        beaconTier: plan.defaultBeaconTier,
+    }
+    let beaconModules = [beacons.beaconModules[0] ?? null, beacons.beaconModules[1] ?? null]
+    let beaconTiers = beacons.beaconModuleTiers || []
     return {
         modules,
-        beaconModules: [beacons.beaconModules[0] ?? null, beacons.beaconModules[1] ?? null],
+        moduleTiers,
+        beaconModules,
+        beaconModuleTiers: beaconModules.map((m, i) => (m === null ? "normal" : qualityTier(beaconTiers[i]).key)),
         beaconCount: beacons.beaconCount,
+        beaconTier: qualityTier(beacons.beaconTier).key,
         source: entry ? "machine" : "plan",
         fellBack,
     }
@@ -159,27 +181,31 @@ export function fallbackNote(resolved) {
 // fall below 20% (the game's -80% floor). `machineProd` is the machine's
 // own bonus (a foundry's +50%, or mining productivity on a drill).
 // beacon: {distributionEffectivity, profile: number[] | null}
-export function effectsOf({modules, beaconModules, beaconCount, machineProd = 0, beacon}) {
+// Tiers (calculator 1.3.0): `moduleTiers`/`beaconModuleTiers` parallel the
+// module lists and `beaconTier` is the beacon's own; missing ones are normal.
+export function effectsOf({modules, moduleTiers = [], beaconModules, beaconModuleTiers = [], beaconCount, beaconTier = "normal", machineProd = 0, beacon}) {
     let speed = 1
     let prod = 1 + machineProd
     let power = 1
-    for (let module of modules) {
-        if (!module) continue
-        speed += module.effect.speed || 0
-        prod += module.effect.productivity || 0
-        power += module.effect.consumption || 0
-    }
+    modules.forEach((module, i) => {
+        if (!module) return
+        let tier = moduleTiers[i]
+        speed += scaledEffectNumber(module.effect.speed || 0, "speed", tier)
+        prod += scaledEffectNumber(module.effect.productivity || 0, "productivity", tier)
+        power += scaledEffectNumber(module.effect.consumption || 0, "consumption", tier)
+    })
     let count = num(beaconCount)
     if (modules.length > 0 && count > 0) {
-        let scale = count * beacon.distributionEffectivity
+        let scale = count * beaconEffectivityNumber(beaconTier, beacon.distributionEffectivity)
         if (beacon.profile) {
             scale *= beacon.profile[Math.min(Math.ceil(count), beacon.profile.length) - 1]
         }
-        for (let module of beaconModules) {
-            if (!module) continue
-            speed += (module.effect.speed || 0) * scale
-            power += (module.effect.consumption || 0) * scale
-        }
+        beaconModules.forEach((module, i) => {
+            if (!module) return
+            let tier = beaconModuleTiers[i]
+            speed += scaledEffectNumber(module.effect.speed || 0, "speed", tier) * scale
+            power += scaledEffectNumber(module.effect.consumption || 0, "consumption", tier) * scale
+        })
     }
     return {speed: Math.max(speed, 0.2), prod, power: Math.max(power, 0.2), floored: speed < 0.2}
 }
