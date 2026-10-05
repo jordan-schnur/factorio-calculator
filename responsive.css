@@ -27,6 +27,10 @@
     .detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding-left: 14px; }
     .detail > :nth-child(3) { grid-column: 1 / -1; }
     #settings-panel { width: 100vw; }
+    /* Full width there's no backdrop to tap, so the title bar and its close
+       button stay in view while the long panel scrolls. */
+    #settings-panel > .titlebar { position: sticky; top: -14px; z-index: 2; background: #313131; margin: -14px -14px 0; padding: 12px 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+    #settings-close { font-size: 22px; min-width: 44px; min-height: 44px; }
     /* The graph's side card becomes a sheet over the bottom of the graph
        (flow.js's fitToView() starts the graph at the top to match). */
     #graph-side { left: 0; right: 0; top: auto; width: auto; max-height: 55%; box-sizing: border-box; box-shadow: 0 -4px 12px rgba(0,0,0,0.7); }
@@ -71,6 +75,18 @@
 
 
     #settings-panel { padding: 10px; }
+    #settings-panel > .titlebar { top: -10px; margin: -10px -10px 0; padding: 10px; }
     #settings-panel .kv { flex-wrap: wrap; }
     #settings-panel .kv > .muted:first-child { width: 100% !important; }
+    /* A checkbox keeps its label beside it rather than wrapping apart. */
+    #settings-panel .kv > input[type="checkbox"] + label { flex: 1 1 0; min-width: 0; }
+
+    /* Landing screen: the examples wrap, and nothing is wider than the
+       screen (the panel centres its children, so a too-wide one spilled
+       off both edges). */
+    #make-panel.intro { padding: 24px 12px; }
+    #make-panel.intro #intro-title { font-size: 22px; text-align: center; }
+    #intro-extras { width: 100%; }
+    #intro-extras .examples { flex-wrap: wrap; justify-content: center; }
+    #intro-extras #restore-last { display: block; text-align: center; margin-top: 10px; }
 }
