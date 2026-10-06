@@ -4,7 +4,9 @@
 
 /* --- tight graph: click chips wrap to fit the narrow column gap ---------- */
 
-.graph-tight .elbl.chip { max-width: 132px; white-space: normal; }
+/* max-content, capped: a chip sits in #flow-nodes, which is 0 px wide, so
+   without it the chip shrinks to its narrowest (one pair per line). */
+.graph-tight .elbl.chip { width: max-content; max-width: 170px; white-space: normal; }
 .graph-tight .elbl.chip .chip-row { flex-wrap: wrap; row-gap: 1px; }
 .graph-tight .elbl.chip .sep { display: none; }
 .elbl.chip .pair { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
@@ -31,19 +33,35 @@
        button stay in view while the long panel scrolls. */
     #settings-panel > .titlebar { position: sticky; top: -14px; z-index: 2; background: #313131; margin: -14px -14px 0; padding: 12px 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
     #settings-close { font-size: 22px; min-width: 44px; min-height: 44px; }
-    /* The graph's side card becomes a sheet over the bottom of the graph
-       (flow.js's fitToView() starts the graph at the top to match). */
-    #graph-side { left: 0; right: 0; top: auto; width: auto; max-height: 55%; box-sizing: border-box; box-shadow: 0 -4px 12px rgba(0,0,0,0.7); }
+
+    /* The page scrolls as a whole instead of each frame scrolling inside a
+       screen-high box. */
+    #page { height: auto; min-height: 100vh; }
+    #table-frame { flex: none; overflow: visible; }
+    #graph-frame { flex: none; height: 72vh; }
+
+    /* The graph runs top to bottom here (flow.js's graphDirection()): one
+       stage per row, its label at the row's top left, the frame as tall as
+       the plan (fitColumn() sets it) so a drag scrolls the page rather than
+       panning the graph, and a stage too wide for the screen scrolls
+       sideways in the frame. */
+    #flow-container.graph-tb { touch-action: pan-x pan-y; cursor: default; overflow-x: auto; overflow-y: hidden; }
+    #flow-container.graph-tb + #flow-fit { display: none; }
+    #flow-columns.tb .stage { box-shadow: inset 0 1px 0 rgba(255, 230, 192, 0.06); }
+    #flow-columns.tb .stage-label, #flow-columns.tb .stage-sub { left: 10px; right: 10px; text-align: left; }
+
+    /* The side card becomes a sheet pinned to the bottom of the screen
+       (the tall frame scrolls with the page, so not to the frame's bottom),
+       and while it's open the page gets that much room underneath, so the
+       last cards can still scroll up above it (flow.js's focusNode()). */
+    #graph-side { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 60vh; z-index: 40; box-sizing: border-box; box-shadow: 0 -4px 12px rgba(0,0,0,0.7); }
+    #page:has(#graph-side:not([hidden])) { padding-bottom: 60vh; }
 }
 
 /* --- phone: up to 640px -------------------------------------------------- */
 
 @media (max-width: 640px) {
-    /* The page scrolls as a whole instead of each frame scrolling inside a
-       screen-high box; the graph keeps a fixed height to pan in. */
-    #page { height: auto; min-height: 100vh; padding: 8px; gap: 8px; }
-    #table-frame { flex: none; overflow: visible; }
-    #graph-frame { flex: none; height: 72vh; }
+    #page { padding: 8px; gap: 8px; }
 
     #topbar { padding: 8px 10px; gap: 8px; }
     #topbar .title { font-size: 16px; }
@@ -72,20 +90,6 @@
 
     .detail { grid-template-columns: minmax(0, 1fr); padding: 10px; gap: 14px; }
     #modules-bar { padding: 8px 10px; }
-
-    /* The graph runs top to bottom here (flow.js's graphDirection()): one
-       stage per row, its label at the row's top left, the frame as tall as
-       the plan so a drag scrolls the page rather than panning the graph. */
-    #flow-container.graph-tb { touch-action: pan-x pan-y; cursor: default; overflow-x: auto; overflow-y: hidden; }
-    #flow-container.graph-tb + #flow-fit { display: none; }
-    #flow-columns.tb .stage { box-shadow: inset 0 1px 0 rgba(255, 230, 192, 0.06); }
-    #flow-columns.tb .stage-label, #flow-columns.tb .stage-sub { left: 10px; right: 10px; text-align: left; }
-    /* The tall frame scrolls with the page, so the details sheet is pinned
-       to the screen rather than to the frame's bottom. */
-    #graph-side { position: fixed; max-height: 60vh; z-index: 40; }
-    /* ...and while it's open the page gets that much room underneath, so
-       the last cards can still scroll up above it (flow.js's focusNode()). */
-    #page:has(#graph-side:not([hidden])) { padding-bottom: 60vh; }
 
 
     #settings-panel { padding: 10px; }

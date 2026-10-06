@@ -55,11 +55,11 @@ function renderKey() {
     return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}:${spec.beltStack}:${spec.format.beltFormat}:${spec.modulesVersion}:${tightGraph()}:${graphDirection()}`
 }
 
-// At phone width (responsive.css's 640px breakpoint) the graph runs top to
-// bottom: the same cards, lines and chips (flow-core's layered() with
+// On phones and tablets (responsive.css's 1000px breakpoint) the graph runs
+// top to bottom: the same cards, lines and chips (flow-core's layered() with
 // direction "TB"), one stage per row, as wide as the screen and as tall as
 // the plan, so the page scrolls through it instead of panning a box.
-const COLUMN_BELOW = 640
+const COLUMN_BELOW = 1000
 
 function graphDirection() {
     return window.innerWidth <= COLUMN_BELOW ? "TB" : "LR"
@@ -767,9 +767,7 @@ export function fitToView() {
     let k = Math.min(1, (W - 40) / lastLayout.width, (H - 190) / lastLayout.height)
     if (!isFinite(k) || k <= 0) return
     let tx = tightGraph() ? 20 : (W - lastLayout.width * k) / 2
-    // Below SHEET_WIDTH the side card opens as a sheet over the bottom half
-    // (responsive.css), so the graph starts at the top instead of the middle.
-    let ty = window.innerWidth <= SHEET_WIDTH ? 20 : 96 + Math.max(0, (H - 190 - lastLayout.height * k) / 2)
+    let ty = 96 + Math.max(0, (H - 190 - lastLayout.height * k) / 2)
     d3.select("#flow-container").call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
     needsFit = false
     isFitted = true
@@ -999,8 +997,6 @@ const ROW_HEADER = 36
 const COLUMN_PAD = 8
 const MIN_COLUMN_SCALE = 0.75
 const FOCUS_TOP = 72
-// responsive.css's 1000px breakpoint, where the side card becomes a sheet.
-const SHEET_WIDTH = 1000
 const PLAIN_LABEL_H = 18
 
 // The full draw pass, called whenever the Graph view needs a picture: on a
