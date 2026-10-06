@@ -35,6 +35,14 @@ export function outputsOf(totals, recipe) {
     })
 }
 
+// The outputs of `recipe` the plan actually uses (made faster than they are
+// left over): what "Bring in from another build" on a multi-output row has
+// to supply. Bringing in only the first product (uranium-235, which nothing
+// uses) would leave the recipe running and the switch flipping straight back.
+export function usedOutputs(totals, recipe) {
+    return outputsOf(totals, recipe).filter(o => o.rate.sub(o.leftover).toFloat() > 1e-9).map(o => o.item)
+}
+
 // What the solver could not use, largest first: [{item, rate, makers}] with
 // `makers` the real recipes that produce it.
 export function leftovers(totals) {

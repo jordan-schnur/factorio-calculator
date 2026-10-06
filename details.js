@@ -4,7 +4,7 @@
 // open row (itemtable.js, `.detail` under the clicked `.lrow`) and the
 // graph view's side card (`#graph-side`, built here since selecting a node
 // does not itself trigger a re-solve).
-import { isMultiOutput, outputsOf } from "./byproduct-core.js"
+import { isMultiOutput, outputsOf, usedOutputs } from "./byproduct-core.js"
 import { spec } from "./factory.js"
 import { recipesFor } from "./machines-core.js"
 import { beltWords, destinationLines, flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
@@ -412,7 +412,7 @@ function buildMakesCol(rows, row, totals) {
     return col("goesto makes", children)
 }
 
-function buildSourceSeg(item, row) {
+function buildSourceSeg(item, row, totals) {
     let seg = document.createElement("span")
     seg.className = "seg source"
     let here = document.createElement("button")
@@ -427,7 +427,14 @@ function buildSourceSeg(item, row) {
     bringIn.classList.toggle("on", supplied)
     bringIn.classList.toggle("in", supplied)
 
-    let toggle = () => document.dispatchEvent(new CustomEvent("calc:toggle-supplied", { detail: { item: item.key } }))
+    // A multi-output row is keyed by its first product, which the plan may
+    // not use at all: bringing it in means bringing in what the plan uses.
+    let items = [item]
+    if (!supplied && isMultiOutput(row.recipe)) {
+        let used = usedOutputs(totals, row.recipe)
+        if (used.length > 0) items = used
+    }
+    let toggle = () => document.dispatchEvent(new CustomEvent("calc:toggle-supplied", { detail: { items: items.map(i => i.key) } }))
     here.addEventListener("click", () => { if (supplied) toggle() })
     bringIn.addEventListener("click", () => { if (!supplied) toggle() })
 
@@ -529,7 +536,7 @@ function buildMachinePicker(recipe, totals) {
 function buildSourceCol(item, row, totals, isTarget, isResource) {
     let children = []
     if (row && !isTarget && !isResource) {
-        children.push(buildSourceSeg(item, row))
+        children.push(buildSourceSeg(item, row, totals))
     }
     if (relevantRecipes(item).length > 1) {
         children.push(lbl("Recipe"))

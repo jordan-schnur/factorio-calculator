@@ -4,6 +4,8 @@
 // findFixes) and, after a fix, a status strip with Undo. A trial switches
 // recipes on/off, solves, and switches them back exactly; trials run on a
 // 0 ms timer after the page renders so the plan never waits for them.
+// A block can be dismissed: it folds into a "hidden" line with Show, and
+// stays dismissed in this browser (localStorage) until the leftovers change.
 import { allowLabel, cheapest, findFixes, joinWords, machineDiff, shortName, stalls } from "./byproduct-core.js"
 import { spec } from "./factory.js"
 import { plural } from "./ratio-core.js"
@@ -20,6 +22,45 @@ let fixesFor = null
 let fixesCache = null
 // The last fix applied, with its Undo, until the plan changes some other way.
 let applied = null
+
+// Dismissed blocks by blockKey(), kept per browser, not in the plan link: a
+// shared link still warns whoever opens it.
+const DISMISSED_KEY = "calc.dismissedByproducts"
+let dismissed = loadDismissed()
+
+function loadDismissed() {
+    try {
+        let list = JSON.parse(localStorage.getItem(DISMISSED_KEY) || "[]")
+        return new Set(Array.isArray(list) ? list : [])
+    } catch (e) {
+        return new Set()
+    }
+}
+
+function saveDismissed() {
+    try {
+        if (dismissed.size > 0) {
+            localStorage.setItem(DISMISSED_KEY, JSON.stringify([...dismissed]))
+        } else {
+            localStorage.removeItem(DISMISSED_KEY)
+        }
+    } catch (e) {
+        // Storage blocked: the dismissal lasts until the page reloads.
+    }
+}
+
+// The recipe and the items it leaves over: a new leftover from the same
+// recipe brings the warning back.
+function blockKey(block) {
+    let items = block.items.map(({item}) => item.key).sort().join(",")
+    return `${block.recipe ? block.recipe.key : ""}:${items}`
+}
+
+function setDismissed(keys, on) {
+    for (let key of keys) on ? dismissed.add(key) : dismissed.delete(key)
+    saveDismissed()
+    renderBar(spec, spec.lastTotals)
+}
 
 function rateText(rate) {
     return `${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`
@@ -151,6 +192,8 @@ function el(tag, className, text) {
 const WARN_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3z"></path><path d="M12 10v5"></path><path d="M12 18h.01"></path></svg>'
 const CHECK_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6"></path></svg>'
 
+const CLOSE_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>'
+
 const SHOWN_ITEMS = 4
 
 function itemNames(block) {
@@ -165,6 +208,13 @@ function blockMarkup(block, found) {
     let head = el("div", "bp-head")
     head.innerHTML = WARN_SVG
     head.appendChild(el("span", "bp-title", block.recipe ? `${block.recipe.name} will back up and stop` : `Nothing here uses ${itemNames(block)}`))
+    let close = el("button", "btn btn-sm bp-dismiss")
+    close.type = "button"
+    close.title = "Dismiss this warning"
+    close.setAttribute("aria-label", "Dismiss this warning")
+    close.innerHTML = CLOSE_SVG
+    close.addEventListener("click", () => setDismissed([blockKey(block)], true))
+    head.appendChild(close)
     div.appendChild(head)
 
     let line = el("div", "bp-line")
@@ -273,20 +323,38 @@ function statusMarkup() {
     return strip
 }
 
+function hiddenMarkup(hidden) {
+    let strip = el("div", "bp-hidden")
+    let names = hidden.map(block => block.recipe ? block.recipe.name : itemNames(block))
+    let one = hidden.length === 1
+    strip.appendChild(el("span", "bp-hidden-text",
+        `${one ? "A byproduct warning is" : `${hidden.length} byproduct warnings are`} hidden: ${joinWords(names)}.`))
+    let show = el("button", "btn btn-sm bp-show", "Show")
+    show.type = "button"
+    show.addEventListener("click", () => setDismissed(hidden.map(blockKey), false))
+    strip.appendChild(show)
+    return strip
+}
+
 function renderBar(_spec, totals) {
     let bar = document.getElementById("byproducts")
     if (!bar) return
     if (applied && applied.totals !== totals) applied = null
     let blocks = totals && spec.buildTargets.length > 0 ? stalls(totals, spec.sendOut) : []
+    let hidden = blocks.filter(block => dismissed.has(blockKey(block)))
     bar.replaceChildren()
     if (applied) bar.appendChild(statusMarkup())
     bar.hidden = blocks.length === 0 && !applied
     if (blocks.length === 0) return
+    if (hidden.length > 0) bar.appendChild(hiddenMarkup(hidden))
+    if (hidden.length === blocks.length) return
 
     let section = el("section", "bp-bar")
     section.setAttribute("aria-label", "Byproducts")
     let cached = fixesFor === totals ? fixesCache : null
-    blocks.forEach((block, i) => section.appendChild(blockMarkup(block, cached ? cached[i] : null)))
+    blocks.forEach((block, i) => {
+        if (!dismissed.has(blockKey(block))) section.appendChild(blockMarkup(block, cached ? cached[i] : null))
+    })
     bar.appendChild(section)
     if (cached) return
 
