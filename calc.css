@@ -292,11 +292,12 @@ html:not([data-companion="yes"]) .needs-companion { display: none !important; }
    without this. */
 #flow-columns { pointer-events: none; }
 #flow-fit { position: absolute; top: 8px; right: 8px; z-index: 5; }
-#graph-side { position: absolute; right: 0; top: 0; bottom: 0; width: 340px; overflow: auto; z-index: 6; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+#graph-side { position: absolute; right: 0; top: 0; bottom: 0; width: 366px; overflow: auto; z-index: 6; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 #graph-side .head .title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* .detail's 3-column grid and 58px left pad (room for the table row's icon
-   column) don't fit the 340px side card: one column, no left pad. */
-#graph-side .detail { grid-template-columns: minmax(0, 1fr); padding: 10px 0 0; gap: 14px; }
+   column) don't fit the 366px side card: one column, and a pad that only
+   clears the gold rule so nothing sits flush against it or the right edge. */
+#graph-side .detail { grid-template-columns: minmax(0, 1fr); padding: 12px 12px 14px 14px; gap: 14px; }
 #make-panel { display: flex; flex-direction: column; gap: 8px; }
 #make-panel .make-row { display: flex; align-items: center; gap: 10px; }
 #make-panel .search-wrap { position: relative; flex: 1; }
