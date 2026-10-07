@@ -7,4 +7,5 @@ blob-report/
 .claude/*
 !.claude/rules/
 !.claude/agents/
+!.claude/commands/
 dist-ssr/
