@@ -1,14 +1,25 @@
 {
   "name": "factorio-calculator",
   "private": true,
-  "description": "Static site; package.json exists only for the end-to-end test suite.",
+  "description": "Factorio production calculator: Svelte 5 + Vite, prerendered to static files.",
   "scripts": {
+    "dev": "vite --open /calc.html",
+    "build": "vite build && vite build --ssr src/render.js --outDir dist-ssr && node scripts/prerender.mjs",
+    "preview": "node tests/e2e/support/serve.mjs 8000 127.0.0.1 dist",
     "test": "playwright test",
     "test:update": "playwright test --update-snapshots",
-    "test:ui": "playwright test --ui",
-    "serve": "node tests/e2e/support/serve.mjs 8000"
+    "test:ui": "playwright test --ui"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0"
+    "@playwright/test": "^1.63.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "svelte": "^5.57.2",
+    "vite": "^8.3.3"
+  },
+  "dependencies": {
+    "@popperjs/core": "^2.11.8",
+    "big-integer": "^1.6.52",
+    "d3": "^6.7.0",
+    "pako": "^2.2.0"
   }
 }

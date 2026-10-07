@@ -1,6 +1,9 @@
 *.swp
 node_modules/
+dist/
 test-results/
 playwright-report/
 blob-report/
-.claude/
+.claude/*
+!.claude/rules/
+dist-ssr/

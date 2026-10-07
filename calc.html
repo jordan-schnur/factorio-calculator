@@ -3,8 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Keep the title in step with settings.js's INTRO_TITLE, which the page
-         sets once it boots with nothing planned. -->
+    <!-- Keep the title in step with settings.js's INTRO_TITLE. -->
     <title>Factorio Calculator – Space Age &amp; 2.0 Production Ratios</title>
     <meta name="description" content="Free Factorio calculator for 2.0 and Space Age. Pick an item and a rate to get every machine, belt and raw input, as a table or a flow graph.">
     <link rel="canonical" href="https://factoriocalculator.app/">
@@ -34,29 +33,12 @@
     </script>
     <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <!-- Google Analytics on factoriocalculator.app only, never the local companion. -->
-    <script type="module" src="analytics.js"></script>
-    <!-- The landing screen's background of plan screenshots. -->
-    <script type="module" src="intro-bg.js"></script>
-    <script type="module" src="version.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&display=swap">
-    <link rel="stylesheet" type="text/css" href="calc.css">
-    <link rel="stylesheet" type="text/css" href="modules.css">
-    <link rel="stylesheet" type="text/css" href="modules-table.css">
-    <link rel="stylesheet" type="text/css" href="modules-graph.css">
-    <link rel="stylesheet" type="text/css" href="modules-editor.css">
-    <link rel="stylesheet" type="text/css" href="modules-settings.css">
-    <link rel="stylesheet" type="text/css" href="quality.css">
-    <script src="third_party/BigInteger.min.js"></script>
-    <script src="third_party/d3.min.js"></script>
-    <script src="third_party/pako.min.js"></script>
-    <script src="third_party/popper.min.js"></script>
+    <!-- A module that fails to load (often a stale cached copy after an update) leaves a dead page, so say so. -->
     <script>
-        // A module that fails to load or link (typically a stale cached copy
-        // after an update) leaves a dead page with no visible sign. Say so.
         window.addEventListener("error", function (e) {
             var msg = String(e.message || "")
-            if (!/module|export|import|handlers is not defined/i.test(msg)) return
+            if (!/module|export|import/i.test(msg)) return
             var bar = document.getElementById("stale-banner") || document.createElement("div")
             bar.id = "stale-banner"
             bar.textContent = "The calculator did not load (" + msg + "). Press Ctrl+F5 to reload it fresh."
@@ -64,169 +46,11 @@
             ;(document.body || document.documentElement).appendChild(bar)
         })
     </script>
-    <script type="module">
-        import { changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeColorblind, changeMprod, changeTitle } from "./events.js"
-        import { init } from "./init.js"
-        // Module scripts are deferred, so this runs before body's onload.
-        window.handlers = { init, changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeColorblind, changeMprod, changeTitle }
-    </script>
+    <script type="module" src="/src/main.js"></script>
 </head>
 
-<!--The solver and data model are Kirk McDonald's, copyright 2015-2024 and
-licensed under the Apache License 2.0 (see LICENSE); this page and the UI
-modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
-
-<body onload="handlers.init()">
-<div id="page">
-  <div class="frame" id="topbar">
-    <h1 class="title">Factorio Calculator</h1>
-    <span class="muted needs-companion" id="save-line"></span>
-    <select id="save-picker" class="needs-companion"></select>
-    <span id="save-status" class="muted needs-companion"></span>
-    <span id="page-note" class="muted"></span>
-    <div class="spacer"></div>
-    <div class="seg" id="view-seg" hidden><button data-view="table">Table</button><button data-view="graph">Graph</button></div>
-    <button class="btn" id="settings-open" title="Settings">Settings</button>
-    <button class="btn btn-green needs-companion" id="board-button" hidden>Add to board</button>
-    <div class="frame needs-companion" id="board-panel" hidden></div>
-  </div>
-
-  <div class="frame intro" id="make-panel">
-    <h2 class="title" id="intro-title">What do you want to make?</h2>
-    <div class="make-row"><span class="title">Make</span>
-      <div class="search-wrap"><input id="target-search" placeholder="red science 60, gears, blue chip 45" autocomplete="off"><div id="target-search-results"></div></div>
-    </div>
-    <span class="muted" id="make-hint">Nicknames work. A trailing number is the rate per minute, or a machine count with "machines": blue chip 7 machines. Enter adds it.</span>
-    <ul id="targets"><li id="plusButton" hidden></li></ul>
-    <div id="target-notes" class="muted" hidden></div>
-    <div id="intro-extras">
-      <div class="examples">
-        <button class="btn example-target" data-item="automation-science-pack" data-rate="60">Red science 60/min</button>
-        <button class="btn example-target" data-item="military-science-pack" data-rate="60">Military science 60/min</button>
-        <button class="btn example-target" data-item="chemical-science-pack" data-rate="30">Blue science 30/min</button>
-      </div>
-      <a id="restore-last" hidden>Restore the last factory</a>
-      <p class="muted about">A production calculator for Factorio 2.0 and Space Age: pick an item and a rate and
-        it works out every machine, belt and raw input, as a table or a flow graph.</p>
-      <div class="guide">
-        <section>
-          <h3>Production ratios, worked out</h3>
-          <p>Ask for 60 red science a minute and the calculator counts the assemblers, furnaces and drills behind it,
-            the belts each line fills and the iron and copper ore it eats. Click any row for its exact ratios:
-            how many machines feed how many of the next, and what one full belt keeps running.</p>
-        </section>
-        <section>
-          <h3>Space Age and 2.0 recipes</h3>
-          <p>Plan on Nauvis, Vulcanus, Fulgora, Gleba or Aquilo with the machines each planet can build.
-            Add modules and beacons, set machine quality, and see leftover byproducts such as heavy oil
-            along with the fixes that use them up.</p>
-        </section>
-        <section>
-          <h3>Table or flow graph</h3>
-          <p>The table groups every item by what to build here, bring in or mine. The graph draws the same plan as
-            production lines with belt counts. The address bar holds the whole plan, so copying it shares it.</p>
-        </section>
-      </div>
-    </div>
-  </div>
-
-  <div id="byproducts" hidden></div>
-
-  <div class="frame" id="table-frame" hidden>
-    <div id="item-table"></div>
-  </div>
-
-  <div class="frame" id="graph-frame" hidden>
-    <div id="flow-container" class="canvas"><div id="flow-columns"></div><svg id="flow"></svg><div id="flow-nodes"></div></div>
-    <button class="btn btn-sm" id="flow-fit">Fit</button>
-    <div class="frame" id="graph-side" hidden></div>
-  </div>
-
-  <div class="frame" id="footer" hidden>
-    <span class="num" id="footer-totals"></span>
-    <div class="spacer"></div>
-    <span class="muted" id="footer-bring"></span>
-    <span id="footer-sendout" hidden></span>
-  </div>
-
-  <details id="scratchpad-frame" hidden><summary>Scratch pad</summary>
-    <div style="display: flex; flex-direction: column; gap: 6px;">
-      <div id="scratch-history"></div>
-      <input class="num" id="scratch-input" placeholder="2 * 450 / 60" autocomplete="off">
-      <div class="num" id="scratch-result" style="font-size: 22px; text-align: right;">=</div>
-      <div class="muted" style="font-size: 13px;"><span class="key">Enter</span> keeps the line &middot; <span class="key">&uarr;</span> recalls &middot; <b>ans</b> is the last result &middot; units like kW, MW, /min pass through.</div>
-      <button class="btn btn-sm" id="scratch-clear">clear</button>
-    </div>
-  </details>
-
-  <div id="settings-drawer" hidden>
-    <div class="frame" id="settings-panel">
-      <div class="titlebar"><span class="title">Settings</span><div class="spacer"></div><button class="x" id="settings-close">&#10005;</button></div>
-
-      <div class="sec needs-companion">From your save</div>
-      <div class="deep needs-companion" id="settings-fromsave"></div>
-
-      <div id="settings-overrides">
-        <div class="sec">Machines</div>
-        <div class="deep">
-          <div class="kv"><span class="muted lbl" style="width: 110px;">Assemblers</span><div class="seg" id="asm-seg"></div></div>
-          <div class="kv"><span class="muted" style="width: 110px;">Machines</span><span id="building_selector"></span></div>
-          <div class="kv"><span class="muted" style="width: 110px;">Available</span><span id="machine_allow"></span></div>
-          <div class="kv"><span class="muted" style="width: 110px;">Quality</span><div id="machine_quality"></div></div>
-          <div class="kv"><span class="muted" style="width: 110px;">Belt</span><span id="belt_selector" class="radio-setting"></span></div>
-          <div class="kv"><span class="muted" style="width: 110px;">Mining</span><span class="muted">productivity</span>+<input id="mprod" class="num mprod" type="number" step="10" value="0" min="0" onchange="handlers.changeMprod(event)"><span class="muted">%</span></div>
-        </div>
-
-        <div class="sec">Recipes</div>
-        <div class="deep">
-          <div class="kv" id="planet_setting_row"><span class="muted" style="width: 110px;">Planets</span><div id="planet_selector"></div></div>
-          <div class="kv"><span class="muted" style="width: 110px;">Preferred fuel</span><span id="fuel_selector" class="radio-setting"></span></div>
-          <span class="muted">Which recipe makes each item is picked on its row in the table.</span>
-        </div>
-      </div>
-
-      <div class="sec" id="modules-sec">Modules</div>
-      <div class="deep" id="settings-modules"></div>
-
-      <div class="sec">Display</div>
-      <div class="deep" id="settings-display">
-        <div class="kv"><span class="muted" style="width: 90px;">Rates</span><form id="display_rate"></form></div>
-        <div class="kv"><span class="muted" style="width: 90px;">Decimal places</span>
-            <input id="rprec" class="num prec" type="number" value="1" min="0" max="6" onchange="handlers.changeRatePrecision(event)">
-            <span class="muted">decimals for rates,</span>
-            <input id="cprec" class="num prec" type="number" value="1" min="0" max="6" onchange="handlers.changeCountPrecision(event)">
-            <span class="muted">for machine counts</span>
-        </div>
-        <div class="kv"><span class="muted" style="width: 90px;">Values</span><form id="value_format">
-            <input id="decimal_format" type="radio" name="format" value="decimal" checked onchange="handlers.changeFormat(event)"><label for="decimal_format">Decimals</label>
-            <input id="rational_format" type="radio" name="format" value="rational" onchange="handlers.changeFormat(event)"><label for="rational_format">Rationals</label>
-        </form></div>
-        <div class="kv"><span class="muted" style="width: 90px;">Belts</span><form id="belt_format">
-            <input id="fraction_belts" type="radio" name="beltformat" value="fraction" checked onchange="handlers.changeBeltFormat(event)"><label for="fraction_belts">1 1/3 belts</label>
-            <input id="decimal_belts" type="radio" name="beltformat" value="decimal" onchange="handlers.changeBeltFormat(event)"><label for="decimal_belts">1.33 belts</label>
-        </form></div>
-        <div class="kv"><span class="muted" style="width: 90px;">Colour-blind</span>
-            <input id="colorblind_toggle" type="checkbox" onchange="handlers.changeColorblind(event)"><label for="colorblind_toggle">Write the colour on belt, splitter and inserter icons (yellow, red, blue, green)</label>
-        </div>
-      </div>
-
-      <details class="adv">
-        <summary class="kv"><span class="title">Advanced</span></summary>
-        <details><summary class="kv"><span class="muted" style="width: 110px;">Toggle recipes</span></summary><div id="recipe_toggles"></div></details>
-        <details><summary class="kv"><span class="muted" style="width: 110px;">Resource priority</span></summary><div id="resource_settings"></div></details>
-        <div class="kv"><span class="muted" style="width: 110px;">Data</span><select id="data_set"></select></div>
-        <div class="kv"><span class="muted" style="width: 110px;">Title</span><input id="title_setting" type="text" size="30" placeholder="Factorio Calculator" oninput="handlers.changeTitle(event)"></div>
-      </details>
-    </div>
-  </div>
-  <div id="tooltip_container"></div>
-  <footer id="site-footer">
-    <span>Factorio Calculator <a class="calc-version" href="changelog.html" title="What's new">v1.4.5</a></span>
-    <a href="changelog.html">Changelog</a>
-    <span>Made by <a href="https://jordanschnur.com/">Jordan Schnur</a></span>
-    <span>Built on <a href="https://kirkmcdonald.github.io/calc.html">Kirk McDonald's calculator</a> (Apache-2.0)</span>
-    <button type="button" id="analytics-settings" hidden>Analytics settings</button>
-  </footer>
-</div>
+<!-- The solver and data model are Kirk McDonald's (Apache-2.0, see LICENSE and NOTICE-factorio-companion.md). -->
+<body>
+<div id="app"><!--app--></div>
 </body>
 </html>
