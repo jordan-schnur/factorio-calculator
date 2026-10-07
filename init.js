@@ -69,7 +69,7 @@ export function reloadFromHash() {
     let settings = loadSettings(window.location.hash)
     resetSpec()
     applyPageState(settings)
-    loadData(currentMod(), settings)
+    return loadData(currentMod(), settings)
 }
 
 let OIL_EXCLUSION = new Map([
@@ -169,8 +169,9 @@ function initModules() {
 
 export let useLegacyCalculation
 
-// Bumped by every load; a load is stale if a newer one started or Back/Forward moved the address while it fetched.
+// A load is stale if a newer one started (its promise then settles with the newer one) or Back/Forward moved the address.
 let loadGeneration = 0
+let latestLoad = null
 
 function loadData(modName, settings) {
     let generation = ++loadGeneration
@@ -178,8 +179,9 @@ function loadData(modName, settings) {
     let mod = MODIFICATIONS.get(modName)
     useLegacyCalculation = mod.legacy
     let filename = "data/" + mod.filename
-    return d3.json(filename, {cache: "reload"}).then(function(data) {
-        if (generation !== loadGeneration || (window.location.hash !== hash && !isOwnHash(window.location.hash))) return
+    latestLoad = d3.json(filename, {cache: "reload"}).then(function(data) {
+        if (generation !== loadGeneration) return latestLoad
+        if (window.location.hash !== hash && !isOwnHash(window.location.hash)) return reloadFromHash()
         let items = getItems(data)
         let recipes = getRecipes(data, items)
         let planets = getPlanets(data, recipes)
@@ -198,6 +200,7 @@ function loadData(modName, settings) {
 
         spec.updateSolution()
     })
+    return latestLoad
 }
 
 // setHash() writes a new history entry on every state change, so the
