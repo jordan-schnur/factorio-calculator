@@ -3,4 +3,7 @@ node_modules/
 test-results/
 playwright-report/
 blob-report/
-.claude/
+.claude/*
+!.claude/rules/
+!.claude/agents/
+!.claude/commands/
