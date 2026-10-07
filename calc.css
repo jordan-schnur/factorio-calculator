@@ -301,13 +301,31 @@ html:not([data-companion="yes"]) .needs-companion { display: none !important; }
 #make-panel { display: flex; flex-direction: column; gap: 8px; }
 #make-panel .make-row { display: flex; align-items: center; gap: 10px; }
 #make-panel .search-wrap { position: relative; flex: 1; }
-#make-panel.intro { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 40px; }
+#make-panel.intro { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 14px; padding: 40px; }
 #make-panel.intro #intro-title { font-size: 26px; }
 #make-panel.intro #target-search { min-height: 44px; font-size: 17px; }
 #make-panel.intro .make-row { width: 640px; max-width: 100%; }
 #make-panel:not(.intro) #intro-title, #make-panel:not(.intro) #intro-extras { display: none; }
 #intro-extras .examples { display: flex; gap: 10px; }
 #intro-extras .about { max-width: 640px; margin: 18px auto 0; text-align: center; line-height: 1.5; }
+/* The topbar name is the page's h1 and the intro question its h2 (one
+   heading outline for search engines); .title already sets their size. */
+h1.title, h2.title { margin: 0; }
+/* The intro's three short sections on what the calculator does: the page's
+   readable text for search engines, hidden with the rest of #intro-extras
+   once a plan exists. */
+#intro-extras { width: 100%; max-width: 960px; }
+#intro-extras .examples { justify-content: center; flex-wrap: wrap; }
+#intro-extras .guide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 22px 0 0; }
+#intro-extras .guide section { background: rgba(31, 31, 31, 0.78); padding: 10px 14px 12px; }
+#intro-extras .guide h3 { margin: 0 0 4px; font-size: 15px; color: var(--accent); }
+#intro-extras .guide p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+#intro-extras .guide-links { text-align: center; margin: 14px 0 0; }
+@media (max-width: 760px) {
+    #page { padding: 8px; gap: 8px; }
+    #make-panel.intro { padding: 20px 12px; }
+    #intro-extras .guide { grid-template-columns: minmax(0, 1fr); }
+}
 /* intro-bg.js: screenshots of real plans behind the intro, one style per
    visit (?bg=collage|drift|slideshow|sharp|none previews the others). */
 /* isolation keeps #intro-bg's negative z-index above the panel's own

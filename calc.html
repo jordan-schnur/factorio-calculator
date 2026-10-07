@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Keep the title in step with settings.js's INTRO_TITLE, which the page
          sets once it boots with nothing planned. -->
     <title>Factorio Calculator – Space Age &amp; 2.0 Production Ratios</title>
-    <meta name="description" content="Free Factorio 2.0 and Space Age production calculator. Pick an item and a rate; see every machine, belt and raw input as a table or a flow graph. Kirk McDonald calculator links open here too.">
+    <meta name="description" content="Free Factorio calculator for 2.0 and Space Age. Pick an item and a rate to get every machine, belt and raw input, as a table or a flow graph.">
     <link rel="canonical" href="https://factoriocalculator.app/">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Factorio Calculator">
@@ -32,6 +33,7 @@
     }
     </script>
     <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <!-- Google Analytics on factoriocalculator.app only, never the local companion. -->
     <script type="module" src="analytics.js"></script>
     <!-- The landing screen's background of plan screenshots. -->
@@ -77,7 +79,7 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
 <body onload="handlers.init()">
 <div id="page">
   <div class="frame" id="topbar">
-    <span class="title">Factorio Calculator</span>
+    <h1 class="title">Factorio Calculator</h1>
     <span class="muted needs-companion" id="save-line"></span>
     <select id="save-picker" class="needs-companion"></select>
     <span id="save-status" class="muted needs-companion"></span>
@@ -90,7 +92,7 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
   </div>
 
   <div class="frame intro" id="make-panel">
-    <span class="title" id="intro-title">What do you want to make?</span>
+    <h2 class="title" id="intro-title">What do you want to make?</h2>
     <div class="make-row"><span class="title">Make</span>
       <div class="search-wrap"><input id="target-search" placeholder="red science 60, gears, blue chip 45" autocomplete="off"><div id="target-search-results"></div></div>
     </div>
@@ -106,6 +108,27 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
       <a id="restore-last" hidden>Restore the last factory</a>
       <p class="muted about">A production calculator for Factorio 2.0 and Space Age: pick an item and a rate and
         it works out every machine, belt and raw input, as a table or a flow graph.</p>
+      <div class="guide">
+        <section>
+          <h3>Production ratios, worked out</h3>
+          <p>Ask for 60 red science a minute and the calculator counts the assemblers, furnaces and drills behind it,
+            the belts each line fills and the iron and copper ore it eats. Click any row for its exact ratios:
+            how many machines feed how many of the next, and what one full belt keeps running.</p>
+        </section>
+        <section>
+          <h3>Space Age and 2.0 recipes</h3>
+          <p>Plan on Nauvis, Vulcanus, Fulgora, Gleba or Aquilo with the machines each planet can build.
+            Add modules and beacons, set machine quality, and see leftover byproducts such as heavy oil
+            along with the fixes that use them up.</p>
+        </section>
+        <section>
+          <h3>Table or flow graph</h3>
+          <p>The table groups every item by what to build here, bring in or mine. The graph draws the same plan as
+            production lines with belt counts. The address bar holds the whole plan, so copying it shares it,
+            and links from Kirk McDonald's calculator open here too.</p>
+        </section>
+      </div>
+      <p class="muted guide-links"><a href="changelog.html">What's new in the calculator</a></p>
     </div>
   </div>
 
@@ -205,7 +228,7 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
       forked at commit 349ebfb5, and his share links open here too.
       The solver and the game data are his; the page and its UI modules are Factorio Companion's.
       Made by <a href="https://jordanschnur.com/">Jordan Schnur</a>.
-      <a class="calc-version" href="changelog.html" title="What's new">v1.4.2</a> · <a href="changelog.html">Changelog</a>
+      <a class="calc-version" href="changelog.html" title="What's new">v1.4.3</a> · <a href="changelog.html">Changelog</a>
       <a id="analytics-settings" hidden>Analytics settings</a>
   </details>
 </div>
