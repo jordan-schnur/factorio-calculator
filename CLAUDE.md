@@ -13,6 +13,10 @@ A static production calculator (factoriocalculator.app), being migrated from van
 - `$derived` for values, `$effect` only to sync with the outside world, `$state.raw` for big replaced objects.
 - Keyed each blocks, callback props, no `addEventListener`, no inline styles, small components, logic in `src/lib`.
 
+## Merging (MUST follow; full text in `.claude/rules/merging.md`)
+
+- All tests pass on every merge: run `npm run verify` on the merged result; zero failures, and a flake counts as a failure.
+
 ## Checks and review
 
 - `npm run check` runs ESLint, svelte-check and `scripts/check-rules.mjs` (one-line comments, <= 3 classes, <= 3 copies of any block). CI runs it.
@@ -34,5 +38,6 @@ A static production calculator (factoriocalculator.app), being migrated from van
 
 ## Commands
 
+- `npm run verify`: every check plus the whole e2e suite; must pass before any merge is done.
 - `npm run check`: lint, svelte-check and the hard rules.
 - `npm run dev`: Vite dev server. `npm run build`: production build to `dist/`. `npm test`: build, then the Playwright suite against `dist/`.

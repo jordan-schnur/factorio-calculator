@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "check:svelte": "svelte-check --threshold warning",
     "rules": "node scripts/check-rules.mjs",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "verify": "npm run check && playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
