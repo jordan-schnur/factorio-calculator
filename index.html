@@ -11,7 +11,7 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Factorio Calculator">
     <meta property="og:title" content="Factorio Calculator – Space Age &amp; 2.0 Production Ratios">
-    <meta property="og:description" content="Pick an item and a rate; see every machine, belt and raw input as a table or a flow graph. Space Age supported, and Kirk McDonald calculator links open here too.">
+    <meta property="og:description" content="Pick an item and a rate; see every machine, belt and raw input as a table or a flow graph. Factorio 2.0 and Space Age supported.">
     <meta property="og:url" content="https://factoriocalculator.app/">
     <meta property="og:image" content="https://factoriocalculator.app/og.png">
     <meta property="og:image:width" content="1200">
@@ -85,9 +85,9 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
     <span id="save-status" class="muted needs-companion"></span>
     <span id="page-note" class="muted"></span>
     <div class="spacer"></div>
-    <div class="seg" id="view-seg"><button data-view="table">Table</button><button data-view="graph">Graph</button></div>
+    <div class="seg" id="view-seg" hidden><button data-view="table">Table</button><button data-view="graph">Graph</button></div>
     <button class="btn" id="settings-open" title="Settings">Settings</button>
-    <button class="btn btn-green needs-companion" id="board-button">Add to board</button>
+    <button class="btn btn-green needs-companion" id="board-button" hidden>Add to board</button>
     <div class="frame needs-companion" id="board-panel" hidden></div>
   </div>
 
@@ -124,17 +124,15 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
         <section>
           <h3>Table or flow graph</h3>
           <p>The table groups every item by what to build here, bring in or mine. The graph draws the same plan as
-            production lines with belt counts. The address bar holds the whole plan, so copying it shares it,
-            and links from Kirk McDonald's calculator open here too.</p>
+            production lines with belt counts. The address bar holds the whole plan, so copying it shares it.</p>
         </section>
       </div>
-      <p class="muted guide-links"><a href="changelog.html">What's new in the calculator</a></p>
     </div>
   </div>
 
   <div id="byproducts" hidden></div>
 
-  <div class="frame" id="table-frame">
+  <div class="frame" id="table-frame" hidden>
     <div id="item-table"></div>
   </div>
 
@@ -144,14 +142,14 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
     <div class="frame" id="graph-side" hidden></div>
   </div>
 
-  <div class="frame" id="footer">
+  <div class="frame" id="footer" hidden>
     <span class="num" id="footer-totals"></span>
     <div class="spacer"></div>
     <span class="muted" id="footer-bring"></span>
     <span id="footer-sendout" hidden></span>
   </div>
 
-  <details id="scratchpad-frame"><summary>Scratch pad</summary>
+  <details id="scratchpad-frame" hidden><summary>Scratch pad</summary>
     <div style="display: flex; flex-direction: column; gap: 6px;">
       <div id="scratch-history"></div>
       <input class="num" id="scratch-input" placeholder="2 * 450 / 60" autocomplete="off">
@@ -222,15 +220,13 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
     </div>
   </div>
   <div id="tooltip_container"></div>
-  <details id="about">
-      <summary>About</summary>
-      Based on <a href="https://kirkmcdonald.github.io/calc.html">Kirk McDonald's calculator</a> (Apache-2.0),
-      forked at commit 349ebfb5, and his share links open here too.
-      The solver and the game data are his; the page and its UI modules are Factorio Companion's.
-      Made by <a href="https://jordanschnur.com/">Jordan Schnur</a>.
-      <a class="calc-version" href="changelog.html" title="What's new">v1.4.2</a> · <a href="changelog.html">Changelog</a>
-      <a id="analytics-settings" hidden>Analytics settings</a>
-  </details>
+  <footer id="site-footer">
+    <span>Factorio Calculator <a class="calc-version" href="changelog.html" title="What's new">v1.4.4</a></span>
+    <a href="changelog.html">Changelog</a>
+    <span>Made by <a href="https://jordanschnur.com/">Jordan Schnur</a></span>
+    <span>Built on <a href="https://kirkmcdonald.github.io/calc.html">Kirk McDonald's calculator</a> (Apache-2.0)</span>
+    <a id="analytics-settings" hidden>Analytics settings</a>
+  </footer>
 </div>
 </body>
 </html>

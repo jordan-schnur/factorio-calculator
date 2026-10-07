@@ -320,7 +320,6 @@ h1.title, h2.title { margin: 0; }
 #intro-extras .guide section { background: rgba(31, 31, 31, 0.78); padding: 10px 14px 12px; }
 #intro-extras .guide h3 { margin: 0 0 4px; font-size: 15px; color: var(--accent); }
 #intro-extras .guide p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
-#intro-extras .guide-links { text-align: center; margin: 14px 0 0; }
 @media (max-width: 760px) {
     #page { padding: 8px; gap: 8px; }
     #make-panel.intro { padding: 20px 12px; }
@@ -333,7 +332,7 @@ h1.title, h2.title { margin: 0; }
    paints over the hint and buttons below it. */
 #make-panel.intro { position: relative; isolation: isolate; }
 #make-panel:not(.intro) #intro-bg { display: none; }
-#intro-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 0.8s ease; }
+#intro-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; }
 #intro-bg.ready { opacity: 1; }
 #intro-bg::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 55% 50% at 50% 50%, rgba(31,31,31,0.78) 0%, rgba(31,31,31,0.5) 55%, rgba(31,31,31,0.12) 100%); }
 #intro-bg .wall { position: absolute; inset: 0; }
@@ -380,8 +379,12 @@ h1.title, h2.title { margin: 0; }
 .example-target { cursor: pointer; padding-right: 10px; }
 #scratchpad-frame { padding: 8px 14px; box-shadow: inset 0 1px 0 #4d4d4d; }
 #scratchpad-frame summary { cursor: pointer; font-weight: 700; }
-#about { padding: 4px; color: var(--muted); font-size: 13px; }
-#about summary { cursor: pointer; }
+/* The page's footer: version, changelog, author and the credit to Kirk's
+   calculator, always on screen and kept small. */
+#site-footer { flex: none; display: flex; flex-wrap: wrap; gap: 2px 18px; padding: 0 4px; color: var(--muted); font-size: 12px; }
+#site-footer a { color: var(--muted); }
+#site-footer a:hover { color: var(--text); }
+#site-footer #analytics-settings { cursor: pointer; }
 
 /* --- rules Kirk's surviving components still need ----------------------- */
 
