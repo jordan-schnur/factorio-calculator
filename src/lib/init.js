@@ -144,7 +144,7 @@ function initModules() {
 
 export let useLegacyCalculation
 
-// Bumped by every load; a load is stale if a newer one started or the address bar moved on while it fetched.
+// Bumped by every load; a load is stale if a newer one started or Back/Forward moved the address while it fetched.
 let loadGeneration = 0
 
 function loadData(modName, settings) {
@@ -154,7 +154,7 @@ function loadData(modName, settings) {
     useLegacyCalculation = mod.legacy
     let filename = "data/" + mod.filename
     return d3.json(filename, {cache: "reload"}).then(function(data) {
-        if (generation !== loadGeneration || window.location.hash !== hash) return
+        if (generation !== loadGeneration || (window.location.hash !== hash && !isOwnHash(window.location.hash))) return
         let items = getItems(data)
         let recipes = getRecipes(data, items)
         let planets = getPlanets(data, recipes)
