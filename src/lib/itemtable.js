@@ -3,7 +3,7 @@
 // or pipe in, replacing the old Ledger side panel. A row expands into a
 // detail panel (calc/details.js) in place instead of opening a side card.
 import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
-import { showByproducts } from "./byproducts.js"
+import { showByproducts } from "./byproducts.svelte.js"
 import { spec } from "./factory.js"
 import { sprites } from "./icon.js"
 import { beaconPhrase, fallbackNote, planSentence } from "./modules-core.js"
