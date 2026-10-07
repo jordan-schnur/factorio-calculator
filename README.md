@@ -69,6 +69,11 @@ npm run test:ui               # watch and debug
 - Every test fails on any page or console error, and nothing is fetched
   from outside the site. The Google Fonts requests are answered from
   `tests/e2e/fixtures/fonts/`.
+- CI (`.github/workflows/test.yml`) runs the suite on every pull request
+  and branch push. On `main`, `deploy.yml` runs it first and publishes the
+  site only when it passes. To regenerate snapshots on the CI machine, run
+  the Test workflow by hand with "update snapshots" ticked, then download
+  the `snapshots` artifact.
 - To run the suite against another build, set `CALC_BASE_URL` to its
   address and `CALC_PAGE` to the page path (default `/calc.html`).
 

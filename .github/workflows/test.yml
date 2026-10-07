@@ -1,9 +1,20 @@
 name: Test
 
+# The Playwright suite (tests/e2e). Runs on pull requests and on pushes to
+# any branch but main; on main, deploy.yml calls it and deploys only when
+# it passes. Run it by hand with "update snapshots" ticked to regenerate
+# every snapshot on the CI machine and download them as an artifact.
 on:
-  push:
   pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_call:
   workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: "Regenerate snapshots on CI and upload them"
+        type: boolean
+        default: false
 
 jobs:
   e2e:
@@ -17,9 +28,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
-      # On failure, the report holds each failing test's trace, and for
-      # screenshot tests the actual and diff PNGs.
+
+      - name: Run the suite
+        if: ${{ !inputs.update_snapshots }}
+        run: npx playwright test
+
+      - name: Regenerate snapshots
+        if: ${{ inputs.update_snapshots }}
+        run: npx playwright test --update-snapshots
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.update_snapshots }}
+        with:
+          name: snapshots
+          path: tests/e2e/__snapshots__/
+
+      # On failure, each failing test's trace, and for screenshot tests the
+      # actual and diff PNGs.
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

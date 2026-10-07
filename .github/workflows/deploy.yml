@@ -6,7 +6,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  # The site only goes out when the end-to-end suite passes.
+  test:
+    uses: ./.github/workflows/test.yml
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
