@@ -350,8 +350,6 @@ h1.title, h2.title { margin: 0; }
 #consent-banner { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 1000; width: calc(100% - 32px); max-width: 680px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
 #consent-banner span { flex: 1; line-height: 1.4; }
 #consent-banner[hidden] { display: none; }
-#analytics-settings { display: block; margin-top: 6px; cursor: pointer; }
-#analytics-settings[hidden] { display: none; }
 #footer { display: flex; align-items: center; gap: 4px 18px; flex-wrap: wrap; }
 #footer-sendout { flex-basis: 100%; color: #b9d3ee; }
 .column { display: flex; flex-direction: column; gap: 12px; }
@@ -382,9 +380,11 @@ h1.title, h2.title { margin: 0; }
 /* The page's footer: version, changelog, author and the credit to Kirk's
    calculator, always on screen and kept small. */
 #site-footer { flex: none; display: flex; flex-wrap: wrap; gap: 2px 18px; padding: 0 4px; color: var(--muted); font-size: 12px; }
-#site-footer a { color: var(--muted); }
-#site-footer a:hover { color: var(--text); }
-#site-footer #analytics-settings { cursor: pointer; }
+/* analytics.js's "Analytics settings" reopens the consent banner: a button,
+   since an href would change the plan's #fragment, drawn like the links. */
+#site-footer a, #site-footer #analytics-settings { color: var(--muted); }
+#site-footer a:hover, #site-footer #analytics-settings:hover { color: var(--text); }
+#site-footer #analytics-settings { background: none; border: 0; padding: 0; font: inherit; text-decoration: underline; cursor: pointer; }
 
 /* --- rules Kirk's surviving components still need ----------------------- */
 
