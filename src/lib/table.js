@@ -54,6 +54,21 @@ export function buildingCount(row) {
     return Math.ceil(spec.getCount(row.recipe, row.recipeRate).toFloat())
 }
 
+// Machines in a solution, total and per building name -- the way every panel (footer, byproducts bar) counts them.
+export function countMachines(totals) {
+    let machines = 0
+    const byBuilding = new Map()
+    for (const row of buildRows(totals)) {
+        if (!row.isReal) continue
+        const count = buildingCount(row)
+        if (count === 0) continue
+        const name = spec.getBuilding(row.recipe).name
+        byBuilding.set(name, (byBuilding.get(name) || 0) + count)
+        machines += count
+    }
+    return { machines, byBuilding }
+}
+
 // Wraps formatPower with the current spec so every caller's power total
 // uses the same display precision.
 export function powerRepr(x) {

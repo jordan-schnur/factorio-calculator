@@ -1,35 +1,22 @@
-// Byproducts bar state: dismissed blocks (localStorage), the applied fix with its Undo, and findFixes' trials.
+// Byproducts bar state: dismissed blocks (localStorage), and the applied fix with its Undo.
 import { SvelteSet } from "svelte/reactivity"
-import { cheapest, findFixes } from "./byproduct-core.js"
+import { on as onEvent } from "svelte/events"
+import { restoreDisable } from "./byproduct-trial.js"
 import { spec } from "./factory.js"
 import { markOverride } from "./savesettings.js"
-import { relevantRecipes } from "./source.js"
-import { RATE_LABEL } from "./table-core.js"
-import { buildingCount, buildRows } from "./table.js"
+import { readList, writeList } from "./storage.js"
 
 const DISMISSED_KEY = "calc.dismissedByproducts"
 
-function loadDismissed() {
-    try {
-        const list = JSON.parse(localStorage.getItem(DISMISSED_KEY) || "[]")
-        return new SvelteSet(Array.isArray(list) ? list : [])
-    } catch (e) {
-        return new SvelteSet()
-    }
+export const dismissed = new SvelteSet()
+
+// Fills `dismissed` from localStorage; called at mount, not module load, so SSR never touches storage.
+export function loadDismissed() {
+    for (const key of readList(DISMISSED_KEY)) dismissed.add(key)
 }
 
-export const dismissed = loadDismissed()
-
 function saveDismissed() {
-    try {
-        if (dismissed.size > 0) {
-            localStorage.setItem(DISMISSED_KEY, JSON.stringify([...dismissed]))
-        } else {
-            localStorage.removeItem(DISMISSED_KEY)
-        }
-    } catch (e) {
-        // Storage blocked: the dismissal lasts until the page reloads.
-    }
+    writeList(DISMISSED_KEY, [...dismissed])
 }
 
 export function setDismissed(keys, on) {
@@ -43,84 +30,9 @@ export function blockKey(block) {
     return `${block.recipe ? block.recipe.key : ""}:${items}`
 }
 
-export function rateText(rate) {
-    return `${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`
-}
-
-// Machines in a solution: total and per building name, counted the way the footer counts them.
-function summarize(totals) {
-    let machines = 0
-    const byBuilding = new Map()
-    for (const row of buildRows(totals)) {
-        if (!row.isReal) continue
-        const count = buildingCount(row)
-        if (count === 0) continue
-        const name = spec.getBuilding(row.recipe).name
-        byBuilding.set(name, (byBuilding.get(name) || 0) + count)
-        machines += count
-    }
-    const surplus = new Map()
-    for (const item of totals.surplus.keys()) surplus.set(item.key, item)
-    const imports = new Set()
-    for (const [recipe, rate] of totals.rates) {
-        if (recipe.isReal() && recipe.isDisable() && !rate.isZero()) imports.add(recipe.products[0].item.key)
-    }
-    return { surplus, imports, machines, byBuilding }
-}
-
-// Puts spec.disable back to `snapshot`, enabling before disabling so no item passes through a state with no producer.
-function restoreDisable(snapshot) {
-    for (const r of [...spec.disable]) if (!snapshot.has(r)) spec.setEnable(r)
-    for (const r of snapshot) if (!spec.disable.has(r)) spec.setDisable(r)
-}
-
-function trial({ enable, disable }) {
-    const disabled = new Set(spec.disable)
-    const ignored = new Set(spec.ignore)
-    const saved = [spec.targetNotes, spec.lastTableau, spec.lastMetadata, spec.lastPartial, spec.lastSolution]
-    try {
-        for (const r of enable) if (spec.disable.has(r)) spec.setEnable(r)
-        for (const r of disable) if (!spec.disable.has(r)) spec.setDisable(r)
-        return summarize(spec.solve())
-    } finally {
-        restoreDisable(disabled)
-        for (const item of [...spec.ignore]) if (!ignored.has(item)) spec.toggleIgnore(item)
-        for (const item of ignored) if (!spec.ignore.has(item)) spec.toggleIgnore(item)
-        ;[spec.targetNotes, spec.lastTableau, spec.lastMetadata, spec.lastPartial, spec.lastSolution] = saved
-    }
-}
-
-function consumersOf(item) {
-    return item.uses.filter(r => !r.isDisable())
-}
-
-function isBlocked(recipe) {
-    return Boolean(spec.planetaryBaseline && spec.planetaryBaseline.has(recipe))
-}
-
-function makesTarget(recipe) {
-    return spec.buildTargets.some(t => recipe.products.some(p => p.item === t.item))
-}
-
-export function unresearched() {
-    const fetched = spec.saveState && spec.saveState.fetched
-    return new Set((fetched && fetched.disabled_recipes) || [])
-}
-
-export function computeFixes(totals, blocks) {
-    const base = summarize(totals)
-    return blocks.map(block => {
-        const fixes = findFixes(block, {
-            base,
-            trial,
-            consumersOf,
-            producersOf: relevantRecipes,
-            isOff: r => spec.disable.has(r),
-            isBlocked,
-            makesTarget: block.recipe ? makesTarget(block.recipe) : false,
-        })
-        return { fixes, base, best: cheapest(fixes) }
-    })
+// Identifies one fix within a block's list, for its each block's key.
+export function fixKey(fix) {
+    return fix.kind + (fix.recipe?.key ?? "") + fix.enable.map(r => r.key).join(",")
 }
 
 // The last fix applied, with its Undo; raw so its `totals` stays === plan.totals.
@@ -130,9 +42,6 @@ export const applied = {
     get current() {
         return appliedState
     },
-    set current(value) {
-        appliedState = value
-    },
 }
 
 function apply(change, text) {
@@ -141,11 +50,11 @@ function apply(change, text) {
     change()
     spec.updateSolution()
     spec.setHash()
-    applied.current = {
+    appliedState = {
         text,
         totals: spec.lastTotals,
         undo() {
-            applied.current = null
+            appliedState = null
             restoreDisable(disabled)
             spec.sendOut = sendOut
             spec.updateSolution()
@@ -168,7 +77,21 @@ export function applySendOut(block, text) {
     }, text)
 }
 
-// Svelte action: appends sprite icon and scrolls byproducts bar into view.
 export function showByproducts() {
     document.getElementById("byproducts")?.scrollIntoView({ block: "nearest", behavior: "smooth" })
+}
+
+// "backs up" on a card/row whose recipe would stop (flow.js, itemtable.js): scrolls to the Byproducts bar instead of selecting/opening what it's on.
+export function backsUpMarker(size) {
+    const marker = document.createElement("span")
+    marker.className = "bp-marker"
+    marker.title = "Something it makes has nowhere to go: see the fixes above"
+    marker.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3z"></path><path d="M12 10v5"></path></svg>`
+    marker.appendChild(document.createTextNode("backs up"))
+    onEvent(marker, "click", event => {
+        event.stopPropagation()
+        event.preventDefault()
+        showByproducts()
+    })
+    return marker
 }

@@ -6,6 +6,11 @@
 // way.
 export const RATE_LABEL = { s: "/s", m: "/min", h: "/h" }
 
+// A rate as everywhere in the app: the formatted number plus its unit.
+export function rateText(format, rate) {
+    return `${format.rate(rate)}${RATE_LABEL[format.rateName] || "/min"}`
+}
+
 // row.itemRate may be a plain number (tests) or a Rational (real rows,
 // which have no usable "-" operator); normalise to a float for ordering.
 function rateValue(itemRate) {

@@ -15,9 +15,9 @@ import { Rational, zero } from "./rational.js"
 import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, lineStyle, rankNodes, stackLabels } from "./flow-core.js"
 import { beaconBadge, moduleStrip } from "./modules-strip.js"
 import { withQualityBadge } from "./quality-ui.js"
-import { RATE_LABEL } from "./table-core.js"
+import { rateText } from "./table-core.js"
 import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
-import { showByproducts } from "./byproducts.svelte.js"
+import { backsUpMarker, showByproducts } from "./byproducts.svelte.js"
 import { linkMachines } from "./details.js"
 import { beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
 import { tierWord } from "./colorblind.js"
@@ -180,24 +180,6 @@ function cardModules(recipe, node) {
 // Recipes the Byproducts bar has a block for; set by draw().
 let stalledNow = new Set()
 
-const MARKER_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3z"></path><path d="M12 10v5"></path></svg>'
-
-// "backs up" on a card whose recipe would stop: scrolls to the Byproducts
-// bar instead of selecting the card.
-function backsUpMarker() {
-    let marker = document.createElement("span")
-    marker.className = "bp-marker"
-    marker.title = "Something it makes has nowhere to go: see the fixes above"
-    marker.innerHTML = MARKER_SVG
-    marker.appendChild(document.createTextNode("backs up"))
-    marker.addEventListener("click", event => {
-        event.stopPropagation()
-        event.preventDefault()
-        showByproducts()
-    })
-    return marker
-}
-
 // The Left over / Send out card: what runs into it, how many things.
 function sinkCard(node, div, body) {
     let out = node.id === SEND_OUT
@@ -230,7 +212,7 @@ function sinkCard(node, div, body) {
         icons.appendChild(icon)
     }
     right.appendChild(icons)
-    if (!out) right.appendChild(backsUpMarker())
+    if (!out) right.appendChild(backsUpMarker(12))
     body.appendChild(right)
     if (!out) body.addEventListener("click", () => showByproducts())
 }
@@ -304,7 +286,6 @@ function nodeMarkup(node) {
 
     let right = document.createElement("span")
     right.className = "right"
-    let unit = RATE_LABEL[spec.format.rateName] || "/min"
     let stalled = recipe !== null && stalledNow.has(recipe)
     if (multi) {
         // Every output, not just the first: the refinery stops when any one
@@ -331,10 +312,10 @@ function nodeMarkup(node) {
         // card click already does something else (toggles selection) -- the
         // graph card's rate isn't click-to-paste.
         rateSpan.className = "rate num"
-        rateSpan.textContent = `${spec.format.rate(node.rate)}${unit}`
+        rateSpan.textContent = rateText(spec.format, node.rate)
         right.appendChild(rateSpan)
     }
-    if (stalled) right.appendChild(backsUpMarker())
+    if (stalled) right.appendChild(backsUpMarker(12))
     body.appendChild(right)
 
     body.addEventListener("click", event => {
@@ -492,7 +473,7 @@ function textSpan(t, className) {
 function lineChip(item, rate, machines = null) {
     let row = document.createElement("div")
     row.className = "chip-row"
-    row.append(...withWord(item, item.icon.make(18, true)), textSpan(`${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`), textSpan("|", "sep"))
+    row.append(...withWord(item, item.icon.make(18, true)), textSpan(rateText(spec.format, rate)), textSpan("|", "sep"))
     if (item.phase === "fluid") {
         let pipe = spec.items.get("pipe")
         if (pipe) row.append(pipe.icon.make(18, true))
@@ -863,7 +844,7 @@ function renderEdges(laidOut) {
         label.append(lineSwatch(color, dash))
         let item = spec.items.get(edge.item)
         if (item) label.append(...withWord(item, item.icon.make(14, true)))
-        label.append(textSpan(`${spec.format.rate(exact)}${RATE_LABEL[spec.format.rateName] || "/min"}`))
+        label.append(textSpan(rateText(spec.format, exact)))
         label.dataset.item = edge.item
         label.addEventListener("mouseenter", () => {
             if (label.classList.contains("chip")) hoverKeep()
@@ -1035,5 +1016,4 @@ export function initFlow() {
             if (isFitted) fitToView()
         }).observe(container)
     }
-    document.querySelector("#flow-fit")?.addEventListener("click", () => fitToView())
 }
