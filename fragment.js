@@ -257,8 +257,13 @@ export function loadSettings(fragment) {
 // event must still see the write that preceded the swap.
 let lastWrittenHash = null
 
-export function writeHash(hash) {
+// A reload also claims the hash it loads, so a later Back/Forward away from it always reloads.
+export function rememberHash(hash) {
     lastWrittenHash = hash
+}
+
+export function writeHash(hash) {
+    rememberHash(hash)
     window.location.hash = hash
 }
 

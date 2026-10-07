@@ -26,7 +26,7 @@ jobs:
       - name: Lay out the site
         run: |
           mkdir _site
-          rsync -a --exclude .git --exclude .github --exclude .gitignore --exclude _site \
+          rsync -a --exclude .git --exclude .github --exclude .gitignore --exclude .claude --exclude _site \
             --exclude node_modules --exclude tests --exclude test-results --exclude playwright-report \
             --exclude package.json --exclude package-lock.json --exclude playwright.config.ts \
             ./ _site/
