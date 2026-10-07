@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "check:svelte": "svelte-check --threshold warning",
     "rules": "node scripts/check-rules.mjs",
-    "check": "npm run lint && npm run check:svelte && npm run rules"
+    "check": "node scripts/check.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

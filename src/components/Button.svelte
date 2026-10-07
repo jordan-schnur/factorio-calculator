@@ -1,5 +1,5 @@
 <script>
-    let { variant, size, class: extra, children, ...rest } = $props()
+    let { variant, size, type = "button", class: extra, children, ...rest } = $props()
 </script>
 
-<button class={["btn", variant && `btn-${variant}`, size && `btn-${size}`, extra]} {...rest}>{@render children?.()}</button>
+<button {type} class={["btn", variant && `btn-${variant}`, size && `btn-${size}`, extra]} {...rest}>{@render children?.()}</button>

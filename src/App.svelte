@@ -8,18 +8,17 @@
     import Views from "./components/Views.svelte"
     import { plan } from "./lib/plan.svelte.js"
 
-    let planned = $derived(plan.spec?.buildTargets.length > 0)
+    let planned = $derived(plan.planned)
     let view = $derived(plan.spec?.view ?? "table")
-    let settingsOpen = $state(false)
 </script>
 
 <div id="page">
-    <Topbar {planned} {view} onsettings={() => (settingsOpen = true)} />
+    <Topbar {planned} {view} />
     <MakePanel intro={!planned} />
     <Views {planned} {view} />
     <FooterBar hidden={!planned} />
     <Scratchpad hidden={!planned} />
-    <SettingsDrawer bind:open={settingsOpen} />
+    <SettingsDrawer />
     <div id="tooltip_container"></div>
     <SiteFooter />
 </div>

@@ -1,8 +1,9 @@
 <script>
     import Button from "./Button.svelte"
     import { plan, refresh } from "../lib/plan.svelte.js"
+    import { openSettings } from "../lib/ui.svelte.js"
 
-    let { planned, view, onsettings } = $props()
+    let { planned, view } = $props()
 
     const VIEWS = [["table", "Table"], ["graph", "Graph"]]
 
@@ -33,7 +34,7 @@
     <span id="page-note" class="muted"></span>
     <div class="spacer"></div>
     <div class="seg" id="view-seg" hidden={!planned}>{#each VIEWS as [key, label]}<button data-view={key} class:on={planned && view === key} onclick={() => pick(key)}>{label}</button>{/each}</div>
-    <Button id="settings-open" title="Settings" onclick={onsettings}>Settings</Button>
+    <Button id="settings-open" title="Settings" onclick={openSettings}>Settings</Button>
     <Button variant="green" class="needs-companion" id="board-button" hidden={!planned}>Add to board</Button>
     <div class="frame needs-companion" id="board-panel" hidden></div>
 </div>
