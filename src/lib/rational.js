@@ -176,12 +176,7 @@ export class Rational {
         }
         var j = s.indexOf("+")
         var q = bigInt(s.slice(i + 1))
-        if (j !== -1) {
-            var integer = bigInt(s.slice(0, j))
-            var p = bigInt(s.slice(j + 1, i)).plus(integer.times(q))
-        } else {
-            var p = bigInt(s.slice(0, i))
-        }
+        var p = j === -1 ? bigInt(s.slice(0, i)) : bigInt(s.slice(j + 1, i)).plus(bigInt(s.slice(0, j)).times(q))
         return new Rational(p, q)
     }
 

@@ -14,7 +14,7 @@
     ]
 
     function addExample(itemKey, perMinute) {
-        let target = plan.spec.addTarget(itemKey)
+        const target = plan.spec.addTarget(itemKey)
         target.setRate(Rational.from_float(perMinute).div(Rational.from_float(60)))
         plan.spec.updateSolution()
     }
@@ -43,7 +43,7 @@
         if (!hash) {
             return
         }
-        let { navigateToHash } = await import("../lib/init.js")
+        const { navigateToHash } = await import("../lib/init.js")
         navigateToHash(hash)
     }
 

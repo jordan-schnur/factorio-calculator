@@ -11,7 +11,7 @@ const DISMISSED_KEY = "calc.dismissedByproducts"
 
 function loadDismissed() {
     try {
-        let list = JSON.parse(localStorage.getItem(DISMISSED_KEY) || "[]")
+        const list = JSON.parse(localStorage.getItem(DISMISSED_KEY) || "[]")
         return new SvelteSet(Array.isArray(list) ? list : [])
     } catch (e) {
         return new SvelteSet()
@@ -33,13 +33,13 @@ function saveDismissed() {
 }
 
 export function setDismissed(keys, on) {
-    for (let key of keys) on ? dismissed.add(key) : dismissed.delete(key)
+    for (const key of keys) on ? dismissed.add(key) : dismissed.delete(key)
     saveDismissed()
 }
 
 // Recipe plus leftover items, so a new leftover from the same recipe brings the warning back.
 export function blockKey(block) {
-    let items = block.items.map(({ item }) => item.key).sort().join(",")
+    const items = block.items.map(({ item }) => item.key).sort().join(",")
     return `${block.recipe ? block.recipe.key : ""}:${items}`
 }
 
@@ -50,19 +50,19 @@ export function rateText(rate) {
 // Machines in a solution: total and per building name, counted the way the footer counts them.
 function summarize(totals) {
     let machines = 0
-    let byBuilding = new Map()
-    for (let row of buildRows(totals)) {
+    const byBuilding = new Map()
+    for (const row of buildRows(totals)) {
         if (!row.isReal) continue
-        let count = buildingCount(row)
+        const count = buildingCount(row)
         if (count === 0) continue
-        let name = spec.getBuilding(row.recipe).name
+        const name = spec.getBuilding(row.recipe).name
         byBuilding.set(name, (byBuilding.get(name) || 0) + count)
         machines += count
     }
-    let surplus = new Map()
-    for (let item of totals.surplus.keys()) surplus.set(item.key, item)
-    let imports = new Set()
-    for (let [recipe, rate] of totals.rates) {
+    const surplus = new Map()
+    for (const item of totals.surplus.keys()) surplus.set(item.key, item)
+    const imports = new Set()
+    for (const [recipe, rate] of totals.rates) {
         if (recipe.isReal() && recipe.isDisable() && !rate.isZero()) imports.add(recipe.products[0].item.key)
     }
     return { surplus, imports, machines, byBuilding }
@@ -70,22 +70,22 @@ function summarize(totals) {
 
 // Puts spec.disable back to `snapshot`, enabling before disabling so no item passes through a state with no producer.
 function restoreDisable(snapshot) {
-    for (let r of [...spec.disable]) if (!snapshot.has(r)) spec.setEnable(r)
-    for (let r of snapshot) if (!spec.disable.has(r)) spec.setDisable(r)
+    for (const r of [...spec.disable]) if (!snapshot.has(r)) spec.setEnable(r)
+    for (const r of snapshot) if (!spec.disable.has(r)) spec.setDisable(r)
 }
 
 function trial({ enable, disable }) {
-    let disabled = new Set(spec.disable)
-    let ignored = new Set(spec.ignore)
-    let saved = [spec.targetNotes, spec.lastTableau, spec.lastMetadata, spec.lastPartial, spec.lastSolution]
+    const disabled = new Set(spec.disable)
+    const ignored = new Set(spec.ignore)
+    const saved = [spec.targetNotes, spec.lastTableau, spec.lastMetadata, spec.lastPartial, spec.lastSolution]
     try {
-        for (let r of enable) if (spec.disable.has(r)) spec.setEnable(r)
-        for (let r of disable) if (!spec.disable.has(r)) spec.setDisable(r)
+        for (const r of enable) if (spec.disable.has(r)) spec.setEnable(r)
+        for (const r of disable) if (!spec.disable.has(r)) spec.setDisable(r)
         return summarize(spec.solve())
     } finally {
         restoreDisable(disabled)
-        for (let item of [...spec.ignore]) if (!ignored.has(item)) spec.toggleIgnore(item)
-        for (let item of ignored) if (!spec.ignore.has(item)) spec.toggleIgnore(item)
+        for (const item of [...spec.ignore]) if (!ignored.has(item)) spec.toggleIgnore(item)
+        for (const item of ignored) if (!spec.ignore.has(item)) spec.toggleIgnore(item)
         ;[spec.targetNotes, spec.lastTableau, spec.lastMetadata, spec.lastPartial, spec.lastSolution] = saved
     }
 }
@@ -103,14 +103,14 @@ function makesTarget(recipe) {
 }
 
 export function unresearched() {
-    let fetched = spec.saveState && spec.saveState.fetched
+    const fetched = spec.saveState && spec.saveState.fetched
     return new Set((fetched && fetched.disabled_recipes) || [])
 }
 
 export function computeFixes(totals, blocks) {
-    let base = summarize(totals)
+    const base = summarize(totals)
     return blocks.map(block => {
-        let fixes = findFixes(block, {
+        const fixes = findFixes(block, {
             base,
             trial,
             consumersOf,
@@ -136,8 +136,8 @@ export const applied = {
 }
 
 function apply(change, text) {
-    let disabled = new Set(spec.disable)
-    let sendOut = new Set(spec.sendOut)
+    const disabled = new Set(spec.disable)
+    const sendOut = new Set(spec.sendOut)
     change()
     spec.updateSolution()
     spec.setHash()
@@ -156,15 +156,15 @@ function apply(change, text) {
 
 export function applyRecipes(fix, text) {
     apply(() => {
-        for (let r of fix.enable) if (spec.disable.has(r)) spec.setEnable(r)
-        for (let r of fix.disable) if (!spec.disable.has(r)) spec.setDisable(r)
+        for (const r of fix.enable) if (spec.disable.has(r)) spec.setEnable(r)
+        for (const r of fix.disable) if (!spec.disable.has(r)) spec.setDisable(r)
         markOverride("recipes")
     }, text)
 }
 
 export function applySendOut(block, text) {
     apply(() => {
-        for (let { item } of block.items) spec.sendOut.add(item.key)
+        for (const { item } of block.items) spec.sendOut.add(item.key)
     }, text)
 }
 

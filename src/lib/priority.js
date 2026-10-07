@@ -78,19 +78,6 @@ export class PriorityList {
     [Symbol.iterator]() {
         return this.priorities[Symbol.iterator]()
     }
-    static getDefaultArray(recipe) {
-        let a = []
-        for (let [recipeKey, recipe] of recipes) {
-            if (recipe.isResource()) {
-                let pri = recipe.defaultPriority
-                while (a.length < pri + 1) {
-                    a.push(new Map())
-                }
-                a.set(recipe, recipe.defaultWeight)
-            }
-        }
-        return a
-    }
     static fromArray(a) {
         let p = new PriorityList()
         for (let m of a) {

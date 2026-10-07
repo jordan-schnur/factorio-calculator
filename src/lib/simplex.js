@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2015-2019 Kirk McDonald
 
-import { zero, one } from "./rational.js"
+import { minusOne, zero, one } from "./rational.js"
 
 function pivot(A, row, col) {
     let x = A.index(row, col)
@@ -140,7 +140,7 @@ export function simplex(A) {
         }
         let bestRow = pivotCol(A, minCol)
         if (bestRow === null) {
-            throw new Exception("failed to pivot")
+            throw new Error("failed to pivot")
         }
     }
 }

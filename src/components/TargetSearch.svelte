@@ -26,8 +26,8 @@
     }
 
     function datasetItemEntries() {
-        let out = []
-        for (let item of plan.spec.items.values()) {
+        const out = []
+        for (const item of plan.spec.items.values()) {
             if (isSearchable(item)) {
                 out.push({ key: item.key, localized_name: { en: item.name } })
             }
@@ -36,7 +36,7 @@
     }
 
     async function loadEntries() {
-        let catalog = await fetchCatalog()
+        const catalog = await fetchCatalog()
         entries = mergeEntries(catalog, datasetEntries(datasetItemEntries()))
         if (value.trim()) {
             runSearch(value)
@@ -57,7 +57,7 @@
     }
 
     function runSearch(text) {
-        let { query } = parseQuery(text)
+        const { query } = parseQuery(text)
         if (!query) {
             closeResults()
             return
@@ -71,7 +71,7 @@
     }
 
     function addTargetAtPerSecond(itemKey, rate) {
-        let target = plan.spec.addTarget(itemKey)
+        const target = plan.spec.addTarget(itemKey)
         target.setRate(rate)
         plan.spec.updateSolution()
         return target
@@ -79,18 +79,18 @@
 
     // "7 machines" sizes the target by machine count, as its unit dropdown would.
     function addTargetMachines(itemKey, count) {
-        let target = plan.spec.addTarget(itemKey)
+        const target = plan.spec.addTarget(itemKey)
         target.setBuildings(Rational.from_float(count), target.recipe)
         plan.spec.updateSolution()
         return target
     }
 
     function pick(entry) {
-        let { rate, machines } = parseQuery(value)
+        const { rate, machines } = parseQuery(value)
         if (machines && rate !== null) {
             addTargetMachines(entry.name, rate)
         } else {
-            let perDisplayUnit = rate === null ? 60 : rate
+            const perDisplayUnit = rate === null ? 60 : rate
             addTargetAtPerSecond(entry.name, Rational.from_float(perDisplayUnit).div(plan.spec.format.rateFactor))
         }
         value = ""

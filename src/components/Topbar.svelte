@@ -10,10 +10,10 @@
 
     function describeSave(spec) {
         if (!spec) return ""
-        let fetched = spec.saveState?.fetched
+        const fetched = spec.saveState?.fetched
         if (!fetched?.save || !spec.saveState.follow) return "not following a save"
-        let planets = Array.from(spec.selectedPlanets, p => p.name).join(", ")
-        let furnaces = Array.from(new Set(spec.buildings.values())).find(g => g.buildings.some(b => b.key.includes("furnace")))
+        const planets = Array.from(spec.selectedPlanets, p => p.name).join(", ")
+        const furnaces = Array.from(new Set(spec.buildings.values())).find(g => g.buildings.some(b => b.key.includes("furnace")))
         return `Reading ${fetched.save.name} · ${planets} · ${spec.belt.name} · ${furnaces?.building.name ?? ""}`
     }
 

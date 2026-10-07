@@ -6,4 +6,5 @@ playwright-report/
 blob-report/
 .claude/*
 !.claude/rules/
+!.claude/agents/
 dist-ssr/

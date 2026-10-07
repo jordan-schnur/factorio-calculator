@@ -4,6 +4,7 @@ import { powerRepr } from "./power.js"
 import { Icon } from "./icon.js"
 import { allowedEffectsOf } from "./modules-core.js"
 import { speedMultiplier } from "./quality-core.js"
+import { spec } from "./factory.js"
 import { Rational, zero, one } from "./rational.js"
 
 let thirty = Rational.from_float(30)

@@ -17,8 +17,8 @@
     $effect(() => {
         if (!totals || blocks.length === 0 || fixesFor === totals) return
         fixesFor = totals
-        let mine = ++generation
-        let computingBlocks = blocks
+        const mine = ++generation
+        const computingBlocks = blocks
         setTimeout(() => {
             if (mine !== generation || plan.totals !== totals) return
             fixesCache = { totals, results: computeFixes(totals, computingBlocks) }

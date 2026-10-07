@@ -23,20 +23,20 @@
     let beltSummary = $derived(plan.spec && describeBelt(plan.spec))
 
     function categoryLabel(group) {
-        let cats = [...buildingGroups].filter(([, g]) => g === group).map(([cat]) => cat)
-        let named = cats.find(cat => CATEGORY_LABELS.has(cat))
+        const cats = [...buildingGroups].filter(([, g]) => g === group).map(([cat]) => cat)
+        const named = cats.find(cat => CATEGORY_LABELS.has(cat))
         if (named) return CATEGORY_LABELS.get(named)
         return cats.length > 0 ? cats[0].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()) : "Building"
     }
 
     function machinesWithQuality(spec) {
-        let found = new Map()
-        for (let [recipe] of spec.lastTotals?.rates ?? []) {
-            let building = recipe.isReal() && !recipe.isDisable() && spec.getBuilding(recipe)
+        const found = new Map()
+        for (const [recipe] of spec.lastTotals?.rates ?? []) {
+            const building = recipe.isReal() && !recipe.isDisable() && spec.getBuilding(recipe)
             if (building && building.takesQuality) found.set(building.key, building)
         }
-        for (let key of spec.machineQuality.keys()) {
-            let building = spec.buildingKeys.get(key)
+        for (const key of spec.machineQuality.keys()) {
+            const building = spec.buildingKeys.get(key)
             if (building) found.set(key, building)
         }
         return [...found.values()].sort((a, b) => a.name.localeCompare(b.name))
