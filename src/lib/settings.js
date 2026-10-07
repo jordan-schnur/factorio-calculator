@@ -55,7 +55,7 @@ function normalizeDataSetName(modName) {
 
 let dataSet = DEFAULT_MODIFICATION
 
-// Read once, at boot: the drawer shows it read-only, as search.js/board.js keep the boot dataset's catalog.
+// Read once, at boot: the drawer shows it read-only and nothing else changes it after that.
 export function selectDataSet(settings) {
     dataSet = normalizeDataSetName(settings.get("data"))
 }
@@ -63,10 +63,6 @@ export function selectDataSet(settings) {
 export function currentMod() {
     return dataSet
 }
-
-// Each render* applies one fragment setting (or its default) to the spec; add new ones to fragment.js too.
-
-// "tab=" in the fragment is a leftover key from before the redesign, read but no longer acted on.
 
 // build targets
 
@@ -683,48 +679,8 @@ export function setRoundMachines(on) {
     spec.display()
 }
 
-// The "override"/"from save" tag of each FIELDS entry (savesettings-core.js), appended to its drawer row.
-const OVERRIDE_ANCHORS = [
-    [() => document.getElementById("belt_selector"), "belt"],
-    [() => document.getElementById("building_selector"), "buildings"],
-    [() => document.getElementById("machine_allow")?.parentElement, "machines"],
-    [() => document.getElementById("machine_quality")?.parentElement, "quality"],
-    [() => document.getElementById("mprod")?.parentElement, "mprod"],
-    [() => document.getElementById("planet_setting_row"), "planet"],
-    [() => document.getElementById("recipe_toggles")?.closest("details")?.querySelector(":scope > summary"), "recipes"],
-]
-
-function ensureOverrideTag(resolveHost) {
-    let host = resolveHost()
-    if (!host) {
-        return null
-    }
-    let tag = host.querySelector(":scope > span.override-tag")
-    if (!tag) {
-        tag = document.createElement("span")
-        tag.className = "muted override-tag needs-companion"
-        tag.style.marginLeft = "auto"
-        tag.style.fontSize = "13px"
-        host.appendChild(tag)
-    }
-    return tag
-}
-
-function refreshOverrideTags() {
-    for (let [resolveHost, field] of OVERRIDE_ANCHORS) {
-        let tag = ensureOverrideTag(resolveHost)
-        if (!tag) {
-            continue
-        }
-        tag.textContent = spec.saveState.overrides.has(field)
-            ? "override"
-            : (spec.saveState.save !== null ? "from save" : "")
-    }
-}
-
 function renderSettingsTab() {
     renderFromSave()
-    refreshOverrideTags()
 }
 
 // init.js calls this once at boot, after the dataset loads.
@@ -733,6 +689,7 @@ export function initSettingsTab() {
     registerRenderer(renderPageTitle)
 }
 
+// Each render* below applies one fragment setting (or its default) to the spec; add new ones to fragment.js too.
 export function renderSettings(settings) {
     spec.roundMachines = roundMachinesChoice
     renderTitle(settings)
