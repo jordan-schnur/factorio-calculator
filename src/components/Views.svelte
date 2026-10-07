@@ -1,10 +1,11 @@
 <script>
     import Button from "./Button.svelte"
+    import Byproducts from "./Byproducts.svelte"
 
     let { planned, view } = $props()
 </script>
 
-<div id="byproducts" hidden></div>
+<Byproducts />
 
 <div class="frame" id="table-frame" hidden={!planned || view !== "table"}>
     <div id="item-table"></div>

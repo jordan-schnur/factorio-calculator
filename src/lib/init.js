@@ -6,7 +6,6 @@ import { getBuildings } from "./building.js"
 import { initDetails } from "./details.js"
 import { spec, resetSpec } from "./factory.js"
 import { initFlow } from "./flow.js"
-import { initByproducts } from "./byproducts.js"
 import { formatSettings, loadSettings, writeHash, isOwnHash } from "./fragment.js"
 import { getFuel } from "./fuel.js"
 import { getItemGroups } from "./group.js"
@@ -146,7 +145,6 @@ function initModules() {
     initSaveSettings()
     initItemTable()
     initDetails()
-    initByproducts()
 }
 
 export let useLegacyCalculation

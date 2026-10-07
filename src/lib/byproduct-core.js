@@ -5,7 +5,7 @@
 // totals.surplus. This file groups those leftovers by the recipe they would
 // stop and searches for fixes, each one proven by solving the plan with it
 // applied. Pure: reads Totals-shaped Maps and recipe.products, and is handed
-// a `trial` callback for the solves (byproducts.js runs the real ones).
+// a `trial` callback for the solves (byproducts.svelte.js runs the real ones).
 import { plural } from "./ratio-core.js"
 import { zero } from "./rational.js"
 
@@ -181,6 +181,11 @@ export function allowLabel(recipes) {
 export function joinWords(words) {
     if (words.length <= 1) return words.join("")
     return words.slice(0, -1).join(", ") + " and " + words[words.length - 1]
+}
+
+// A block's items, lower case and joined: "heavy oil and light oil".
+export function itemNames(block) {
+    return joinWords(block.items.map(({ item }) => item.name.toLowerCase()))
 }
 
 // What a fix does to the machines: the three biggest changes by building
