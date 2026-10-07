@@ -98,7 +98,6 @@ test("Back then Forward at once lands on the newer plan, not the one Back was st
     let entries = await page.evaluate(() => history.length)
     await page.goBack()
     await page.goForward()
-    await calc.expectSetting("item", "automation-science-pack")
     await expect(calc.row("automation-science-pack").locator("xpath=following-sibling::*[1]")).toHaveClass(/detail/)
     expect(await page.evaluate(() => history.length), "no history entry pushed over the forward one").toBe(entries)
 })

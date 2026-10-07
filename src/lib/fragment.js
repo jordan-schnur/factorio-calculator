@@ -241,7 +241,7 @@ export function loadSettings(fragment) {
     return settings
 }
 
-// The fragment the page last wrote or loaded; init.js's hashchange listener reloads on anything else.
+// The last fragment this page wrote or reloaded; isOwnHash() compares against it.
 let lastWrittenHash = null
 
 export function rememberHash(hash) {
