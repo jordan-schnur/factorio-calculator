@@ -21,7 +21,7 @@ Run whichever of these exist, and record pass/fail:
 - `npm run check` if `package.json` defines it (ESLint + svelte-check + `scripts/check-rules.mjs`).
 - Otherwise `npx eslint .` when an `eslint.config.*` exists, and `node scripts/check-rules.mjs` when that script exists.
 - `node scripts/check-rules.mjs --verbose` for the full duplication list.
-- The e2e suite only if the caller asks, or you suspect a behaviour change: `CALC_PORT=4290 npx playwright test --workers=4`. Use that port; others may be busy.
+- The e2e suite when reviewing a merge or a branch about to merge (merges must land with zero failed tests, see `.claude/rules/merging.md`), when the caller asks, or when you suspect a behaviour change: `CALC_PORT=4290 npx playwright test --workers=4`. Use that port; others may be busy.
 
 Every failure is a finding. Any duplicated block that touches a file in scope is a finding, even at 2 copies: the hard limit is 3 copies and the goal is none.
 
