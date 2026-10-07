@@ -301,13 +301,30 @@ html:not([data-companion="yes"]) .needs-companion { display: none !important; }
 #make-panel { display: flex; flex-direction: column; gap: 8px; }
 #make-panel .make-row { display: flex; align-items: center; gap: 10px; }
 #make-panel .search-wrap { position: relative; flex: 1; }
-#make-panel.intro { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 40px; }
+#make-panel.intro { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 14px; padding: 40px; }
 #make-panel.intro #intro-title { font-size: 26px; }
 #make-panel.intro #target-search { min-height: 44px; font-size: 17px; }
 #make-panel.intro .make-row { width: 640px; max-width: 100%; }
 #make-panel:not(.intro) #intro-title, #make-panel:not(.intro) #intro-extras { display: none; }
 #intro-extras .examples { display: flex; gap: 10px; }
 #intro-extras .about { max-width: 640px; margin: 18px auto 0; text-align: center; line-height: 1.5; }
+/* The topbar name is the page's h1 and the intro question its h2 (one
+   heading outline for search engines); .title already sets their size. */
+h1.title, h2.title { margin: 0; }
+/* The intro's three short sections on what the calculator does: the page's
+   readable text for search engines, hidden with the rest of #intro-extras
+   once a plan exists. */
+#intro-extras { width: 100%; max-width: 960px; }
+#intro-extras .examples { justify-content: center; flex-wrap: wrap; }
+#intro-extras .guide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 22px 0 0; }
+#intro-extras .guide section { background: rgba(31, 31, 31, 0.78); padding: 10px 14px 12px; }
+#intro-extras .guide h3 { margin: 0 0 4px; font-size: 15px; color: var(--accent); }
+#intro-extras .guide p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+@media (max-width: 760px) {
+    #page { padding: 8px; gap: 8px; }
+    #make-panel.intro { padding: 20px 12px; }
+    #intro-extras .guide { grid-template-columns: minmax(0, 1fr); }
+}
 /* intro-bg.js: screenshots of real plans behind the intro, one style per
    visit (?bg=collage|drift|slideshow|sharp|none previews the others). */
 /* isolation keeps #intro-bg's negative z-index above the panel's own
@@ -333,8 +350,6 @@ html:not([data-companion="yes"]) .needs-companion { display: none !important; }
 #consent-banner { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 1000; width: calc(100% - 32px); max-width: 680px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
 #consent-banner span { flex: 1; line-height: 1.4; }
 #consent-banner[hidden] { display: none; }
-#analytics-settings { display: block; margin-top: 6px; cursor: pointer; }
-#analytics-settings[hidden] { display: none; }
 #footer { display: flex; align-items: center; gap: 4px 18px; flex-wrap: wrap; }
 #footer-sendout { flex-basis: 100%; color: #b9d3ee; }
 .column { display: flex; flex-direction: column; gap: 12px; }
@@ -362,8 +377,14 @@ html:not([data-companion="yes"]) .needs-companion { display: none !important; }
 .example-target { cursor: pointer; padding-right: 10px; }
 #scratchpad-frame { padding: 8px 14px; box-shadow: inset 0 1px 0 #4d4d4d; }
 #scratchpad-frame summary { cursor: pointer; font-weight: 700; }
-#about { padding: 4px; color: var(--muted); font-size: 13px; }
-#about summary { cursor: pointer; }
+/* The page's footer: version, changelog, author and the credit to Kirk's
+   calculator, always on screen and kept small. */
+#site-footer { flex: none; display: flex; flex-wrap: wrap; gap: 2px 18px; padding: 0 4px; color: var(--muted); font-size: 12px; }
+/* analytics.js's "Analytics settings" reopens the consent banner: a button,
+   since an href would change the plan's #fragment, drawn like the links. */
+#site-footer a, #site-footer #analytics-settings { color: var(--muted); }
+#site-footer a:hover, #site-footer #analytics-settings:hover { color: var(--text); }
+#site-footer #analytics-settings { background: none; border: 0; padding: 0; font: inherit; text-decoration: underline; cursor: pointer; }
 
 /* --- rules Kirk's surviving components still need ----------------------- */
 
