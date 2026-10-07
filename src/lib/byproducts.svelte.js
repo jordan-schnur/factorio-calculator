@@ -1,7 +1,4 @@
-// calc/byproducts.js - the Byproducts bar's state: dismissed blocks (kept in
-// this browser's localStorage), the applied fix with its Undo, and the trial
-// machinery byproduct-core.js's findFixes needs to prove one. Byproducts.svelte
-// and its subcomponents render it.
+// Byproducts bar state: dismissed blocks (localStorage), the applied fix with its Undo, and findFixes' trials.
 import { SvelteSet } from "svelte/reactivity"
 import { cheapest, findFixes } from "./byproduct-core.js"
 import { spec } from "./factory.js"
@@ -40,8 +37,7 @@ export function setDismissed(keys, on) {
     saveDismissed()
 }
 
-// The recipe and the items it leaves over: a new leftover from the same
-// recipe brings the warning back.
+// Recipe plus leftover items, so a new leftover from the same recipe brings the warning back.
 export function blockKey(block) {
     let items = block.items.map(({ item }) => item.key).sort().join(",")
     return `${block.recipe ? block.recipe.key : ""}:${items}`
@@ -173,10 +169,6 @@ export function applySendOut(block, text) {
 }
 
 // A Svelte action: appends the sprite icon.make() builds, tooltip and all, to `node`.
-export function icon(node, [iconObj, size]) {
-    node.appendChild(iconObj.make(size, true))
-}
-
 // Scrolls the bar into view: the "backs up" markers on table rows and graph cards call this.
 export function showByproducts() {
     document.getElementById("byproducts")?.scrollIntoView({ block: "nearest", behavior: "smooth" })

@@ -1,6 +1,7 @@
 <script>
     import { itemNames } from "../lib/byproduct-core.js"
-    import { applySendOut, blockKey, icon, rateText, setDismissed } from "../lib/byproducts.svelte.js"
+    import { applySendOut, blockKey, rateText, setDismissed } from "../lib/byproducts.svelte.js"
+    import { icon } from "../lib/icon-action.js"
     import { spec } from "../lib/factory.js"
     import { plural } from "../lib/ratio-core.js"
     import BpFixRow from "./BpFixRow.svelte"

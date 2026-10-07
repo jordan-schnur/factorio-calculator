@@ -1,6 +1,7 @@
 <script>
     import { allowLabel, itemNames, joinWords, machineDiff, shortName } from "../lib/byproduct-core.js"
-    import { applyRecipes, icon, unresearched } from "../lib/byproducts.svelte.js"
+    import { applyRecipes, unresearched } from "../lib/byproducts.svelte.js"
+    import { icon } from "../lib/icon-action.js"
     import Button from "./Button.svelte"
 
     let { block, fix, found } = $props()
