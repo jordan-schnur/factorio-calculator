@@ -31,6 +31,10 @@ export class Calculator {
     // Open the page on a plan. `fragment` is everything after "#" (or ""),
     // `query` everything after "?". The landing background is off by default
     // (?bg=none): it shows screenshots in a random order.
+    // A second open() in the same test that only changes the fragment is a
+    // same-document navigation: the page re-reads the link on hashchange but
+    // keeps its DOM state (an open settings drawer stays open). For a real
+    // fresh boot, `page.goto("about:blank")` first.
     async open(fragment = "", { query = "bg=none", wait = true }: { query?: string; wait?: boolean } = {}) {
         let url = PAGE + (query ? "?" + query : "") + (fragment ? "#" + fragment : "")
         await this.page.goto(url)
