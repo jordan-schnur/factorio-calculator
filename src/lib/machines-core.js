@@ -78,3 +78,37 @@ export function parseRecipeMachines(text) {
 export function formatRecipeMachines(map) {
     return [...map.keys()].sort().map(k => `${k}:${map.get(k)}`).join(",")
 }
+
+// spec.buildings maps each category to its BuildingGroup; groups covering more than one category repeat.
+export function buildingGroups(spec) {
+    return new Set(spec.buildings.values())
+}
+
+// The one BuildingGroup matching `test`, deduped the same way as above.
+export function findGroup(spec, test) {
+    return [...buildingGroups(spec)].find(test)
+}
+
+export const CATEGORY_LABELS = new Map([["crafting", "Assembling"], ["smelting", "Smelting"], ["basic-solid", "Mining"]])
+
+// The category-by-category label of `group`, as the settings drawer shows it.
+export function categoryLabel(categoriesByGroup, group) {
+    let cats = [...categoriesByGroup].filter(([, g]) => g === group).map(([cat]) => cat)
+    let named = cats.find(cat => CATEGORY_LABELS.has(cat))
+    if (named) return CATEGORY_LABELS.get(named)
+    return cats.length > 0 ? cats[0].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()) : "Building"
+}
+
+// The machines with a quality tier set, or any quality-capable machine actually used.
+export function machinesWithQuality(spec) {
+    let found = new Map()
+    for (let [recipe] of spec.lastTotals?.rates ?? []) {
+        let building = recipe.isReal() && !recipe.isDisable() && spec.getBuilding(recipe)
+        if (building && building.takesQuality) found.set(building.key, building)
+    }
+    for (let key of spec.machineQuality.keys()) {
+        let building = spec.buildingKeys.get(key)
+        if (building) found.set(key, building)
+    }
+    return [...found.values()].sort((a, b) => a.name.localeCompare(b.name))
+}

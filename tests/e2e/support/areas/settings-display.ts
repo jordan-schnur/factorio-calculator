@@ -22,7 +22,7 @@ export const SD = {
 
     // Machines / Recipes
     beltSelector: "#belt_selector",
-    beltSummary: "#belt_selector .belt-summary",
+    beltSummary: "#belt_selector .aside",
     beltButton: (name: string) => `#belt_selector button.slot[title="${name}"]`,
     fuelSelector: "#fuel_selector",
     fuelButton: (name: string) => `#fuel_selector button.slot[title="${name}"]`,

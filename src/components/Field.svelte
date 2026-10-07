@@ -1,5 +1,6 @@
 <script>
-    let { label, width = 110, id, hidden, children } = $props()
+    import OverrideTag from "./OverrideTag.svelte"
+    let { label, narrow = false, id, hidden, tag, children } = $props()
 </script>
 
-<div class="kv" {id} {hidden}><span class="muted" style="width: {width}px;">{label}</span>{@render children()}</div>
+<div class={["kv", { narrow }]} {id} {hidden}><span class="muted label">{label}</span>{@render children()}{#if tag}<OverrideTag field={tag} />{/if}</div>

@@ -73,6 +73,12 @@ a { color: #f1be64; } a:hover { color: #ffe6c0; }
 input { background: #1c1c1c; box-shadow: inset 0 2px 3px rgba(0,0,0,0.8), inset 0 -1px 0 #454545; border: none; color: #ffe6c0; padding: 6px 8px; font: inherit; }
 .chip { display: inline-flex; align-items: center; gap: 6px; background: #3a3a3a; box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -1px 0 #1a1a1a; padding: 2px 8px 2px 2px; font-weight: 600; }
 .kv { display: flex; align-items: center; gap: 8px; padding: 3px 6px; }
+.kv > .label { width: 110px; }
+.kv.narrow > .label { width: 90px; }
+.override-tag { margin-left: auto; font-size: 13px; }
+.slots { display: flex; gap: 4px; }
+.slots.wrap { flex-wrap: wrap; }
+.slot img.qbadge { width: 10px; height: 10px; }
 .machines .num { font-size: 18px; }
 .c-name { width: 230px; }
 .c-out { width: 110px; text-align: right; }
@@ -81,7 +87,7 @@ input { background: #1c1c1c; box-shadow: inset 0 2px 3px rgba(0,0,0,0.8), inset 
 .bartrack { flex: 1; height: 12px; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8); }
 .tip { background: #313131; box-shadow: 0 0 0 1px #4d4d4d, 0 4px 12px rgba(0,0,0,0.8); padding: 8px 10px; font-size: 13px; }
 .key { display: inline-block; background: #3a3a3a; box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -2px 0 #1a1a1a; padding: 0 6px; font-size: 12px; font-weight: 700; color: #ffe6c0; }
-.radio { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.radio { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-weight: 600; cursor: pointer; background: none; border: none; padding: 0; color: inherit; text-align: left; }
 .dot { width: 14px; height: 14px; border-radius: 50%; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8), 0 0 0 1px #4d4d4d; }
 .dot.on { background: radial-gradient(#f1be64 40%, #1c1c1c 48%); }
 .check { width: 16px; height: 16px; background: #1c1c1c; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8), 0 0 0 1px #4d4d4d; display: inline-flex; align-items: center; justify-content: center; color: #f1be64; font-weight: 700; font-size: 13px; }
