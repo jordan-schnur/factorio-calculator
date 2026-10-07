@@ -31,10 +31,6 @@ export function setColorblind(on) {
 
 export function applyColorblind(on = colorblindOn()) {
     document.documentElement.classList.toggle("colorblind", on)
-    let box = document.getElementById("colorblind_toggle")
-    if (box) {
-        box.checked = on
-    }
 }
 
 // The colour word as text, for places where an icon is drawn too small for

@@ -7,7 +7,7 @@ import { initDetails } from "./details.js"
 import { spec, resetSpec } from "./factory.js"
 import { initFlow } from "./flow.js"
 import { initByproducts } from "./byproducts.js"
-import { formatSettings, loadSettings, writeHash, isOwnHash } from "./fragment.js"
+import { loadSettings, writeHash, isOwnHash } from "./fragment.js"
 import { getFuel } from "./fuel.js"
 import { getItemGroups } from "./group.js"
 import { getSprites } from "./icon.js"
@@ -23,22 +23,12 @@ import { registerRenderer } from "./render.js"
 import { initSaveSettings, applySaveSettings } from "./savesettings.js"
 import { initScratchpad } from "./scratchpad.js"
 import { initSearch } from "./search.js"
-import { currentMod, MODIFICATIONS, initSettingsTab, renderDataSetOptions, renderSettings } from "./settings.js"
+import { currentMod, MODIFICATIONS, initSettingsTab, selectDataSet, renderSettings } from "./settings.js"
 import { initSource } from "./source.js"
 import { initSupplied } from "./supplied.js"
 import { initTargets } from "./targets.js"
 import { reapTooltips } from "./tooltip.js"
 import { applyColorblind } from "./colorblind.js"
-
-export function changeMod() {
-    let currentSettings = loadSettings("#" + formatSettings())
-    currentSettings.delete("data")
-    let modName = currentMod()
-    writeHash("")
-    resetSpec()
-    applyPageState(currentSettings)
-    loadData(modName, currentSettings)
-}
 
 // Re-parses the fragment into a fresh spec and re-solves. The UI modules are
 // not re-initialized: their renderers are already registered, and renderAll()
@@ -192,7 +182,7 @@ export function init() {
         }
     })
     let settings = loadSettings(window.location.hash)
-    renderDataSetOptions(settings)
+    selectDataSet(settings)
     applyPageState(settings)
     // applySaveSettings starts the follow timer, so it runs once per page
     // life -- not on the reloads it may itself trigger.
