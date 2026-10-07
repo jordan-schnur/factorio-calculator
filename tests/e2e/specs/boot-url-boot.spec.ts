@@ -91,6 +91,18 @@ test("back and forward through history reload the plan they land on", async ({ c
     expect((await calc.settings()).get("item")).toBe("automation-science-pack")
 })
 
+test("Back then Forward at once lands on the newer plan, not the one Back was still loading", async ({ calc, page }) => {
+    await calc.open("items=automation-science-pack:r:60")
+    await calc.row("automation-science-pack").click()
+    await calc.expectSetting("item", "automation-science-pack")
+    let entries = await page.evaluate(() => history.length)
+    await page.goBack()
+    await page.goForward()
+    await calc.expectSetting("item", "automation-science-pack")
+    await expect(calc.row("automation-science-pack").locator("xpath=following-sibling::*[1]")).toHaveClass(/detail/)
+    expect(await page.evaluate(() => history.length), "no history entry pushed over the forward one").toBe(entries)
+})
+
 test("removing the only target returns to the intro and offers Restore the last factory", async ({ calc, page }) => {
     await calc.open("data=space-age-2.0.77&items=military-science-pack:r:60")
     await expect(page.locator(S.restoreLast)).toBeHidden()
