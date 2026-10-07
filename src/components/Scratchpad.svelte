@@ -2,35 +2,22 @@
     import { tick } from "svelte"
     import Button from "./Button.svelte"
     import { evaluate, formatResult, insertAtCaret } from "../lib/scratchpad-core.js"
+    import { readList, writeStore } from "../lib/storage.js"
 
     const STORAGE_KEY = "calc.scratch"
     const MAX_HISTORY = 20
 
     let { hidden } = $props()
 
-    let history = $state([])
+    let history = $state(readList(STORAGE_KEY))
     let expr = $state("")
     let ans = $state(null)
     let inputEl
 
     let result = $derived(formatResult(evaluate(expr, ans)))
 
-    function loadHistory() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY)
-            const parsed = raw ? JSON.parse(raw) : []
-            return Array.isArray(parsed) ? parsed : []
-        } catch (err) {
-            return []
-        }
-    }
-
     function saveHistory() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(history))
-        } catch (err) {
-            // storage unavailable or full: history just won't survive a reload.
-        }
+        writeStore(STORAGE_KEY, JSON.stringify(history))
     }
 
     function commitLine() {
@@ -81,13 +68,9 @@
         const el = e.target.closest(".num[data-value]")
         if (el) insert(el.dataset.value)
     }
-
-    $effect(() => {
-        history = loadHistory()
-        document.addEventListener("click", onDocumentClick)
-        return () => document.removeEventListener("click", onDocumentClick)
-    })
 </script>
+
+<svelte:document onclick={onDocumentClick} />
 
 <details id="scratchpad-frame" {hidden}><summary>Scratch pad</summary>
     <div class="scratch-body">

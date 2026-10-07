@@ -4,6 +4,9 @@
     import TargetSearch from "./TargetSearch.svelte"
     import { plan } from "../lib/plan.svelte.js"
     import { Rational } from "../lib/rational.js"
+    import { addTarget } from "../lib/target.js"
+    import { readStore } from "../lib/storage.js"
+    import { navigateToHash } from "../lib/init.js"
 
     let { intro } = $props()
 
@@ -14,36 +17,19 @@
     ]
 
     function addExample(itemKey, perMinute) {
-        const target = plan.spec.addTarget(itemKey)
-        target.setRate(Rational.from_float(perMinute).div(Rational.from_float(60)))
-        plan.spec.updateSolution()
+        addTarget(plan.spec, itemKey, { perSecond: Rational.from_float(perMinute).div(Rational.from_float(60)) })
     }
 
-    let restoreVisible = $derived.by(() => {
-        if (!plan.spec || plan.spec.buildTargets.length > 0) {
-            return false
-        }
-        let last = null
-        try {
-            last = localStorage.getItem("calc.lastHash")
-        } catch (err) {
-            last = null
-        }
-        return Boolean(last) && last !== location.hash
-    })
+    let lastHash = $derived(plan.spec && readStore("calc.lastHash"))
 
-    async function restoreLast(event) {
+    let restoreVisible = $derived(!plan.planned && Boolean(lastHash) && lastHash !== location.hash)
+
+    function restoreLast(event) {
         event.preventDefault()
-        let hash = null
-        try {
-            hash = localStorage.getItem("calc.lastHash")
-        } catch (err) {
-            hash = null
-        }
+        const hash = readStore("calc.lastHash")
         if (!hash) {
             return
         }
-        const { navigateToHash } = await import("../lib/init.js")
         navigateToHash(hash)
     }
 
@@ -73,7 +59,7 @@
     <TargetNotes />
     <div id="intro-extras">
         <div class="examples">
-            {#each EXAMPLES as { item, rate, label }}
+            {#each EXAMPLES as { item, rate, label } (item)}
                 <Button class="example-target" data-item={item} data-rate={rate} onclick={() => addExample(item, rate)}>{label}</Button>
             {/each}
         </div>
@@ -82,7 +68,7 @@
         <p class="muted about">A production calculator for Factorio 2.0 and Space Age: pick an item and a rate and
             it works out every machine, belt and raw input, as a table or a flow graph.</p>
         <div class="guide">
-            {#each GUIDE as { title, text }}
+            {#each GUIDE as { title, text } (title)}
                 <section>
                     <h3>{title}</h3>
                     <p>{text}</p>

@@ -25,6 +25,7 @@ import { initSource } from "./source.js"
 import { initSupplied } from "./supplied.js"
 import { reapTooltips } from "./tooltip.js"
 import { applyColorblind } from "./colorblind.js"
+import { writeStore } from "./storage.js"
 
 // Re-parses the fragment into a fresh spec and re-solves. The UI modules are
 // not re-initialized: their renderers are already registered, and renderAll()
@@ -114,6 +115,9 @@ function renderHousekeeping(spec) {
     }
     reapTooltips()
     spec.setHash()
+    if (spec.buildTargets.length > 0) {
+        writeStore("calc.lastHash", location.hash)
+    }
 }
 
 let modulesInitialized = false

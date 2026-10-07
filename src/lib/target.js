@@ -56,6 +56,18 @@ function unitChangedHandler(target) {
     }
 }
 
+// The one way to add a target and re-solve: `perSecond` for a rate, `machines` for a building count.
+export function addTarget(spec, itemKey, { perSecond, machines } = {}) {
+    const target = spec.addTarget(itemKey)
+    if (machines !== undefined) {
+        target.setBuildings(Rational.from_float(machines), target.recipe)
+    } else {
+        target.setRate(perSecond)
+    }
+    spec.updateSolution()
+    return target
+}
+
 let recipeSelectorCount = 0
 
 export class BuildTarget {
