@@ -19,7 +19,7 @@ import { spec, resetSpec } from "./factory.js"
 import { initFlow } from "./flow.js"
 import { initFooter } from "./footer.js"
 import { initByproducts } from "./byproducts.js"
-import { formatSettings, loadSettings, writeHash, isOwnHash } from "./fragment.js"
+import { formatSettings, loadSettings, writeHash, isOwnHash, rememberHash } from "./fragment.js"
 import { getFuel } from "./fuel.js"
 import { getItemGroups } from "./group.js"
 import { initHeader } from "./header.js"
@@ -65,10 +65,11 @@ export function reloadFromHash() {
     // Counted so the page tests can prove our own setHash() writes never
     // bounce back through the hashchange listener as a reload.
     window.__calcReloads = (window.__calcReloads || 0) + 1
+    rememberHash(window.location.hash)
     let settings = loadSettings(window.location.hash)
     resetSpec()
     applyPageState(settings)
-    loadData(currentMod(), settings)
+    return loadData(currentMod(), settings)
 }
 
 let OIL_EXCLUSION = new Map([
@@ -168,11 +169,19 @@ function initModules() {
 
 export let useLegacyCalculation
 
+// A load is stale if a newer one started (its promise then settles with the newer one) or Back/Forward moved the address.
+let loadGeneration = 0
+let latestLoad = null
+
 function loadData(modName, settings) {
+    let generation = ++loadGeneration
+    let hash = window.location.hash
     let mod = MODIFICATIONS.get(modName)
     useLegacyCalculation = mod.legacy
     let filename = "data/" + mod.filename
-    return d3.json(filename, {cache: "reload"}).then(function(data) {
+    latestLoad = d3.json(filename, {cache: "reload"}).then(function(data) {
+        if (generation !== loadGeneration) return latestLoad
+        if (window.location.hash !== hash && !isOwnHash(window.location.hash)) return reloadFromHash()
         let items = getItems(data)
         let recipes = getRecipes(data, items)
         let planets = getPlanets(data, recipes)
@@ -191,6 +200,7 @@ function loadData(modName, settings) {
 
         spec.updateSolution()
     })
+    return latestLoad
 }
 
 // setHash() writes a new history entry on every state change, so the
