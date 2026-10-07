@@ -37,6 +37,41 @@ This repo is also the calculator inside the Factorio Companion (a Claude
 Desktop MCP server), whose local server adds extras the static site hides:
 reading settings from your save and adding a plan to a board.
 
+## Tests
+
+`tests/e2e/` is a Playwright suite that pins down what the page does: the
+plan it works out for a link, what every control changes, the link it
+writes back and how each state looks. It drives the page only as a player
+would and reads back what the page shows, so it is the check that a
+rewrite (to a framework, say) still behaves the same.
+
+```text
+npm ci
+npx playwright install chromium
+npm test                      # the whole suite (it serves this folder itself)
+npx playwright test golden    # one spec file, by name
+npm run test:update           # refresh snapshots after an intended change
+npm run test:ui               # watch and debug
+```
+
+- `tests/e2e/support/` holds the only code that knows the markup:
+  `selectors.ts` (core hooks), `areas/*.ts` (per-feature hooks),
+  `calculator.ts` (the page object). A rewrite that changes the markup
+  updates those files, and every spec should then pass unchanged.
+- `specs/golden.spec.ts` holds 45 plans across every dataset. Each plan's
+  table, footer, graph and written link are compared with JSON snapshots in
+  `__snapshots__/golden.spec.ts/`, and each link must reopen to the same
+  plan.
+- `specs/visual.spec.ts` compares screenshots with the PNGs in
+  `__snapshots__/visual.spec.ts/`. They are rendered on Linux Chromium with
+  the vendored Titillium Web, so refresh them on the machine (or CI) that
+  runs the gate.
+- Every test fails on any page or console error, and nothing is fetched
+  from outside the site. The Google Fonts requests are answered from
+  `tests/e2e/fixtures/fonts/`.
+- To run the suite against another build, set `CALC_BASE_URL` to its
+  address and `CALC_PAGE` to the page path (default `/calc.html`).
+
 ## Licence
 
 Apache-2.0, as upstream: see `LICENSE` and `NOTICE-factorio-companion.md`.
