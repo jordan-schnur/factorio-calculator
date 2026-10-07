@@ -591,6 +591,9 @@ input.prec, input.mprod {
 }
 .toggle-list .toggle {
     cursor: pointer;
+    font: inherit;
+    color: inherit;
+    line-height: inherit;
     display: inline-block;
     border: 2px solid var(--light);
     margin: 2px;

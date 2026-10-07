@@ -2,6 +2,7 @@
 // current solution, grouped Build here / Bring in from another build / Mine
 // or pipe in, replacing the old Ledger side panel. A row expands into a
 // detail panel (calc/details.js) in place instead of opening a side card.
+import { flushSync } from "svelte"
 import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
 import { backsUpMarker } from "./byproducts.svelte.js"
 import { spec } from "./factory.js"
@@ -224,6 +225,7 @@ function isHandSet(row) {
 // Opens Settings at its Modules section (calc.html's #modules-sec).
 function openModuleSettings() {
     openSettings()
+    flushSync()
     document.getElementById("modules-sec")?.scrollIntoView({ block: "start" })
 }
 

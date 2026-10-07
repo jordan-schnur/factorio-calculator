@@ -3,24 +3,13 @@
 // clock get a banner asking first; the About section's "Analytics
 // settings" link reopens it so anyone can change their answer.
 
+import { readStore, writeStore } from "./storage.js"
 import { MEASUREMENT_ID, asksConsent, consentDefaults, isTracked, pageLocation, parseChoice } from "./analytics-core.js"
 
 const KEY = "calc.analytics"
 
 function storedChoice() {
-    try {
-        return parseChoice(localStorage.getItem(KEY))
-    } catch (e) {
-        return null
-    }
-}
-
-function storeChoice(choice) {
-    try {
-        localStorage.setItem(KEY, choice)
-    } catch (e) {
-        // Private window or blocked storage: the answer holds for this page only.
-    }
+    return parseChoice(readStore(KEY))
 }
 
 function timeZone() {
@@ -37,7 +26,7 @@ function gtag() {
 }
 
 function answer(choice) {
-    storeChoice(choice)
+    writeStore(KEY, choice)
     gtag("consent", "update", { analytics_storage: choice })
     document.getElementById("consent-banner").hidden = true
 }

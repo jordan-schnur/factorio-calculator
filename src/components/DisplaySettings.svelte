@@ -17,12 +17,7 @@
     let countPrecision = $derived(plan.spec?.format.countPrecision ?? DEFAULT_COUNT_PRECISION)
     let displayFormat = $derived(plan.spec?.format.displayFormat ?? DEFAULT_FORMAT)
     let beltFormat = $derived(plan.spec?.format.beltFormat ?? DEFAULT_BELT_FORMAT)
-    // eslint-disable-next-line svelte/prefer-writable-derived -- localStorage must stay out of render, so this needs the effect below
-    let colorblind = $state(false)
-
-    $effect(() => {
-        colorblind = plan.spec ? colorblindOn() : false
-    })
+    let colorblind = $derived(plan.spec ? colorblindOn() : false)
 
     function setFormat(field, value) {
         plan.spec.format[field] = value
@@ -40,10 +35,6 @@
         plan.spec.display()
     }
 
-    function toggleColorblind(event) {
-        setColorblind(event.target.checked)
-        colorblind = event.target.checked
-    }
 </script>
 
 <Section title="Display" deepId="settings-display">
@@ -57,7 +48,7 @@
     <Field label="Values" narrow><form id="value_format"><RadioGroup name="format" options={FORMAT_OPTIONS} value={displayFormat} onchange={value => setFormat("displayFormat", value)} /></form></Field>
     <Field label="Belts" narrow><form id="belt_format"><RadioGroup name="beltformat" options={BELT_OPTIONS} value={beltFormat} onchange={setBeltFormat} /></form></Field>
     <Field label="Colour-blind" narrow>
-        <input id="colorblind_toggle" type="checkbox" checked={colorblind} onchange={toggleColorblind}><label for="colorblind_toggle">Write the colour on belt, splitter and inserter icons (yellow, red, blue, green)</label>
+        <input id="colorblind_toggle" type="checkbox" checked={colorblind} onchange={event => setColorblind(event.target.checked)}><label for="colorblind_toggle">Write the colour on belt, splitter and inserter icons (yellow, red, blue, green)</label>
     </Field>
     {#if plan.spec}<Field label="Machines" narrow id="machines-round-toggle">{#each ROUNDING as r (r.key)}<button type="button" class="radio" onclick={() => setRoundMachines(r.key === "up")}><span class="dot" class:on={(r.key === "up") === plan.spec.roundMachines}></span>{r.name}</button>{/each}</Field>{/if}
 </Section>

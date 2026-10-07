@@ -1,5 +1,5 @@
 <script>
-    import { tick } from "svelte"
+    import { onMount, tick } from "svelte"
     import Button from "./Button.svelte"
     import { evaluate, formatResult, insertAtCaret } from "../lib/scratchpad-core.js"
     import { readList, writeStore } from "../lib/storage.js"
@@ -9,12 +9,14 @@
 
     let { hidden } = $props()
 
-    let history = $state(readList(STORAGE_KEY))
+    let history = $state([])
     let expr = $state("")
     let ans = $state(null)
     let inputEl
 
     let result = $derived(formatResult(evaluate(expr, ans)))
+
+    onMount(() => (history = readList(STORAGE_KEY)))
 
     function saveHistory() {
         writeStore(STORAGE_KEY, JSON.stringify(history))

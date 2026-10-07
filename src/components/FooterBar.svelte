@@ -14,10 +14,9 @@
     }
 
     function summarize(spec, totals) {
-        if (!totals) return null
         const rows = buildRows(totals)
         const made = rows.filter(row => row.isReal)
-        const { machines } = countMachines(totals)
+        const { machines } = countMachines(rows)
         const power = made.reduce((sum, row) => sum.add(spec.getPowerUsage(row.recipe, row.recipeRate).power), zero)
         const brought = rows.filter(row => !row.isReal).map(row => ({ item: row.item, rate: row.itemRate }))
         const sent = listed(spec, sentOut(totals, spec.sendOut))

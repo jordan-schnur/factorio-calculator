@@ -2,11 +2,11 @@
 import { cheapest, findFixes } from "./byproduct-core.js"
 import { spec } from "./factory.js"
 import { relevantRecipes } from "./source.js"
-import { countMachines } from "./table.js"
+import { buildRows, countMachines } from "./table.js"
 
 // Machines plus what the solution leaves over and brings in -- the shape findFixes needs to tell one solve's result from another's.
 function summarize(totals) {
-    const { machines, byBuilding } = countMachines(totals)
+    const { machines, byBuilding } = countMachines(buildRows(totals))
     const surplus = new Map()
     for (const item of totals.surplus.keys()) surplus.set(item.key, item)
     const imports = new Set()

@@ -5,7 +5,7 @@
     import { plan } from "../lib/plan.svelte.js"
     import { plural } from "../lib/ratio-core.js"
     import { rateText } from "../lib/table-core.js"
-    import { buildingCount, buildRows } from "../lib/table.js"
+    import { buildingCount } from "../lib/table.js"
     import BpAction from "./BpAction.svelte"
     import BpFixRow from "./BpFixRow.svelte"
     import Button from "./Button.svelte"
@@ -14,7 +14,7 @@
 
     const SHOWN_ITEMS = 4
 
-    let row = $derived(block.recipe && plan.totals ? buildRows(plan.totals).find(r => r.recipe === block.recipe) : null)
+    let row = $derived(block.recipe && plan.totals ? { isReal: true, recipe: block.recipe, recipeRate: plan.totals.rates.get(block.recipe) } : null)
     let count = $derived(row ? buildingCount(row) : 0)
     let building = $derived(block.recipe ? plan.spec.getBuilding(block.recipe) : null)
     let shown = $derived(block.items.length > SHOWN_ITEMS + 1 ? block.items.slice(0, SHOWN_ITEMS) : block.items)

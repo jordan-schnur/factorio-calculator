@@ -51,6 +51,11 @@
         }
     }
 
+    // Fetch the catalog as soon as the dataset is in, so the first search doesn't wait on it.
+    $effect(() => {
+        if (plan.spec) ensureLoaded()
+    })
+
     function closeResults() {
         visibleRows = []
         highlighted = -1

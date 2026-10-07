@@ -8,7 +8,6 @@
     import Section from "./Section.svelte"
     import { plan } from "../lib/plan.svelte.js"
     import { clearOverrides } from "../lib/savesettings.js"
-
 </script>
 
 <svelte:window onkeydown={event => event.key === "Escape" && closeSettings()} />

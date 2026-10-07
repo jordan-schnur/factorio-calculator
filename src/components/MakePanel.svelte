@@ -26,11 +26,7 @@
 
     function restoreLast(event) {
         event.preventDefault()
-        const hash = readStore("calc.lastHash")
-        if (!hash) {
-            return
-        }
-        navigateToHash(hash)
+        if (lastHash) navigateToHash(lastHash)
     }
 
     const GUIDE = [

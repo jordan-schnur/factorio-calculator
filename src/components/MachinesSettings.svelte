@@ -5,7 +5,7 @@
     import SlotPicker from "./SlotPicker.svelte"
     import TierPicker from "./TierPicker.svelte"
     import { iconOf } from "../lib/icon-attach.js"
-    import { buildingGroups, categoryLabel as categoryLabelOf, machinesWithQuality } from "../lib/machines-core.js"
+    import { buildingGroups, categoryLabel, isChosenBuilding, machinesWithQuality } from "../lib/machines-core.js"
     import { plan } from "../lib/plan.svelte.js"
     import { isNormal, tierOf } from "../lib/quality-core.js"
     import { qualityIconUrl } from "../lib/quality-ui.js"
@@ -16,16 +16,12 @@
 
     const HUNDRED = Rational.from_float(100)
 
-    let buildingsByCategory = $derived(plan.spec?.buildings)
-    let groups = $derived(buildingsByCategory ? sorted([...buildingGroups(plan.spec)].filter(g => g.buildings.length > 1), g => g.getDefault().name) : [])
+    let groups = $derived(plan.spec ? sorted([...buildingGroups(plan.spec)].filter(g => g.buildings.length > 1), g => g.getDefault().name) : [])
     let machines = $derived(sorted(new Set(groups.flatMap(g => g.buildings)), b => b.name))
     let belts = $derived(plan.spec ? [...plan.spec.belts.values()] : [])
     let qualityMachines = $derived(plan.spec ? machinesWithQuality(plan.spec) : [])
     let beltSummary = $derived(plan.spec && describeBelt(plan.spec))
 
-    function categoryLabel(group) {
-        return categoryLabelOf(buildingsByCategory, group)
-    }
 
     function describeBelt({ belt, format }) {
         return `${belt.name} · ${format.rate(belt.rate)}/${format.longRate} · ${format.rate(belt.rate.div(Rational.from_float(2)))} per lane`
@@ -57,9 +53,9 @@
 
 <Section title="Machines">
     <AsmSeg />
-    <Field label="Machines" tag="buildings"><span id="building_selector">{#each groups as group (group)}<Field label={categoryLabel(group)}><span class="slots"><SlotPicker items={group.buildings} selected={b => plan.spec.getBuildingGroup(b).building === b} onpick={pickBuilding} /></span></Field>{/each}</span></Field>
-    <Field label="Available" tag="machines"><span id="machine_allow" class="slots wrap"><SlotPicker items={machines} off={b => plan.spec.excludedBuildings.has(b.key)} label={b => b.name + (plan.spec.excludedBuildings.has(b.key) ? " (off)" : "")} onpick={toggleMachine} /></span></Field>
-    <Field label="Quality" tag="quality"><div id="machine_quality">
+    <Field label="Machines" override="buildings"><span id="building_selector">{#each groups as group (group)}<Field label={categoryLabel(plan.spec.buildings, group)}><span class="slots"><SlotPicker items={group.buildings} selected={b => isChosenBuilding(plan.spec, b)} onpick={pickBuilding} /></span></Field>{/each}</span></Field>
+    <Field label="Available" override="machines"><span id="machine_allow" class="slots wrap"><SlotPicker items={machines} off={b => plan.spec.excludedBuildings.has(b.key)} label={b => b.name + (plan.spec.excludedBuildings.has(b.key) ? " (off)" : "")} onpick={toggleMachine} /></span></Field>
+    <Field label="Quality" override="quality"><div id="machine_quality">
         {#if plan.spec && qualityMachines.length === 0}<span class="muted">No machines in this plan.</span>{/if}
         {#each qualityMachines as building (building.key)}
             {@const tier = tierOf(plan.spec.machineTier(building))}
@@ -70,6 +66,6 @@
             </div>
         {/each}
     </div></Field>
-    <Field label="Belt" tag="belt"><span id="belt_selector" class="radio-setting">{#if plan.spec}<SlotPicker items={belts} selected={b => plan.spec.belt === b} onpick={pickBelt} note={beltSummary} />{/if}</span></Field>
-    <Field label="Mining" tag="mprod"><span class="muted">productivity</span>+<input id="mprod" class="num mprod" type="number" step="10" value={plan.spec ? plan.spec.miningProd.mul(HUNDRED).toFloat() : 0} min="0" onchange={changeMprod}><span class="muted">%</span></Field>
+    <Field label="Belt" override="belt"><span id="belt_selector" class="radio-setting">{#if plan.spec}<SlotPicker items={belts} selected={b => plan.spec.belt === b} onpick={pickBelt} note={beltSummary} />{/if}</span></Field>
+    <Field label="Mining" override="mprod"><span class="muted">productivity</span>+<input id="mprod" class="num mprod" type="number" step="10" value={plan.spec ? plan.spec.miningProd.mul(HUNDRED).toFloat() : 0} min="0" onchange={changeMprod}><span class="muted">%</span></Field>
 </Section>

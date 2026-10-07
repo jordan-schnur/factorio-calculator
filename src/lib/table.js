@@ -55,10 +55,10 @@ export function buildingCount(row) {
 }
 
 // Machines in a solution, total and per building name -- the way every panel (footer, byproducts bar) counts them.
-export function countMachines(totals) {
+export function countMachines(rows) {
     let machines = 0
     const byBuilding = new Map()
-    for (const row of buildRows(totals)) {
+    for (const row of rows) {
         if (!row.isReal) continue
         const count = buildingCount(row)
         if (count === 0) continue

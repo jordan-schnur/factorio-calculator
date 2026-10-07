@@ -23,7 +23,7 @@ import {
 import { handTag } from "./modules-strip.js"
 import { beaconPowerMultiplier, isNormal, tierOf as qualityTier } from "./quality-core.js"
 import { addQualityBadge, tierPicker, withQualityBadge } from "./quality-ui.js"
-import { RATE_LABEL } from "./table-core.js"
+import { rateText } from "./table-core.js"
 
 const MAX_BEACONS = 16
 // A module going into a beacon slot while the count is 0 brings this many
@@ -432,10 +432,6 @@ function effectsBlock(opts, entry) {
     return box
 }
 
-function rateText(rate) {
-    return spec.format.rate(rate) + (RATE_LABEL[spec.format.rateName] || "/min")
-}
-
 // The row's machines and power three ways, from its output rate without
 // re-solving (modules-core.js's rowMachines): no modules, what the layers
 // would give it, and the modules shown.
@@ -462,7 +458,7 @@ function compareBlock(opts, entry) {
         ["these", "These modules", entry],
     ]
     let box = el("div", "me-block me-compare")
-    box.appendChild(el("span", "lbl", `For ${rateText(output)}`))
+    box.appendChild(el("span", "lbl", `For ${rateText(spec.format, output)}`))
     let row = el("div", "me-cells")
     for (let [key, label, e] of cells) {
         let {machines, watts} = rowMachines({...base, effects: fx(e)})

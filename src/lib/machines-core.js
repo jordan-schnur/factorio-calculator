@@ -112,3 +112,7 @@ export function machinesWithQuality(spec) {
     }
     return [...found.values()].sort((a, b) => a.name.localeCompare(b.name))
 }
+
+export function isChosenBuilding(spec, building) {
+    return spec.getBuildingGroup(building).building === building
+}
