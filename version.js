@@ -3,7 +3,7 @@
 // to factoriocalculator.app bumps it and adds its entry at the top of
 // changelog.html; tests/test_calc_version.py fails when the two disagree.
 // Minor for anything new a player can do, patch for fixes only.
-export const VERSION = "1.4.3"
+export const VERSION = "1.4.4"
 
 if (typeof document !== "undefined") {
     for (let el of document.querySelectorAll(".calc-version")) {
