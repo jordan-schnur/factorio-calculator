@@ -1,7 +1,8 @@
 // calc/intro-bg.js — the landing screen's background: screenshots of real
 // plans behind "What do you want to make?", in a random order each visit.
-// Built after the page's load event so it never holds up the first paint;
-// calc.css hides it once #make-panel stops being the intro.
+// Built as soon as this module runs, so the image is on its way before the
+// first paint (a module never holds that paint up); calc.css hides it once
+// #make-panel stops being the intro.
 import { pickShots, pickStyle, shotUrl } from "./intro-bg-core.js"
 
 const SLIDE_MS = 7000
@@ -50,5 +51,4 @@ function build() {
     }
 }
 
-if (document.readyState === "complete") build()
-else window.addEventListener("load", build)
+build()

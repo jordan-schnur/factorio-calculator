@@ -315,7 +315,7 @@ html:not([data-companion="yes"]) .needs-companion { display: none !important; }
    paints over the hint and buttons below it. */
 #make-panel.intro { position: relative; isolation: isolate; }
 #make-panel:not(.intro) #intro-bg { display: none; }
-#intro-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 0.8s ease; }
+#intro-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; }
 #intro-bg.ready { opacity: 1; }
 #intro-bg::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 55% 50% at 50% 50%, rgba(31,31,31,0.78) 0%, rgba(31,31,31,0.5) 55%, rgba(31,31,31,0.12) 100%); }
 #intro-bg .wall { position: absolute; inset: 0; }
