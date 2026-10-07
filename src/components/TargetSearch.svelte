@@ -42,8 +42,7 @@
         }
     }
 
-    // Loaded once from the first spec, like the legacy initSearch() this
-    // replaces; a later mod change leaves the catalog as it was.
+    // Loaded once from the first spec; a later mod change keeps the catalog.
     $effect(() => {
         if (!loaded && plan.spec) {
             loaded = true
@@ -77,8 +76,7 @@
         return target
     }
 
-    // "7 machines": the target is sized by machine count, as if its unit
-    // dropdown were switched to machines (target.js's getRate shows it so).
+    // "7 machines" sizes the target by machine count, as its unit dropdown would.
     function addTargetMachines(itemKey, count) {
         let target = plan.spec.addTarget(itemKey)
         target.setBuildings(Rational.from_float(count), target.recipe)
@@ -126,8 +124,7 @@
         }
     }
 
-    // mousemove, not mouseenter: a list repainted under a resting pointer
-    // must not steal the highlight from the keyboard.
+    // mousemove, not mouseenter, so a repaint under a resting pointer keeps the keyboard highlight.
     function onRowMousemove(i) {
         if (highlighted !== i) {
             highlighted = i
