@@ -12,8 +12,7 @@ import { parseMachineQuality, qualityFromSave, splitModuleToken, tierOf as quali
 
 // data set
 
-// This setting is somewhat special. It prompts a reset of the full calculator
-// state.
+// This setting is somewhat special and prompts a reset of the full calculator state.
 class Modification {
     constructor(name, filename, legacy) {
         this.name = name
@@ -32,8 +31,7 @@ export let MODIFICATIONS = new Map([
 
 let DEFAULT_MODIFICATION = "space-age-2-0-77"
 
-// Ideally we'd write this as a generalized function, but for now we can hard-
-// code these version upgrades.
+// Hard-coded version upgrades (ideally a generalized function).
 var modUpdates = new Map([
     ["2-0-6", "2-0-55"],
     ["2-0-7", "2-0-55"],
@@ -68,8 +66,7 @@ export function currentMod() {
 
 // Each render* applies one fragment setting (or its default) to the spec; add new ones to fragment.js too.
 
-// The page is one screen now (calc/events.js); "tab=" in the fragment is a
-// leftover key from before the redesign, read but no longer acted on.
+// "tab=" in the fragment is a leftover key from before the redesign, read but no longer acted on.
 
 // build targets
 
@@ -108,8 +105,7 @@ function renderTargets(settings) {
             }
         }
     }
-    // No `items=` in the fragment: unlike upstream Kirk, a fresh open shows
-    // the empty state (calc.html's #flow-empty) rather than a default item.
+    // No `items=` in the fragment: fresh opens show the empty state, not a default item.
 }
 
 // modules
@@ -132,11 +128,7 @@ function getModule(moduleKey) {
 
 const NO_MODULE = {module: null, tier: "normal"}
 
-// A module token from a link, "p3" or "p3@legendary" (calculator 1.3.0):
-// the module (getModule's backstops apply) and its quality tier, normal
-// when the token names none, names an unknown tier, or the module is empty.
-// A field a malformed link leaves out (`modules=r:p3;s3`) is an empty slot,
-// as getModule read it in 1.2.0.
+// Module token from link, e.g. "p3" or "p3@legendary"; backstops handle unknown/empty modules.
 function getModuleToken(token) {
     if (token === undefined || token === null) {
         return NO_MODULE
@@ -148,16 +140,13 @@ function getModuleToken(token) {
 
 const MAX_BEACONS = 16
 
-// A beacon count from a link: a whole number 0-16. Anything else reads as
-// 0, the same backstop as an unknown module key, so a bad link can't stop
-// the page from rendering.
+// Beacon count from link (0-16); non-numeric defaults to 0 to prevent crashes.
 function parseBeaconCount(text, max = MAX_BEACONS) {
     let n = /^\d+$/.test(text ?? "") ? Number(text) : NaN
     return n <= max ? Rational.from_float(n) : zero
 }
 
-// Kirk's legacy one-module beacon form, "module:count": an even count
-// means that module in both slots and half the count.
+// Legacy beacon form "module:count"; even count puts module in both slots at half count.
 function legacyBeaconCount(text) {
     let n = /^\d+$/.test(text) ? Number(text) : 0
     let both = n % 2 === 0
@@ -165,11 +154,7 @@ function legacyBeaconCount(text) {
     return {both, count: count <= MAX_BEACONS ? Rational.from_float(count) : zero}
 }
 
-// NOTE: Buildings must be configured before modules! And the plan (dm,
-// dm2, db, dbc) and machine (mm) layers before the rows: a row's ModuleSpec
-// is created from those layers here, then its listed slots overwrite them,
-// so Kirk's partial lists keep the layers in the slots they leave out.
-// Every entry read marks its recipe as set by hand.
+// Buildings before modules; plan/machine layers before rows; layer slots overwritten by listed ones.
 function renderModules(settings) {
     for (let entry of parseModuleList(settings.get("modules"))) {
         let recipe = spec.recipes.get(entry.key)
@@ -189,13 +174,7 @@ function renderModules(settings) {
             }
         }
         if (entry.beacon !== null) {
-            // The legacy beacon config was simply in the form
-            // "module:count". If the count is even, then it is adapted to
-            // the new format by dividing it by two and placing the
-            // specified module in both slots. Otherwise, a single slot is
-            // filled and the count is used as the beacon count. The new
-            // form is "b1:b2:count", with a 4th field for the beacon's own
-            // quality when it isn't normal.
+            // Legacy form "module:count" vs. new form "b1:b2:count[:quality]".
             let first
             let second
             let count
@@ -217,11 +196,7 @@ function renderModules(settings) {
             moduleSpec.setBeaconCount(count)
             moduleSpec.setBeaconTier(beaconTier)
         }
-        // A hand-written link can name a module the recipe or machine can't
-        // take (no productivity on this recipe, a kind this machine
-        // refuses) or a beacon can't hold (quality, productivity): fall
-        // back to what the layers would say for that slot, or empty the
-        // beacon slot, rather than carry an invalid pick through silently.
+        // Hand-written links can name invalid modules; fall back to layers or empty slot.
         let resolved = null
         for (let i = 0; i < moduleSpec.modules.length; i++) {
             let module = moduleSpec.modules[i]
@@ -240,10 +215,7 @@ function renderModules(settings) {
     }
 }
 
-// The machine layer, `mm=<machine>:<m>:...;<b1>:<b2>:<count>[:<tier>],...`.
-// Every slot is listed ("null" for empty, "p3@legendary" with a tier);
-// slots past the machine's own count are dropped, missing ones are empty.
-// Runs after the plan layer, before rows.
+// Machine layer `mm=<machine>:<m>:...;<b1>:<b2>:<count>[:<tier>],...`; runs after plan, before rows.
 function renderMachineModules(settings) {
     let layer = new Map()
     for (let entry of parseModuleList(settings.get("mm"))) {
@@ -252,10 +224,7 @@ function renderMachineModules(settings) {
             console.log("unknown machine:", entry.key)
             continue
         }
-        // A hand-written link can name a module this machine's own
-        // allowed_effects refuses (no recipe is pinned here, so only the
-        // machine's own check applies), or a beacon module beacons refuse:
-        // checked once on load, the same backstop as `modules=` above.
+        // Hand-written links can name invalid modules; check once like `modules=`.
         let modules = []
         let moduleTiers = []
         for (let i = 0; i < building.moduleSlots; i++) {
@@ -301,8 +270,7 @@ function renderIgnore(settings) {
     }
 }
 
-// out: leftovers sent out on purpose (byproducts.js). Kept as item keys,
-// not items, so a key the plan no longer leaves over just does nothing.
+// out: leftovers sent out on purpose (byproducts.js), stored as keys not items.
 
 function renderSendOut(settings) {
     spec.sendOut.clear()
@@ -318,12 +286,10 @@ function renderSendOut(settings) {
 
 export const DEFAULT_TITLE = "Factorio Calculator"
 
-// The tab title with nothing planned yet: what search engines index and what
-// a shared bare link previews as. Keep it in step with calc.html's <title>.
+// Tab title with nothing planned yet (search engines index this); kept in step with calc.html.
 export const INTRO_TITLE = "Factorio Calculator – Space Age & 2.0 Production Ratios"
 
-// The Title setting, "" when unset. Only this goes in the fragment; the tab
-// title otherwise names what the plan makes, so it can be found in history.
+// Title setting (in fragment only); tab title otherwise names what the plan makes for history.
 export let customTitle = ""
 
 export function setTitle(s) {
@@ -331,8 +297,7 @@ export function setTitle(s) {
     renderPageTitle(spec)
 }
 
-// "Electronic circuit 60/min, Plastic bar 30/min · Factorio Calculator",
-// read off the target rows renderHousekeeping has just synced.
+// Example: "Electronic circuit 60/min, Plastic bar 30/min · Factorio Calculator".
 export function targetsTitle(targets) {
     let parts = targets.map(t => {
         let unit = t.unitSelect.value
@@ -431,8 +396,7 @@ function renderBuildings(settings) {
     spec.setRecipeBuildings(parseRecipeMachines(settings.get("mach")))
 }
 
-// A planet switch re-derives the save's default for the new planet, unless
-// the user has set the machines by hand.
+// Planet switch re-derives save's default, unless user has set machines by hand.
 function syncMachinesToPlanet() {
     let fetched = spec.saveState.fetched
     if (!fetched || !fetched.machines || spec.saveState.overrides.has("machines")) {
@@ -442,8 +406,7 @@ function syncMachinesToPlanet() {
     spec.setExcludedBuildings(excludedMachines(fetched.machines, planets))
 }
 
-// A planet switch re-derives the save's machine quality for the new planet,
-// unless the user has set it by hand.
+// Planet switch re-derives save's machine quality, unless user has set it by hand.
 function syncQualityToPlanet() {
     let fetched = spec.saveState.fetched
     if (!fetched || !fetched.machine_quality || spec.saveState.overrides.has("quality")) {
@@ -483,8 +446,7 @@ function renderFuel(settings) {
     spec.fuel = spec.fuels.get(fuelKey)
 }
 
-// The plan layer, read from dm/dm2 and db/dbc. Settings -> Modules
-// (modules-settings.js) draws it on every render.
+// Plan layer from dm/dm2 and db/dbc; Settings -> Modules draws it on every render.
 
 function renderDefaultModule(settings) {
     let dm = settings.has("dm") ? getModuleToken(settings.get("dm")) : NO_MODULE
@@ -493,8 +455,7 @@ function renderDefaultModule(settings) {
     spec.setSecondaryDefaultModule(dm2.module, dm2.tier)
 }
 
-// A one-module legacy `db=` with an even `dbc` means that module in both
-// beacon slots and half the count. `dbq=` is the beacons' own quality.
+// Legacy `db=` with even `dbc` puts module in both slots at half count; `dbq=` is beacon quality.
 function renderDefaultBeacon(settings) {
     let defaultBeacon = [NO_MODULE, NO_MODULE]
     let defaultCount = zero
@@ -517,8 +478,7 @@ function renderDefaultBeacon(settings) {
     } else if (settings.has("dbc")) {
         defaultCount = parseBeaconCount(settings.get("dbc"))
     }
-    // A hand-written `db=` can name a module beacons refuse (productivity,
-    // quality): checked once here too, the same backstop as `modules=`/`mm=`.
+    // Hand-written `db=` can name invalid modules; checked here like `modules=`/`mm=`.
     defaultBeacon = defaultBeacon.map(t => t.module !== null && !canBeacon(t.module, beaconData.allowedEffects) ? NO_MODULE : t)
     for (let i = 0; i < defaultBeacon.length; i++) {
         spec.setDefaultBeacon(defaultBeacon[i].module, i, defaultBeacon[i].tier)
@@ -527,9 +487,7 @@ function renderDefaultBeacon(settings) {
     spec.setDefaultBeaconTier(settings.get("dbq"))
 }
 
-// Machine quality, `mq=<machine>:<tier>,...` (calculator 1.3.0). Unknown
-// machines, machines quality doesn't speed up and unknown tiers are dropped
-// (factory.js's setMachineQuality), so a bad link still renders.
+// Machine quality `mq=<machine>:<tier>,...` (1.3.0); unknown machines/tiers dropped gracefully.
 function renderMachineQuality(settings) {
     spec.setMachineQualityMap(parseMachineQuality(settings.get("mq")))
 }
@@ -604,8 +562,7 @@ function renderResourcePriorities(settings) {
         outer: for (let tierStr of keys) {
             let tier = []
             for (let pair of tierStr.split(",")) {
-                // Backward compatibility: If this is using the old format,
-                // ignore the whole thing and bail.
+                // Backward compatibility: reject old format and bail.
                 if (pair.indexOf("=") === -1) {
                     console.log("bailing:", pair)
                     tiers = null
@@ -637,9 +594,7 @@ function appendKV(container, label, build) {
     return row
 }
 
-// `thing` is any game-data object with `.icon`/`.name` (Belt, Building, ...),
-// or null/undefined when the save didn't tell us (an empty `buildings: {}`,
-// e.g. before calcroutes has read a save).
+// `thing` is a game-data object with `.icon`/`.name` (Belt, Building, ...), or null.
 function appendSetRow(container, label, thing, extra) {
     appendKV(container, label, row => {
         if (thing) {

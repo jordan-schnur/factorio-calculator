@@ -51,15 +51,10 @@ class PriorityLevel {
     isEmpty() {
         return this.resources.length === 0
     }
-    // Moves the given resource to this level. Removes it from its old level.
-    // If the old level is left empty as a result, it will be removed.
-    //
-    // If the resource is already in this level, it will be re-inserted in
-    // sorted order.
+    // Move resource to this level, removing from old level if it empties; re-sort if needed.
     insertSorted(resource) {
         if (resource.level === this && this.resources.length === 1) {
-            // If it's the only resource on this level, then no re-sorting is
-            // required.
+            // Only resource on this level, no re-sorting needed.
             return
         } else if (resource.level !== null) {
             resource.remove()
@@ -183,9 +178,7 @@ export class PriorityList {
     }
     removeRecipe(recipe) {
         let resource = this.getResource(recipe)
-        // No Resource exists for an item ignored via the fragment (or any
-        // other path that adds straight to spec.ignore without going
-        // through addRecipe); un-ignoring it then is a no-op here.
+        // No Resource if ignored via fragment; un-ignoring is a no-op.
         if (resource === null) {
             return
         }

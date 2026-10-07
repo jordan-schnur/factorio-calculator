@@ -168,8 +168,7 @@ export function applySendOut(block, text) {
     }, text)
 }
 
-// A Svelte action: appends the sprite icon.make() builds, tooltip and all, to `node`.
-// Scrolls the bar into view: the "backs up" markers on table rows and graph cards call this.
+// Svelte action: appends sprite icon and scrolls byproducts bar into view.
 export function showByproducts() {
     document.getElementById("byproducts")?.scrollIntoView({ block: "nearest", behavior: "smooth" })
 }
