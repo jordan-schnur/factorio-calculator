@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2019-2021 Kirk McDonald
 import { spec } from "./factory.js"
-import { Rational } from "./rational.js"
-import { setTitle } from "./settings.js"
-import { setColorblind } from "./colorblind.js"
 
 // tab events
 //
@@ -33,42 +30,5 @@ export let currentTab = DEFAULT_TAB
 
 export function toggleIgnoreHandler(event, d) {
     spec.toggleIgnore(d.item)
-    spec.updateSolution()
-}
-
-// setting events
-
-export function changeTitle(event) {
-    setTitle(event.target.value)
-    spec.setHash()
-}
-
-export function changeRatePrecision(event) {
-    spec.format.ratePrecision = Number(event.target.value)
-    spec.display()
-}
-
-export function changeCountPrecision(event) {
-    spec.format.countPrecision = Number(event.target.value)
-    spec.display()
-}
-
-export function changeFormat(event) {
-    spec.format.displayFormat = event.target.value
-    spec.display()
-}
-
-export function changeBeltFormat(event) {
-    spec.format.beltFormat = event.target.value
-    spec.setHash()
-    spec.display()
-}
-
-export function changeColorblind(event) {
-    setColorblind(event.target.checked)
-}
-
-export function changeMprod(event) {
-    spec.miningProd = Rational.from_string(event.target.value).div(Rational.from_float(100))
     spec.updateSolution()
 }

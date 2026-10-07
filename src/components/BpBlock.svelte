@@ -1,7 +1,7 @@
 <script>
     import { itemNames } from "../lib/byproduct-core.js"
     import { applySendOut, blockKey, rateText, setDismissed } from "../lib/byproducts.svelte.js"
-    import { icon } from "../lib/icon-action.js"
+    import { iconOf } from "../lib/icon-attach.js"
     import { spec } from "../lib/factory.js"
     import { plural } from "../lib/ratio-core.js"
     import BpFixRow from "./BpFixRow.svelte"
@@ -36,12 +36,12 @@
     </div>
     <div class="bp-line">
         {#if block.recipe}
-            <span use:icon={[block.recipe.icon, 24]}></span>
+            <span {@attach iconOf(block.recipe, 24, true)}></span>
             <span>{building ? `${count} ${plural(building.name, count)}` : block.recipe.name} also make{building && count === 1 ? "s" : ""}</span>
         {/if}
         {#each shown as { item, rate }, i (item.key)}
             {#if i > 0 && i === shown.length - 1 && rest.length === 0}<span>and</span>{/if}
-            <span use:icon={[item.icon, 20]}></span>
+            <span {@attach iconOf(item, 20, true)}></span>
             <span class="bp-rate num">{rateText(rate)} {item.name.toLowerCase()}{itemComma(i)}</span>
         {/each}
         {#if rest.length > 0}

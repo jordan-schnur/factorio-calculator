@@ -1,5 +1,5 @@
 <script>
-    import { icon } from "../lib/icon-action.js"
+    import { iconOf } from "../lib/icon-attach.js"
     import { plan } from "../lib/plan.svelte.js"
     import { Rational } from "../lib/rational.js"
     import { parseQuery, datasetEntries, mergeEntries, isSearchable } from "../lib/search-core.js"
@@ -146,7 +146,7 @@
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div class="row" class:hot={i === highlighted} data-item={entry.name}
                 onmousemove={() => onRowMousemove(i)} onmousedown={(event) => onRowMousedown(event, entry)}>
-                <span class="slot slot-sm" use:icon={[plan.spec?.items.get(entry.name)?.icon, 20]}></span>
+                <span class="slot slot-sm" {@attach iconOf(plan.spec?.items.get(entry.name), 20, true)}></span>
                 <span class="h">{entry.label}</span>
                 {#if entry.matchedAlias}
                     <span class="muted" style="margin-left: auto; font-size: 13px;">{entry.matchedAlias}</span>

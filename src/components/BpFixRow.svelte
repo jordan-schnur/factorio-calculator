@@ -1,7 +1,7 @@
 <script>
     import { allowLabel, itemNames, joinWords, machineDiff, shortName } from "../lib/byproduct-core.js"
     import { applyRecipes, unresearched } from "../lib/byproducts.svelte.js"
-    import { icon } from "../lib/icon-action.js"
+    import { iconOf } from "../lib/icon-attach.js"
     import Button from "./Button.svelte"
 
     let { block, fix, found } = $props()
@@ -14,12 +14,12 @@
     let done = $derived(fix.kind === "allow" ? `${label.replace(/^Allow/, "Allowed")}.` : `Switched ${fix.item.name.toLowerCase()} to ${fix.recipe.name.toLowerCase()}.`)
     let fullDone = $derived(`${done} ${diff.delta === 0 ? "No change in machines." : `${Math.abs(diff.delta)} ${diff.delta < 0 ? "fewer" : "more"} machines.`}`)
     let locked = $derived(unresearched())
-    let buttonIcon = $derived(fix.kind === "allow" ? fix.enable[fix.enable.length - 1].icon : fix.recipe.icon)
+    let iconSource = $derived(fix.kind === "allow" ? fix.enable[fix.enable.length - 1] : fix.recipe)
 </script>
 
 <div class="bp-fix">
     <Button class="bp-btn" variant={green ? "green" : undefined} data-fix={fix.kind === "allow" ? "allow" : "avoid"} onclick={() => applyRecipes(fix, fullDone)}>
-        <span use:icon={[buttonIcon, 24]}></span>{label}
+        <span {@attach iconOf(iconSource, 24, true)}></span>{label}
     </Button>
     <span class="bp-what">{before} {diff.parts.join(", ")}{diff.parts.length ? ". " : ""}<strong>{diff.total}.</strong>{fix.enable.some(r => locked.has(r.key)) ? " Not researched in your save yet." : ""}</span>
     {#if best}<span class="badge best">Fewest machines</span>{/if}

@@ -1,27 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2019-2021 Kirk McDonald
 import * as d3 from "d3"
-import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, DEFAULT_BELT_FORMAT, longRateNames } from "./align.js"
-import { spec, DEFAULT_PLANET, DEFAULT_BELT, DEFAULT_FUEL, buildingSort } from "./factory.js"
-import { getRecipeGroups } from "./groups.js"
-import { changeMod } from "./init.js"
+import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, DEFAULT_BELT_FORMAT } from "./align.js"
+import { spec, DEFAULT_PLANET, DEFAULT_BELT, DEFAULT_FUEL } from "./factory.js"
 import { beaconData, shortModules } from "./module.js"
 import { Rational, zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
-import { markOverride, clearOverrides } from "./savesettings.js"
+import { markOverride } from "./savesettings.js"
 import { excludedMachines, parseRecipeMachines } from "./machines-core.js"
 import { canBeacon, canUse, parseModuleList } from "./modules-core.js"
 import { parseMachineQuality, qualityFromSave, splitModuleToken, tierOf as qualityTier } from "./quality-core.js"
-import { addQualityBadge, tierPicker } from "./quality-ui.js"
-import { sorted } from "./sort.js"
-
-// Category keys (spec.buildings' Map keys, also the C5 payload's
-// `buildings.<key>` names) that get a friendly label in the "From your
-// save"/Overrides panels; anything else falls back to a title-cased key.
-const CATEGORY_LABELS = new Map([
-    ["crafting", "Assembling"],
-    ["smelting", "Smelting"],
-    ["basic-solid", "Mining"],
-])
 
 // data set
 
@@ -68,44 +55,18 @@ function normalizeDataSetName(modName) {
     return DEFAULT_MODIFICATION
 }
 
-// Unlike most "renderSetting" functions, this is called exactly once, on
-// initialization, and so does not need to wipe and re-render its UI elements.
-export function renderDataSetOptions(settings) {
-    let modSelector = document.getElementById("data_set")
-    d3.select(modSelector).on("change", function(event) {
-        changeMod()
-    })
-    let configuredMod = normalizeDataSetName(settings.get("data"))
-    for (let [modName, mod] of MODIFICATIONS) {
-        let option = document.createElement("option")
-        option.textContent = mod.name
-        option.value = modName
-        if (configuredMod && configuredMod === modName || !configuredMod && modName === DEFAULT_MODIFICATION) {
-            option.selected = true
-        }
-        modSelector.appendChild(option)
-    }
-    // The mock shows this as read-only text: search.js/board.js build their
-    // catalog entries once per page life off the dataset that was loaded at
-    // boot, so switching data sets from here without a full reload would
-    // leave them stale.
-    modSelector.disabled = true
+let dataSet = DEFAULT_MODIFICATION
+
+// Read once, at boot: the drawer shows it read-only, as search.js/board.js keep the boot dataset's catalog.
+export function selectDataSet(settings) {
+    dataSet = normalizeDataSetName(settings.get("data"))
 }
 
-// Returns currently-selected data set.
 export function currentMod() {
-    let elem = document.getElementById("data_set")
-    return elem.value
+    return dataSet
 }
 
-// There are several things going on with this control flow. Settings should
-// work like this:
-// 1) Settings are parsed from the URL fragment into the settings Map.
-// 2) Each setting's `render` function is called.
-// 3) If the setting is not present in the map, a default value is used.
-// 4) The setting is applied.
-// 5) The setting's GUI is placed into a consistent state.
-// Remember to add the setting to fragment.js, too!
+// Each render* applies one fragment setting (or its default) to the spec; add new ones to fragment.js too.
 
 // The page is one screen now (calc/events.js); "tab=" in the fragment is a
 // leftover key from before the redesign, read but no longer acted on.
@@ -386,49 +347,13 @@ function renderPageTitle(spec) {
 }
 
 function renderTitle(settings) {
-    let input = d3.select("#title_setting").node()
-    let title = ""
-    if (settings.has("title")) {
-        title = decodeURIComponent(settings.get("title"))
-    }
-    input.value = title
-    setTitle(title)
+    setTitle(settings.has("title") ? decodeURIComponent(settings.get("title")) : "")
 }
 
 // display rate
 
-function rateHandler() {
-    spec.format.setDisplayRate(this.value)
-    d3.select("#belt_selector span.belt-summary").text(beltSummaryText)
-    spec.display()
-}
-
 function renderRateOptions(settings) {
-    let rateName = DEFAULT_RATE
-    if (settings.has("rate")) {
-        rateName = settings.get("rate")
-    }
-    spec.format.setDisplayRate(rateName)
-    let rates = []
-    for (let [rateName, longRateName] of longRateNames) {
-        rates.push({rateName, longRateName})
-    }
-    let form = d3.select("#display_rate")
-    form.selectAll("*").remove()
-    let rateOption = form.selectAll("span")
-        .data(rates)
-        .join("span")
-    rateOption.append("input")
-        .attr("id", d => d.rateName + "_rate")
-        .attr("type", "radio")
-        .attr("name", "rate")
-        .attr("value", d => d.rateName)
-        .property("checked", d => d.rateName === rateName)
-        .on("change", rateHandler)
-    rateOption.append("label")
-        .attr("for", d => d.rateName + "_rate")
-        .text(d => "items/" + d.longRateName)
-    rateOption.append("br")
+    spec.format.setDisplayRate(settings.has("rate") ? settings.get("rate") : DEFAULT_RATE)
 }
 
 // precisions
@@ -438,12 +363,10 @@ function renderPrecisions(settings) {
     if (settings.has("rp")) {
         spec.format.ratePrecision = Number(settings.get("rp"))
     }
-    d3.select("#rprec").attr("value", spec.format.ratePrecision)
     spec.format.countPrecision = DEFAULT_COUNT_PRECISION
     if (settings.has("cp")) {
         spec.format.countPrecision = Number(settings.get("cp"))
     }
-    d3.select("#cprec").attr("value", spec.format.countPrecision)
 }
 
 // value format
@@ -458,18 +381,12 @@ function renderValueFormat(settings) {
     if (settings.has("vf")) {
         spec.format.displayFormat = displayFormats.get(settings.get("vf"))
     }
-    let input = document.getElementById(spec.format.displayFormat + "_format")
-    input.checked = true
 }
 
 // mining productivity
 
 function renderBeltFormat(settings) {
     spec.format.beltFormat = settings.get("bf") === "d" ? "decimal" : DEFAULT_BELT_FORMAT
-    let input = document.getElementById(spec.format.beltFormat + "_belts")
-    if (input) {
-        input.checked = true
-    }
 }
 
 function renderMiningProd(settings) {
@@ -477,44 +394,14 @@ function renderMiningProd(settings) {
     if (settings.has("mprod")) {
         mprod = settings.get("mprod")
     }
-    let mprodInput = document.getElementById("mprod")
-    mprodInput.value = mprod
     spec.miningProd = Rational.from_string(mprod).div(Rational.from_float(100))
-    // calc.html wires #mprod's own onchange to handlers.changeMprod (which
-    // sets spec.miningProd and re-solves); this is an *additional* listener
-    // (own d3 namespace, doesn't replace the inline one) so a save-derived
-    // mprod stays "from save" but a hand edit marks the override.
-    d3.select("#mprod").on("change.override", () => markOverride("mprod"))
 }
 
 // buildings
 
-function categoryLabel(group) {
-    let cats = []
-    for (let [cat, g] of spec.buildings) {
-        if (g === group) {
-            cats.push(cat)
-        }
-    }
-    for (let cat of cats) {
-        if (CATEGORY_LABELS.has(cat)) {
-            return CATEGORY_LABELS.get(cat)
-        }
-    }
-    if (cats.length > 0) {
-        return cats[0].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())
-    }
-    return "Building"
-}
-
-function buildingHandler(building) {
+export function pickBuilding(building) {
     spec.setMinimumBuilding(building)
     markOverride("buildings")
-    // updateSolution()'s renderAll pass refreshes everything else, but the
-    // slot highlight itself must update here: it's this function's own DOM,
-    // not something any registered renderer touches.
-    d3.selectAll("#building_selector button.slot")
-        .classed("sel", b => spec.getBuildingGroup(b).building === b)
     spec.updateSolution()
 }
 
@@ -542,59 +429,6 @@ function renderBuildings(settings) {
         }
     }
     spec.setRecipeBuildings(parseRecipeMachines(settings.get("mach")))
-
-    // It doesn't really matter how we order these, but pick something just to
-    // make it consistent.
-    let groups = sorted(groupSet, g => g.getDefault().name)
-    let div = d3.select("#building_selector")
-    div.selectAll("*").remove()
-    let rows = div.selectAll("div.kv")
-        .data(groups)
-        .join("div")
-            .classed("kv", true)
-    rows.append("span")
-        .classed("muted", true)
-        .style("width", "110px")
-        .text(categoryLabel)
-    let slots = rows.append("span").style("display", "flex").style("gap", "4px")
-    slots.selectAll("button.slot")
-        .data(d => d.buildings)
-        .join("button")
-            .attr("type", "button")
-            .attr("class", b => "slot" + (spec.getBuildingGroup(b).building === b ? " sel" : ""))
-            .attr("title", b => b.name)
-            .on("click", (event, b) => buildingHandler(b))
-            .append(b => b.icon.make(28, false))
-    renderMachineAllow()
-}
-
-// Settings -> Machines -> Available: every machine in a multi-machine group
-// as an on/off slot. Off machines are never planned with (factory.js's
-// excludedBuildings); the save sets the default and a click overrides it.
-function renderMachineAllow() {
-    let machines = []
-    for (let group of new Set(spec.buildings.values())) {
-        if (group.buildings.length > 1) {
-            machines.push(...group.buildings)
-        }
-    }
-    machines = sorted(new Set(machines), b => b.name)
-    let div = d3.select("#machine_allow")
-    div.selectAll("*").remove()
-    div.style("display", "flex").style("flex-wrap", "wrap").style("gap", "4px")
-    div.selectAll("button.slot")
-        .data(machines)
-        .join("button")
-            .attr("type", "button")
-            .attr("class", b => "slot" + (spec.excludedBuildings.has(b.key) ? " off" : ""))
-            .attr("title", b => b.name + (spec.excludedBuildings.has(b.key) ? " (off)" : ""))
-            .on("click", (event, b) => {
-                spec.toggleExcludedBuilding(b)
-                markOverride("machines")
-                renderMachineAllow()
-                spec.updateSolution()
-            })
-            .append(b => b.icon.make(28, false))
 }
 
 // A planet switch re-derives the save's default for the new planet, unless
@@ -606,67 +440,6 @@ function syncMachinesToPlanet() {
     }
     let planets = [...spec.selectedPlanets].map(p => p.key)
     spec.setExcludedBuildings(excludedMachines(fetched.machines, planets))
-    renderMachineAllow()
-}
-
-// Settings -> Machines -> Quality (calculator 1.3.0): one row per crafting
-// machine the plan uses, plus any machine whose tier is set, each with a
-// tier picker. A pick sets that machine's tier for every row
-// (spec.machineQuality, `mq=`) and marks the save's "quality" field
-// overridden. Redrawn on every render (renderSettingsTab).
-function renderMachineQualityRows() {
-    let host = document.getElementById("machine_quality")
-    if (!host || !spec.buildingKeys) {
-        return
-    }
-    host.textContent = ""
-    let machines = new Map()
-    let totals = spec.lastTotals
-    if (totals) {
-        for (let [recipe] of totals.rates) {
-            if (!recipe.isReal() || recipe.isDisable()) {
-                continue
-            }
-            let building = spec.getBuilding(recipe)
-            if (building && building.takesQuality) {
-                machines.set(building.key, building)
-            }
-        }
-    }
-    for (let key of spec.machineQuality.keys()) {
-        let building = spec.buildingKeys.get(key)
-        if (building) {
-            machines.set(key, building)
-        }
-    }
-    let list = [...machines.values()].sort((a, b) => a.name.localeCompare(b.name))
-    if (list.length === 0) {
-        let none = document.createElement("span")
-        none.className = "muted"
-        none.textContent = "No machines in this plan."
-        host.appendChild(none)
-        return
-    }
-    for (let building of list) {
-        let tier = spec.machineTier(building)
-        let row = document.createElement("div")
-        row.className = "mq-row"
-        row.dataset.machine = building.key
-        let slot = document.createElement("span")
-        slot.className = "slot slot-sm"
-        slot.appendChild(building.icon.make(20, true))
-        addQualityBadge(slot, tier, 10)
-        let name = document.createElement("span")
-        name.className = "mq-name"
-        name.textContent = building.name
-        row.append(slot, name, tierPicker(tier, picked => setMachineTierByHand(building, picked), {label: `${building.name} quality`}))
-        host.appendChild(row)
-    }
-}
-
-function setMachineTierByHand(building, tier) {
-    markOverride("quality")
-    spec.commitModules(() => spec.setMachineQuality(building.key, tier))
 }
 
 // A planet switch re-derives the save's machine quality for the new planet,
@@ -682,20 +455,6 @@ function syncQualityToPlanet() {
 
 // belt
 
-function beltSummaryText() {
-    return `${spec.belt.name} · ${spec.format.rate(spec.belt.rate)}/${spec.format.longRate} · ${spec.format.rate(spec.belt.rate.div(Rational.from_float(2)))} per lane`
-}
-
-function beltHandler(belt) {
-    spec.belt = belt
-    markOverride("belt")
-    // As with buildingHandler: the slot highlight and the summary text are
-    // this function's own DOM, not refreshed by any registered renderer.
-    d3.selectAll("#belt_selector button.slot").classed("sel", d => d === belt)
-    d3.select("#belt_selector span.belt-summary").text(beltSummaryText)
-    spec.display()
-}
-
 function renderBelts(settings) {
     let beltKey = DEFAULT_BELT
     if (settings.has("belt")) {
@@ -707,35 +466,9 @@ function renderBelts(settings) {
         }
     }
     spec.belt = spec.belts.get(beltKey)
-
-    let belts = []
-    for (let [beltKey, belt] of spec.belts) {
-        belts.push(belt)
-    }
-    let form = d3.select("#belt_selector")
-    form.selectAll("*").remove()
-    form.selectAll("button.slot")
-        .data(belts)
-        .join("button")
-            .attr("type", "button")
-            .attr("class", d => "slot" + (d === spec.belt ? " sel" : ""))
-            .attr("title", d => d.name)
-            .on("click", (event, d) => beltHandler(d))
-            .append(d => d.icon.make(28, false))
-    form.append("span")
-        .classed("muted belt-summary", true)
-        .style("margin-left", "10px")
-        .style("font-size", "13px")
-        .text(beltSummaryText)
 }
 
 // fuel
-
-function fuelHandler(fuel) {
-    spec.fuel = fuel
-    d3.selectAll("#fuel_selector button.slot").classed("sel", d => d === fuel)
-    spec.updateSolution()
-}
 
 function renderFuel(settings) {
     let fuelKey = DEFAULT_FUEL
@@ -748,23 +481,6 @@ function renderFuel(settings) {
         }
     }
     spec.fuel = spec.fuels.get(fuelKey)
-
-    let fuels = Array.from(spec.fuels.values())
-    let form = d3.select("#fuel_selector")
-    form.selectAll("*").remove()
-    form.selectAll("button.slot")
-        .data(fuels)
-        .join("button")
-            .attr("type", "button")
-            .attr("class", d => "slot" + (d === spec.fuel ? " sel" : ""))
-            .attr("title", d => d.name)
-            .on("click", (event, d) => fuelHandler(d))
-            .append(d => d.icon.make(28, false))
-    form.append("span")
-        .classed("muted", true)
-        .style("margin-left", "10px")
-        .style("font-size", "13px")
-        .text("for boilers and burner machines")
 }
 
 // The plan layer, read from dm/dm2 and db/dbc. Settings -> Modules
@@ -822,9 +538,7 @@ function renderMachineQuality(settings) {
 
 function renderRecipes(settings) {
     let havePlanets = spec.planets && spec.planets.size > 1
-    let planetRow = d3.select("#planet_setting_row")
     if (havePlanets) {
-        planetRow.style("display", null)
         let planetKeys = []
         if (settings.has("planet")) {
             let s = settings.get("planet")
@@ -839,8 +553,6 @@ function renderRecipes(settings) {
                 spec.selectPlanet(spec.planets.get(key))
             }
         }
-    } else {
-        planetRow.style("display", "none")
     }
 
     if (settings.has("disable") || settings.has("enable")) {
@@ -865,77 +577,21 @@ function renderRecipes(settings) {
     } else if (!havePlanets) {
         spec.setDefaultDisable()
     }
+}
 
-    let planetDiv = d3.select("#planet_selector")
-    planetDiv.selectAll("*").remove()
-    if (havePlanets) {
-        let planets = sorted(spec.planets.values(), p => p.order)
-        planetDiv.selectAll("span.radio")
-            .data(planets)
-            .join("span")
-                .attr("class", "radio")
-                .style("cursor", "pointer")
-                .each(function(d) {
-                    d3.select(this).append("span")
-                        .classed("check", true)
-                        .text(spec.selectedPlanets.has(d) ? "✓" : "")
-                    d3.select(this).append(() => new Text(" " + d.name))
-                })
-                .on("click", function(event, d) {
-                    if (event.shiftKey) {
-                        event.preventDefault()
-                        let selected = spec.selectedPlanets.has(d)
-                        if (selected) {
-                            spec.unselectPlanet(d)
-                        } else {
-                            spec.selectPlanet(d)
-                        }
-                    } else {
-                        spec.selectOnePlanet(d)
-                    }
-                    d3.selectAll("#planet_selector span.check")
-                        .text(dd => spec.selectedPlanets.has(dd) ? "✓" : "")
-                    d3.selectAll("#recipe_toggles .toggle")
-                        .classed("selected", d => !spec.disable.has(d))
-                    syncMachinesToPlanet()
-                    syncQualityToPlanet()
-                    markOverride("planet")
-                    spec.updateSolution()
-                })
+// A plain pick selects only that planet; `add` (shift-click) toggles it in the selection.
+export function pickPlanet(planet, add) {
+    if (!add) {
+        spec.selectOnePlanet(planet)
+    } else if (spec.selectedPlanets.has(planet)) {
+        spec.unselectPlanet(planet)
+    } else {
+        spec.selectPlanet(planet)
     }
-
-    let allGroups = getRecipeGroups(new Set(spec.recipes.values()))
-    let groups = []
-    for (let group of allGroups) {
-        if (group.size > 1) {
-            groups.push(sorted(group, d => d.order))
-        }
-    }
-
-    let div = d3.select("#recipe_toggles")
-        .classed("toggle-list", true)
-    div.selectAll("*").remove()
-    let recipe = div.selectAll("div")
-        .data(groups)
-        .join("div")
-            .classed("toggle-row", true)
-            .selectAll("div")
-            .data(d => d)
-            .join("div")
-                .classed("toggle recipe", true)
-                .classed("selected", d => !spec.disable.has(d))
-                .on("click", function(event, d) {
-                    let disabled = spec.disable.has(d)
-                    d3.select(this).classed("selected", disabled)
-                    if (disabled) {
-                        spec.setEnable(d)
-                    } else {
-                        spec.setDisable(d)
-                    }
-                    markOverride("recipes")
-                    spec.updateSolution()
-                })
-    recipe.append(d => d.icon.make(32))
+    syncMachinesToPlanet()
+    syncQualityToPlanet()
+    markOverride("planet")
+    spec.updateSolution()
 }
 
 // resource priority
@@ -970,11 +626,7 @@ function renderResourcePriorities(settings) {
     }
 }
 
-// --- the Settings tab: from-save panel, Machines precision toggle, and the
-// override tags beside the Overrides frame's fields. The controls those
-// fields render into (belt/building slots, planet checks, recipe toggles,
-// ...) are (re)built by the render* functions above, only when the fragment
-// is (re)loaded; this section refreshes cheaply, on every solve. ---
+// The drawer's legacy parts, redrawn on every solve: the from-save panel and the override tags.
 
 // From your save
 
@@ -1067,60 +719,16 @@ function renderFromSave() {
     })
 }
 
-// Display: "Machines: rounded up / exact", bound to spec.roundMachines
-// (read by table.js). calc.html has no id for this row (it predates
-// roundMachines), so it's built once, on demand, into #settings-display.
-//
-// The choice itself lives here, not only on spec: reloadFromHash() calls
-// resetSpec(), which throws the old spec (and any field hung off it) away,
-// so a value kept solely on spec.roundMachines would silently revert to the
-// default on the next save-driven reload.
+// Kept off spec, as reloadFromHash() replaces the spec and would revert it.
 let roundMachinesChoice = true
 
-function renderMachinesToggle() {
-    let display = document.getElementById("settings-display")
-    if (!display) {
-        return
-    }
-    let row = document.getElementById("machines-round-toggle")
-    if (!row) {
-        row = document.createElement("div")
-        row.id = "machines-round-toggle"
-        row.className = "kv"
-        let label = document.createElement("span")
-        label.className = "muted"
-        label.style.width = "90px"
-        label.textContent = "Machines"
-        row.appendChild(label)
-        for (let [value, text] of [["up", "rounded up"], ["exact", "exact"]]) {
-            let option = document.createElement("span")
-            option.className = "radio"
-            option.style.cursor = "pointer"
-            option.dataset.value = value
-            let dot = document.createElement("span")
-            dot.className = "dot"
-            option.appendChild(dot)
-            option.appendChild(document.createTextNode(text))
-            option.addEventListener("click", () => {
-                roundMachinesChoice = value === "up"
-                spec.roundMachines = roundMachinesChoice
-                spec.display()
-            })
-            row.appendChild(option)
-        }
-        display.appendChild(row)
-    }
-    for (let option of row.querySelectorAll(".radio")) {
-        option.querySelector(".dot").classList.toggle("on", (option.dataset.value === "up") === spec.roundMachines)
-    }
+export function setRoundMachines(on) {
+    roundMachinesChoice = on
+    spec.roundMachines = on
+    spec.display()
 }
 
-// Overrides: "Reset all" and the per-field "override"/"from save" tags.
-// FIELDS in savesettings-core.js; each anchor resolves to an element this
-// file already fully owns the *contents* of (belt/building/planet
-// selectors), or, for #mprod, its parent .kv row (calc.html's own markup),
-// or, for recipes, the collapsed <details>' own summary row (#recipe_toggles
-// itself is hidden until the details is opened).
+// The "override"/"from save" tag of each FIELDS entry (savesettings-core.js), appended to its drawer row.
 const OVERRIDE_ANCHORS = [
     [() => document.getElementById("belt_selector"), "belt"],
     [() => document.getElementById("building_selector"), "buildings"],
@@ -1159,47 +767,18 @@ function refreshOverrideTags() {
     }
 }
 
-// calc.html's Overrides titlebar already carries "anything you set here
-// sticks until you reset it"; this row is just the button.
-function ensureResetAllButton() {
-    let container = document.getElementById("settings-overrides")
-    if (!container || document.getElementById("overrides-reset-all")) {
-        return
-    }
-    let row = document.createElement("div")
-    // Resets to the save's values, so only with the companion (hosting.js).
-    row.className = "kv needs-companion"
-    let btn = document.createElement("button")
-    btn.id = "overrides-reset-all"
-    btn.type = "button"
-    btn.className = "btn btn-sm"
-    btn.textContent = "Reset all"
-    btn.addEventListener("click", () => clearOverrides())
-    row.appendChild(btn)
-    container.insertBefore(row, container.firstChild)
-}
-
-function renderSettingsTab(spec) {
-    spec.roundMachines = roundMachinesChoice
+function renderSettingsTab() {
     renderFromSave()
-    renderMachineQualityRows()
-    renderMachinesToggle()
-    ensureResetAllButton()
     refreshOverrideTags()
 }
 
 // init.js calls this once at boot, after the dataset loads.
 export function initSettingsTab() {
-    spec.roundMachines = roundMachinesChoice
     registerRenderer(renderSettingsTab)
     registerRenderer(renderPageTitle)
 }
 
 export function renderSettings(settings) {
-    // Must land before spec.updateSolution() (the caller runs it right after
-    // this): table.js's renderer is registered ahead of ours, so if
-    // spec.roundMachines were only set from renderSettingsTab, the first
-    // render after a reloadFromHash() rebuild would see it undefined.
     spec.roundMachines = roundMachinesChoice
     renderTitle(settings)
     renderIgnore(settings)
