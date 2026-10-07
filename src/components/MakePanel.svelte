@@ -1,5 +1,9 @@
 <script>
     import Button from "./Button.svelte"
+    import TargetNotes from "./TargetNotes.svelte"
+    import TargetSearch from "./TargetSearch.svelte"
+    import { plan } from "../lib/plan.svelte.js"
+    import { Rational } from "../lib/rational.js"
 
     let { intro } = $props()
 
@@ -8,6 +12,40 @@
         { item: "military-science-pack", rate: 60, label: "Military science 60/min" },
         { item: "chemical-science-pack", rate: 30, label: "Blue science 30/min" },
     ]
+
+    function addExample(itemKey, perMinute) {
+        let target = plan.spec.addTarget(itemKey)
+        target.setRate(Rational.from_float(perMinute).div(Rational.from_float(60)))
+        plan.spec.updateSolution()
+    }
+
+    let restoreVisible = $derived.by(() => {
+        if (!plan.spec || plan.spec.buildTargets.length > 0) {
+            return false
+        }
+        let last = null
+        try {
+            last = localStorage.getItem("calc.lastHash")
+        } catch (err) {
+            last = null
+        }
+        return Boolean(last) && last !== location.hash
+    })
+
+    async function restoreLast(event) {
+        event.preventDefault()
+        let hash = null
+        try {
+            hash = localStorage.getItem("calc.lastHash")
+        } catch (err) {
+            hash = null
+        }
+        if (!hash) {
+            return
+        }
+        let { navigateToHash } = await import("../lib/init.js")
+        navigateToHash(hash)
+    }
 
     const GUIDE = [
         {
@@ -28,18 +66,19 @@
 <div class={["frame", { intro }]} id="make-panel">
     <h2 class="title" id="intro-title">What do you want to make?</h2>
     <div class="make-row"><span class="title">Make</span>
-        <div class="search-wrap"><input id="target-search" placeholder="red science 60, gears, blue chip 45" autocomplete="off"><div id="target-search-results"></div></div>
+        <TargetSearch />
     </div>
     <span class="muted" id="make-hint">Nicknames work. A trailing number is the rate per minute, or a machine count with "machines": blue chip 7 machines. Enter adds it.</span>
     <ul id="targets"><li id="plusButton" hidden></li></ul>
-    <div id="target-notes" class="muted" hidden></div>
+    <TargetNotes />
     <div id="intro-extras">
         <div class="examples">
             {#each EXAMPLES as { item, rate, label }}
-                <Button class="example-target" data-item={item} data-rate={rate}>{label}</Button>
+                <Button class="example-target" data-item={item} data-rate={rate} onclick={() => addExample(item, rate)}>{label}</Button>
             {/each}
         </div>
-        <a id="restore-last" hidden>Restore the last factory</a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a id="restore-last" href="#" hidden={!restoreVisible} onclick={restoreLast}>Restore the last factory</a>
         <p class="muted about">A production calculator for Factorio 2.0 and Space Age: pick an item and a rate and
             it works out every machine, belt and raw input, as a table or a flow graph.</p>
         <div class="guide">

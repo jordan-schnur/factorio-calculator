@@ -22,11 +22,9 @@ import { getRecipes } from "./recipe.js"
 import { registerRenderer } from "./render.js"
 import { initSaveSettings, applySaveSettings } from "./savesettings.js"
 import { initScratchpad } from "./scratchpad.js"
-import { initSearch } from "./search.js"
 import { currentMod, MODIFICATIONS, initSettingsTab, renderDataSetOptions, renderSettings } from "./settings.js"
 import { initSource } from "./source.js"
 import { initSupplied } from "./supplied.js"
-import { initTargets } from "./targets.js"
 import { reapTooltips } from "./tooltip.js"
 import { applyColorblind } from "./colorblind.js"
 
@@ -139,8 +137,6 @@ function initModules() {
     modulesInitialized = true
     registerRenderer(renderHousekeeping)
     registerRenderer(renderPlan)
-    initSearch()
-    initTargets()
     initSupplied()
     initScratchpad()
     initFlow()
