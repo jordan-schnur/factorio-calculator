@@ -1,9 +1,12 @@
 <script>
     import { itemNames } from "../lib/byproduct-core.js"
-    import { applySendOut, blockKey, rateText, setDismissed } from "../lib/byproducts.svelte.js"
+    import { applySendOut, blockKey, fixKey, setDismissed } from "../lib/byproducts.svelte.js"
     import { iconOf } from "../lib/icon-attach.js"
-    import { spec } from "../lib/factory.js"
+    import { plan } from "../lib/plan.svelte.js"
     import { plural } from "../lib/ratio-core.js"
+    import { rateText } from "../lib/table-core.js"
+    import { buildingCount, buildRows } from "../lib/table.js"
+    import BpAction from "./BpAction.svelte"
     import BpFixRow from "./BpFixRow.svelte"
     import Button from "./Button.svelte"
 
@@ -11,8 +14,9 @@
 
     const SHOWN_ITEMS = 4
 
-    let count = $derived(block.recipe ? Math.ceil(spec.getCount(block.recipe, spec.lastTotals.rates.get(block.recipe)).toFloat()) : 0)
-    let building = $derived(block.recipe ? spec.getBuilding(block.recipe) : null)
+    let row = $derived(block.recipe && plan.totals ? buildRows(plan.totals).find(r => r.recipe === block.recipe) : null)
+    let count = $derived(row ? buildingCount(row) : 0)
+    let building = $derived(block.recipe ? plan.spec.getBuilding(block.recipe) : null)
     let shown = $derived(block.items.length > SHOWN_ITEMS + 1 ? block.items.slice(0, SHOWN_ITEMS) : block.items)
     let rest = $derived(block.items.slice(shown.length))
     let one = $derived(block.items.length === 1)
@@ -42,10 +46,10 @@
         {#each shown as { item, rate }, i (item.key)}
             {#if i > 0 && i === shown.length - 1 && rest.length === 0}<span>and</span>{/if}
             <span {@attach iconOf(item, 20, true)}></span>
-            <span class="bp-rate num">{rateText(rate)} {item.name.toLowerCase()}{itemComma(i)}</span>
+            <span class="bp-rate num">{rateText(plan.spec.format, rate)} {item.name.toLowerCase()}{itemComma(i)}</span>
         {/each}
         {#if rest.length > 0}
-            <span class="bp-more" title={rest.map(({ item, rate }) => `${item.name}: ${rateText(rate)}`).join("\n")}>and {rest.length} more</span>
+            <span class="bp-more" title={rest.map(({ item, rate }) => `${item.name}: ${rateText(plan.spec.format, rate)}`).join("\n")}>and {rest.length} more</span>
         {/if}
         <span>{block.recipe ? "that nothing in this plan uses." : "is left over."}</span>
     </div>
@@ -53,16 +57,15 @@
         {#if found === null}
             <span class="muted bp-checking">Checking fixes…</span>
         {:else}
-            {#each found.fixes as fix (fix.kind + (fix.recipe?.key ?? "") + fix.enable.map(r => r.key).join(","))}
+            {#each found.fixes as fix (fixKey(fix))}
                 <BpFixRow {block} {fix} {found} />
             {/each}
             {#if found.fixes.length === 0}
                 <span class="muted bp-none">No recipe you could switch on uses it up, and no other recipe avoids it.</span>
             {/if}
-            <div class="bp-fix">
-                <Button class="bp-btn" data-fix="out" onclick={() => applySendOut(block, sendOutDone())}>{one ? "Send it out" : "Send them out"}</Button>
-                <span class="bp-what">Keep this plan and take {one ? "it" : "them"} to storage or another build. No change in machines.</span>
-            </div>
+            <BpAction dataFix="out" label={one ? "Send it out" : "Send them out"} onclick={() => applySendOut(block, sendOutDone())}>
+                {#snippet what()}Keep this plan and take {one ? "it" : "them"} to storage or another build. No change in machines.{/snippet}
+            </BpAction>
         {/if}
     </div>
 </div>

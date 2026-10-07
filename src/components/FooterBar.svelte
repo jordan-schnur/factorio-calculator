@@ -2,23 +2,22 @@
     import { sentOut } from "../lib/byproduct-core.js"
     import { plan } from "../lib/plan.svelte.js"
     import { zero } from "../lib/rational.js"
-    import { RATE_LABEL } from "../lib/table-core.js"
-    import { buildingCount, buildRows, powerRepr } from "../lib/table.js"
+    import { rateText } from "../lib/table-core.js"
+    import { buildRows, countMachines, powerRepr } from "../lib/table.js"
 
     let { hidden } = $props()
 
-    let summary = $derived(summarize(plan.spec, plan.totals))
+    let summary = $derived(plan.planned ? summarize(plan.spec, plan.totals) : null)
 
     function listed(spec, entries) {
-        const unit = RATE_LABEL[spec.format.rateName] || "/min"
-        return entries.map(({ item, rate }) => `${item.name.toLowerCase()} ${spec.format.rate(rate)}${unit}`).join(", ")
+        return entries.map(({ item, rate }) => `${item.name.toLowerCase()} ${rateText(spec.format, rate)}`).join(", ")
     }
 
     function summarize(spec, totals) {
-        if (!spec || !totals || spec.buildTargets.length === 0) return null
+        if (!totals) return null
         const rows = buildRows(totals)
         const made = rows.filter(row => row.isReal)
-        const machines = made.reduce((n, row) => n + buildingCount(row), 0)
+        const { machines } = countMachines(totals)
         const power = made.reduce((sum, row) => sum.add(spec.getPowerUsage(row.recipe, row.recipeRate).power), zero)
         const brought = rows.filter(row => !row.isReal).map(row => ({ item: row.item, rate: row.itemRate }))
         const sent = listed(spec, sentOut(totals, spec.sendOut))

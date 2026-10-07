@@ -3,7 +3,7 @@
 // or pipe in, replacing the old Ledger side panel. A row expands into a
 // detail panel (calc/details.js) in place instead of opening a side card.
 import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
-import { showByproducts } from "./byproducts.svelte.js"
+import { backsUpMarker } from "./byproducts.svelte.js"
 import { spec } from "./factory.js"
 import { sprites } from "./icon.js"
 import { beaconPhrase, fallbackNote, planSentence } from "./modules-core.js"
@@ -12,17 +12,14 @@ import { addQualityBadge } from "./quality-ui.js"
 import { beltWords } from "./ratio-core.js"
 import { registerRenderer } from "./render.js"
 import { buildRows, buildingCount } from "./table.js"
-import { groupForTable, RATE_LABEL } from "./table-core.js"
+import { groupForTable, rateText } from "./table-core.js"
+import { openSettings } from "./ui.svelte.js"
 import { itemTooltip, renderDetail } from "./details.js"
 
 // Re-rendered off calc:select rather than a fresh solve, so the graph
 // selecting an item (or this table's own row click) can move the open row
 // without re-running the solver.
 let lastTotals = null
-
-function rateText(rate) {
-    return spec.format.rate(rate) + (RATE_LABEL[spec.format.rateName] || "/min")
-}
 
 // Consumer-distance from a build target: a target sits at depth 0, and
 // every ingredient's depth is one more than the deepest item made from it
@@ -105,23 +102,6 @@ function outputIcons(row, totals, rows) {
     return strip
 }
 
-const MARKER_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3z"></path><path d="M12 10v5"></path></svg>'
-
-// A row whose recipe would stop (the Byproducts bar has a block for it):
-// "backs up", which scrolls to the bar rather than opening the row.
-function backsUpMarker() {
-    const marker = document.createElement("span")
-    marker.className = "bp-marker"
-    marker.title = "Something it makes has nowhere to go: see the fixes above"
-    marker.innerHTML = MARKER_SVG
-    marker.appendChild(document.createTextNode("backs up"))
-    marker.addEventListener("click", event => {
-        event.stopPropagation()
-        showByproducts()
-    })
-    return marker
-}
-
 // Recipes the Byproducts bar has a block for; set by renderTable.
 let stalledNow = new Set()
 
@@ -149,7 +129,7 @@ function itemCell(row, totals, rows) {
         cell.appendChild(outputIcons(row, totals, rows))
     }
     if (row.isReal && stalledNow.has(row.recipe)) {
-        cell.appendChild(backsUpMarker())
+        cell.appendChild(backsUpMarker(14))
     }
     const out = row.isReal ? sentOutCount(row, totals) : 0
     if (out > 0) {
@@ -165,7 +145,7 @@ function needCell(row, totals, rows) {
         cell.appendChild(document.createTextNode(`${row.recipe.products.length} outputs`))
         return cell
     }
-    cell.appendChild(document.createTextNode(rateText(row.itemRate)))
+    cell.appendChild(document.createTextNode(rateText(spec.format, row.itemRate)))
     const belts = document.createElement("span")
     belts.className = "belts"
     belts.textContent = row.item.phase === "fluid" ? "pipe" : beltWords(spec.getBeltCount(row.itemRate).toFloat(), spec.format.beltFormat)
@@ -243,7 +223,7 @@ function isHandSet(row) {
 
 // Opens Settings at its Modules section (calc.html's #modules-sec).
 function openModuleSettings() {
-    document.getElementById("settings-open")?.click()
+    openSettings()
     document.getElementById("modules-sec")?.scrollIntoView({ block: "start" })
 }
 

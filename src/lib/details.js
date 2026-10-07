@@ -13,7 +13,7 @@ import { registerRenderer } from "./render.js"
 import { mountModuleEditor } from "./modules-editor.js"
 import { tierPicker } from "./quality-ui.js"
 import { relevantRecipes, renderOptions } from "./source.js"
-import { RATE_LABEL } from "./table-core.js"
+import { rateText } from "./table-core.js"
 import { buildRows, powerRepr } from "./table.js"
 import { Tooltip } from "./tooltip.js"
 
@@ -27,10 +27,6 @@ function percentText(share) {
         return "<1%"
     }
     return percent.toDecimal(0) + "%"
-}
-
-function rateText(rate) {
-    return `${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`
 }
 
 // data-value must be the exact decimal text on screen, not the raw
@@ -227,7 +223,7 @@ export function itemTooltip(el, totals, rows, item) {
     }
     let destinations = flows.map(f => destinationLines({
         name: f.name,
-        rate: rateText(f.rate),
+        rate: rateText(spec.format, f.rate),
         percent: percentText(f.rate.div(total)),
         belts: fluid ? null : spec.getBeltCount(f.rate).toFloat(),
         beltName: spec.belt.name,
@@ -237,7 +233,7 @@ export function itemTooltip(el, totals, rows, item) {
     }))
     el.classList.add("flow")
     new Tooltip(el, () => {
-        let frame = cardFrame(`${rateText(total)} ${item.name}`)
+        let frame = cardFrame(`${rateText(spec.format, total)} ${item.name}`)
         for (let line of summary) {
             cardLine(frame, line)
         }
@@ -295,7 +291,7 @@ function buildHead(item, rate, size) {
     let subtitle = document.createElement("span")
     subtitle.className = "muted num"
     let beltPart = item.phase === "fluid" ? "pipe" : beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)
-    subtitle.textContent = `${rateText(rate)} · ${beltPart}`
+    subtitle.textContent = `${rateText(spec.format, rate)} · ${beltPart}`
     grow.appendChild(subtitle)
     head.appendChild(grow)
 
@@ -348,7 +344,7 @@ function buildNeedsCol(rows, row, totals) {
         for (let ing of ingredients) {
             let amount = ing.amount.mul(row.recipeRate)
             let rate = (consumed.get(ing.item) || new Map()).get(row.recipe) || amount
-            let num = flowTooltip(numSpan(rateText(amount)), totals, rows, ing.item, row.recipe, rate)
+            let num = flowTooltip(numSpan(rateText(spec.format, amount)), totals, rows, ing.item, row.recipe, rate)
             children.push(drow(ing.item.icon, ing.item.name, needBadge(rows, ing.item), num))
             let ratio = machineRatio(totals, rows, ing.item, row.recipe, rate)
             if (ratio) {
@@ -371,7 +367,7 @@ function buildGoesToCol(rows, item, totals, isTarget) {
         for (let [recipe, rate] of consumers) {
             let product = recipe.products[0].item
             let share = totalRate.isZero() ? zero : rate.div(totalRate)
-            let num = flowTooltip(numSpan(rateText(rate)), totals, rows, item, recipe, rate)
+            let num = flowTooltip(numSpan(rateText(spec.format, rate)), totals, rows, item, recipe, rate)
             children.push(drow(product.icon, recipe.name, shareSpan(percentText(share)), num))
             let ratio = machineRatio(totals, rows, item, recipe, rate)
             if (ratio) {
@@ -388,7 +384,7 @@ function buildGoesToCol(rows, item, totals, isTarget) {
 function buildMakesCol(rows, row, totals) {
     let children = [lbl("Makes")]
     for (let { item, rate, leftover } of outputsOf(totals, row.recipe)) {
-        let head = drow(item.icon, item.name, null, numSpan(rateText(rate)))
+        let head = drow(item.icon, item.name, null, numSpan(rateText(spec.format, rate)))
         head.classList.add("out-head")
         children.push(head)
         let links = totals.proportionate
@@ -396,14 +392,14 @@ function buildMakesCol(rows, row, totals) {
             .sort((a, b) => b.rate.toFloat() - a.rate.toFloat())
         for (let link of links) {
             let share = rate.isZero() ? zero : link.rate.div(rate)
-            let num = flowTooltip(numSpan(rateText(link.rate)), totals, rows, item, link.to, link.rate)
+            let num = flowTooltip(numSpan(rateText(spec.format, link.rate)), totals, rows, item, link.to, link.rate)
             let to = drow(link.to.products[0].item.icon, link.to.name, shareSpan(percentText(share)), num)
             to.classList.add("out-to")
             children.push(to)
         }
         if (!leftover.isZero()) {
-            let text = spec.sendOut.has(item.key) ? `${rateText(leftover)} sent out.` :
-                `${rateText(leftover)} nothing here uses: see the fixes above.`
+            let text = spec.sendOut.has(item.key) ? `${rateText(spec.format, leftover)} sent out.` :
+                `${rateText(spec.format, leftover)} nothing here uses: see the fixes above.`
             children.push(mutedSpan(text, "left-note"))
         } else if (links.length === 0 && spec.buildTargets.some(t => t.item === item)) {
             children.push(mutedSpan("This is what you asked for.", "out-to"))

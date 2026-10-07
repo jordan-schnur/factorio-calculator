@@ -1,32 +1,33 @@
 <script>
     import { itemNames, joinWords, stalls } from "../lib/byproduct-core.js"
-    import { applied, blockKey, computeFixes, dismissed, setDismissed } from "../lib/byproducts.svelte.js"
+    import { computeFixes } from "../lib/byproduct-trial.js"
+    import { applied, blockKey, dismissed, loadDismissed, setDismissed } from "../lib/byproducts.svelte.js"
     import { plan } from "../lib/plan.svelte.js"
     import BpBlock from "./BpBlock.svelte"
     import Button from "./Button.svelte"
 
     let totals = $derived(plan.totals)
-    let blocks = $derived(totals && plan.spec && plan.spec.buildTargets.length > 0 ? stalls(totals, plan.spec.sendOut) : [])
+    let blocks = $derived(totals && plan.planned ? stalls(totals, plan.spec.sendOut) : [])
     let hidden = $derived(blocks.filter(block => dismissed.has(blockKey(block))))
     let activeApplied = $derived(applied.current && applied.current.totals === totals ? applied.current : null)
 
-    let fixesFor = null
-    let generation = 0
     let fixesCache = $state.raw(null)
 
     $effect(() => {
-        if (!totals || blocks.length === 0 || fixesFor === totals) return
-        fixesFor = totals
-        const mine = ++generation
-        const computingBlocks = blocks
-        setTimeout(() => {
-            if (mine !== generation || plan.totals !== totals) return
-            fixesCache = { totals, results: computeFixes(totals, computingBlocks) }
-        }, 0)
+        loadDismissed()
     })
 
-    function foundFor(i) {
-        return fixesCache && fixesCache.totals === totals ? fixesCache.results[i] : null
+    $effect(() => {
+        if (!totals || !blocks.length || fixesCache?.totals === totals) return
+        const id = setTimeout(() => {
+            const results = computeFixes(totals, blocks)
+            fixesCache = { totals, results: new Map(blocks.map((block, i) => [blockKey(block), results[i]])) }
+        }, 0)
+        return () => clearTimeout(id)
+    })
+
+    function foundFor(block) {
+        return fixesCache && fixesCache.totals === totals ? fixesCache.results.get(blockKey(block)) ?? null : null
     }
 
     let hiddenNames = $derived(hidden.map(block => block.recipe ? block.recipe.name : itemNames(block)))
@@ -49,9 +50,9 @@
         {/if}
         {#if hidden.length < blocks.length}
             <section class="bp-bar" aria-label="Byproducts">
-                {#each blocks as block, i (blockKey(block))}
+                {#each blocks as block (blockKey(block))}
                     {#if !dismissed.has(blockKey(block))}
-                        <BpBlock {block} found={foundFor(i)} />
+                        <BpBlock {block} found={foundFor(block)} />
                     {/if}
                 {/each}
             </section>
