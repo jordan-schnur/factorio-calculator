@@ -5,27 +5,16 @@
 // at once, nothing is redrawn.
 
 import { tierOf } from "./colorblind-core.js"
+import { readStore, writeStore } from "./storage.js"
 
 const KEY = "calc.colorblind"
 
 export function colorblindOn() {
-    try {
-        return localStorage.getItem(KEY) === "1"
-    } catch (e) {
-        return false
-    }
+    return readStore(KEY) === "1"
 }
 
 export function setColorblind(on) {
-    try {
-        if (on) {
-            localStorage.setItem(KEY, "1")
-        } else {
-            localStorage.removeItem(KEY)
-        }
-    } catch (e) {
-        // private window / blocked storage: still applies for this visit
-    }
+    writeStore(KEY, on ? "1" : null)
     applyColorblind(on)
 }
 

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2019-2021 Kirk McDonald
 import pako from "pako"
 import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, DEFAULT_BELT_FORMAT } from "./align.js"
-import { DEFAULT_TAB, currentTab } from "./events.js"
 import { spec, DEFAULT_BELT, DEFAULT_FUEL } from "./factory.js"
 import { formatRecipeMachines } from "./machines-core.js"
 import { formatModuleList } from "./modules-core.js"
@@ -9,6 +8,9 @@ import { formatMachineQuality, isNormal, joinModuleToken, tierOf as qualityTier 
 import { Rational } from "./rational.js"
 import { currentMod, customTitle } from "./settings.js"
 import { sorted } from "./sort.js"
+
+// The page is one screen now; "tab=" is only read/written for links minted before the redesign.
+const DEFAULT_TAB = "flow"
 
 // One `mm=`/`modules=` entry with every slot listed in order, so slot
 // positions survive a round trip. Each module token carries its tier
@@ -38,7 +40,7 @@ export function formatSettings(excludeTitle, overrideTab, targets) {
         settings += "title=" + encodeURIComponent(customTitle) + "&"
     }
     settings += "data=" + currentMod() + "&"
-    let tab = currentTab
+    let tab = DEFAULT_TAB
     if (overrideTab) {
         tab = overrideTab
     }

@@ -2,6 +2,7 @@
     import { iconOf } from "../lib/icon-attach.js"
     import { plan } from "../lib/plan.svelte.js"
     import { Rational } from "../lib/rational.js"
+    import { addTarget } from "../lib/target.js"
     import { parseQuery, datasetEntries, mergeEntries, isSearchable } from "../lib/search-core.js"
     import { rankMatches } from "../lib/boardcore.js"
     import { companion } from "../lib/hosting.js"
@@ -43,13 +44,12 @@
         }
     }
 
-    // Loaded once from the first spec; a later mod change keeps the catalog.
-    $effect(() => {
+    function ensureLoaded() {
         if (!loaded && plan.spec) {
             loaded = true
             loadEntries()
         }
-    })
+    }
 
     function closeResults() {
         visibleRows = []
@@ -66,40 +66,16 @@
         highlighted = visibleRows.length ? 0 : -1
     }
 
-    function perMinuteToPerSecond(perMinute) {
-        return Rational.from_float(perMinute).div(Rational.from_float(60))
-    }
-
-    function addTargetAtPerSecond(itemKey, rate) {
-        const target = plan.spec.addTarget(itemKey)
-        target.setRate(rate)
-        plan.spec.updateSolution()
-        return target
-    }
-
-    // "7 machines" sizes the target by machine count, as its unit dropdown would.
-    function addTargetMachines(itemKey, count) {
-        const target = plan.spec.addTarget(itemKey)
-        target.setBuildings(Rational.from_float(count), target.recipe)
-        plan.spec.updateSolution()
-        return target
-    }
-
     function pick(entry) {
         const { rate, machines } = parseQuery(value)
         if (machines && rate !== null) {
-            addTargetMachines(entry.name, rate)
+            addTarget(plan.spec, entry.name, { machines: rate })
         } else {
             const perDisplayUnit = rate === null ? 60 : rate
-            addTargetAtPerSecond(entry.name, Rational.from_float(perDisplayUnit).div(plan.spec.format.rateFactor))
+            addTarget(plan.spec, entry.name, { perSecond: Rational.from_float(perDisplayUnit).div(plan.spec.format.rateFactor) })
         }
         value = ""
         closeResults()
-    }
-
-    function onInput(event) {
-        value = event.target.value
-        runSearch(value)
     }
 
     function onKeydown(event) {
@@ -140,7 +116,7 @@
 
 <div class="search-wrap">
     <input id="target-search" placeholder="red science 60, gears, blue chip 45" autocomplete="off"
-        bind:value oninput={onInput} onkeydown={onKeydown} onblur={() => setTimeout(closeResults, 150)}>
+        bind:value onfocus={ensureLoaded} oninput={() => { ensureLoaded(); runSearch(value) }} onkeydown={onKeydown} onblur={() => setTimeout(closeResults, 150)}>
     <div id="target-search-results">
         {#each visibleRows as entry, i (entry.name)}
             <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -149,7 +125,7 @@
                 <span class="slot slot-sm" {@attach iconOf(plan.spec?.items.get(entry.name), 20, true)}></span>
                 <span class="h">{entry.label}</span>
                 {#if entry.matchedAlias}
-                    <span class="muted" style="margin-left: auto; font-size: 13px;">{entry.matchedAlias}</span>
+                    <span class="muted aside">{entry.matchedAlias}</span>
                 {/if}
             </div>
         {/each}
