@@ -1,0 +1,6 @@
+/* Applied only while Playwright takes a screenshot (config: stylePath).
+   The version shows in the always-on footer and changes every release,
+   so screenshots draw a fixed placeholder in its place: a release bump
+   then moves no pixels. The version itself is checked by the specs. */
+.calc-version { font-size: 0 !important; }
+.calc-version::after { content: "vX.Y.Z"; font-size: 12px; }

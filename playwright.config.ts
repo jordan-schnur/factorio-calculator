@@ -32,6 +32,7 @@ export default defineConfig({
             maxDiffPixelRatio: 0.002,
             animations: "disabled",
             caret: "hide",
+            stylePath: "tests/e2e/fixtures/screenshot.css",
         },
     },
     use: {
