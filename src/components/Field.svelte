@@ -1,5 +1,5 @@
 <script>
-    let { label, width = 110, lbl = false, id, children } = $props()
+    let { label, width = 110, id, hidden, children } = $props()
 </script>
 
-<div class="kv" {id}><span class="muted" class:lbl style="width: {width}px;">{label}</span>{@render children()}</div>
+<div class="kv" {id} {hidden}><span class="muted" style="width: {width}px;">{label}</span>{@render children()}</div>

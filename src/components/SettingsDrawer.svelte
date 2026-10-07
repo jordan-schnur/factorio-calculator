@@ -1,19 +1,25 @@
 <script>
+    import AsmSeg from "./AsmSeg.svelte"
     import Field from "./Field.svelte"
     import Radio from "./Radio.svelte"
     import Section from "./Section.svelte"
     import { changeBeltFormat, changeColorblind, changeCountPrecision, changeFormat, changeMprod, changeRatePrecision, changeTitle } from "../lib/events.js"
+
+    let { open = $bindable(false) } = $props()
 </script>
 
-<div id="settings-drawer" hidden>
+<svelte:window onkeydown={event => event.key === "Escape" && (open = false)} />
+
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+<div id="settings-drawer" hidden={!open} onclick={event => event.target === event.currentTarget && (open = false)}>
     <div class="frame" id="settings-panel">
-        <div class="titlebar"><span class="title">Settings</span><div class="spacer"></div><button class="x" id="settings-close">&#10005;</button></div>
+        <div class="titlebar"><span class="title">Settings</span><div class="spacer"></div><button class="x" id="settings-close" onclick={() => (open = false)}>&#10005;</button></div>
 
         <Section title="From your save" class="needs-companion" deepId="settings-fromsave"></Section>
 
         <div id="settings-overrides">
             <Section title="Machines">
-                <Field label="Assemblers" lbl><div class="seg" id="asm-seg"></div></Field>
+                <AsmSeg />
                 <Field label="Machines"><span id="building_selector"></span></Field>
                 <Field label="Available"><span id="machine_allow"></span></Field>
                 <Field label="Quality"><div id="machine_quality"></div></Field>

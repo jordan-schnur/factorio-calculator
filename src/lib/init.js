@@ -6,12 +6,10 @@ import { getBuildings } from "./building.js"
 import { initDetails } from "./details.js"
 import { spec, resetSpec } from "./factory.js"
 import { initFlow } from "./flow.js"
-import { initFooter } from "./footer.js"
 import { initByproducts } from "./byproducts.js"
 import { formatSettings, loadSettings, writeHash, isOwnHash } from "./fragment.js"
 import { getFuel } from "./fuel.js"
 import { getItemGroups } from "./group.js"
-import { initHeader } from "./header.js"
 import { getSprites } from "./icon.js"
 import { getItems } from "./item.js"
 import { initItemTable } from "./itemtable.js"
@@ -152,10 +150,8 @@ function initModules() {
     initModulesSettings()
     initBoard()
     initSaveSettings()
-    initHeader()
     initItemTable()
     initDetails()
-    initFooter()
     initByproducts()
 }
 

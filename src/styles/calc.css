@@ -152,11 +152,6 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 #flow-container.hovering .elbl:not(.lit) { visibility: hidden; }
 #flow-container.hovering .elbl.lit { display: flex; color: #f1be64; }
 .lbl { color: #a8a8a8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
-/* header.js's renderAsmSeg needs the "Assemblers" label to carry .lbl (it
-   checks previousElementSibling.classList.contains("lbl") to hide the label
-   along with the seg when no dataset is loaded); this row's label otherwise
-   looks like every other .kv label, so cancel .lbl's uppercase styling here. */
-.kv .muted.lbl { text-transform: none; letter-spacing: 0; font-size: inherit; font-weight: inherit; }
 
 /* item table: one .sect header row per group, one .lrow per item, an
    optional .detail directly after an open .lrow */

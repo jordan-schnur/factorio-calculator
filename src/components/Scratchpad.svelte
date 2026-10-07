@@ -1,8 +1,10 @@
 <script>
     import Button from "./Button.svelte"
+
+    let { hidden } = $props()
 </script>
 
-<details id="scratchpad-frame" hidden><summary>Scratch pad</summary>
+<details id="scratchpad-frame" {hidden}><summary>Scratch pad</summary>
     <div style="display: flex; flex-direction: column; gap: 6px;">
         <div id="scratch-history"></div>
         <input class="num" id="scratch-input" placeholder="2 * 450 / 60" autocomplete="off">

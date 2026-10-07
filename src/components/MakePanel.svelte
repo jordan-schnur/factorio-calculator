@@ -1,6 +1,8 @@
 <script>
     import Button from "./Button.svelte"
 
+    let { intro } = $props()
+
     const EXAMPLES = [
         { item: "automation-science-pack", rate: 60, label: "Red science 60/min" },
         { item: "military-science-pack", rate: 60, label: "Military science 60/min" },
@@ -23,7 +25,7 @@
     ]
 </script>
 
-<div class="frame intro" id="make-panel">
+<div class={["frame", { intro }]} id="make-panel">
     <h2 class="title" id="intro-title">What do you want to make?</h2>
     <div class="make-row"><span class="title">Make</span>
         <div class="search-wrap"><input id="target-search" placeholder="red science 60, gears, blue chip 45" autocomplete="off"><div id="target-search-results"></div></div>

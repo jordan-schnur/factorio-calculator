@@ -8,3 +8,7 @@ export const plan = {
 export function renderPlan(spec, totals) {
     current = { spec, totals }
 }
+
+export function refresh() {
+    current = { ...current }
+}
