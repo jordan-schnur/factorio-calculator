@@ -6,7 +6,7 @@
     "test": "playwright test",
     "test:update": "playwright test --update-snapshots",
     "test:ui": "playwright test --ui",
-    "serve": "python3 -m http.server 8000"
+    "serve": "node tests/e2e/support/serve.mjs 8000"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0"

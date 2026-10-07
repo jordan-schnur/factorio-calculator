@@ -31,12 +31,15 @@ export class Calculator {
     // Open the page on a plan. `fragment` is everything after "#" (or ""),
     // `query` everything after "?". The landing background is off by default
     // (?bg=none): it shows screenshots in a random order.
-    // A second open() in the same test that only changes the fragment is a
-    // same-document navigation: the page re-reads the link on hashchange but
-    // keeps its DOM state (an open settings drawer stays open). For a real
-    // fresh boot, `page.goto("about:blank")` first.
+    // Every open() is a fresh boot, as if the link were pasted into a new
+    // tab: going straight from one fragment to another on the same page is
+    // a same-document navigation, which the page handles on hashchange while
+    // the old plan is still drawn, so ready() could read the previous plan.
+    // (Storage carries over, as it would in a real browser.) To test the
+    // hashchange path itself, use navigateHash().
     async open(fragment = "", { query = "bg=none", wait = true }: { query?: string; wait?: boolean } = {}) {
         let url = PAGE + (query ? "?" + query : "") + (fragment ? "#" + fragment : "")
+        if (this.page.url().startsWith("http")) await this.page.goto("about:blank")
         await this.page.goto(url)
         if (wait) await this.ready()
     }
@@ -56,6 +59,16 @@ export class Calculator {
             return intro > 0 || rows > 0 || nodes > 0
         }, { message: "page never settled on the intro, a table or a graph" }).toBe(true)
         await this.page.evaluate(() => document.fonts.ready)
+    }
+
+    // Change the fragment in place (a pasted link in the same tab, or
+    // back/forward) and wait until the page has drawn the new plan.
+    async navigateHash(fragment: string) {
+        let before = await this.page.locator("body").innerHTML()
+        await this.page.evaluate(f => { location.hash = f }, fragment)
+        await expect.poll(async () => (await this.page.locator("body").innerHTML()) !== before,
+            { message: "page never redrew after the hash changed" }).toBe(true)
+        await this.ready()
     }
 
     // --- Fragment ---------------------------------------------------------

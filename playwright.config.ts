@@ -56,7 +56,7 @@ export default defineConfig({
         },
     ],
     webServer: process.env.CALC_BASE_URL ? undefined : {
-        command: `python3 -m http.server ${PORT} --bind ${HOST}`,
+        command: `node tests/e2e/support/serve.mjs ${PORT} ${HOST}`,
         url: `${BASE_URL}/calc.html`,
         reuseExistingServer: true,
         stdout: "ignore",
