@@ -1,0 +1,211 @@
+{
+  "title": "Metallurgic science pack 60/min · Factorio Calculator",
+  "fragment": {
+    "data": "space-age-2-0-77",
+    "items": "metallurgic-science-pack:r:60",
+    "planet": "vulcanus",
+    "priority": "ammoniacal-solution=10,heavy-oil=10,water=10,lava=10;crude-oil=10,sulfuric-acid-geyser=10,lithium-brine=10,fluorine-vent=10,iron-ore=100,copper-ore=100,coal=100,stone=100,uranium-ore=100,tungsten-ore=100,calcite=100,scrap=100,yumako-tree=100,jellystem=100;D-lane-splitter=100,D-coin=100,D-electric-energy-interface=100,D-simple-entity-with-force=100,D-simple-entity-with-owner=100,D-infinity-cargo-wagon=100,D-burner-generator=100,D-linked-chest=100,D-proxy-container=100,D-linked-belt=100,D-one-way-valve=100,D-overflow-valve=100,D-top-up-valve=100,D-empty-module-slot=100,D-science=100,D-promethium-asteroid-chunk=100,D-blueprint=100,D-deconstruction-planner=100,D-blueprint-book=100,D-recycler=100,D-copper-bacteria=100,D-iron-bacteria=100,D-overgrowth-yumako-soil=100,D-overgrowth-jellynut-soil=100,D-space-science-pack=100,D-agricultural-science-pack=100,D-electromagnetic-science-pack=100,D-cryogenic-science-pack=100,D-oxide-asteroid-chunk=100,D-metallic-asteroid-chunk=100,D-carbonic-asteroid-chunk=100,D-thruster-fuel=100,D-thruster-oxidizer=100,D-biochamber=100,D-holmium-ore=100,D-electromagnetic-plant=100,D-lightning-collector=100,D-cryogenic-plant=100,D-fusion-reactor=100,D-fusion-generator=100,D-promethium-science-pack=100,D-tree-seed=100,D-raw-fish=100,D-artificial-yumako-soil=100,D-artificial-jellynut-soil=100,D-biter-egg=100,D-pentapod-egg=100,D-lightning-rod=100,D-quantum-processor=100,D-uranium-ore=100,D-crude-oil=100,D-scrap=100,D-lithium-brine=100,D-fluorine=100,D-ammoniacal-solution=100,D-yumako=100,D-jellynut=100,D-wood=100"
+  },
+  "footer": {
+    "totals": "45 machines · 20.9 MW",
+    "bring": "Everything is made here from raw ore, gas and water."
+  },
+  "rows": [
+    {
+      "item": "metallurgic-science-pack",
+      "group": "Build here",
+      "name": "Metallurgic science pack",
+      "badges": [
+        "target"
+      ],
+      "need": "60/min",
+      "belts": "1/15 belt",
+      "machines": "2 ×",
+      "machineName": "Foundry"
+    },
+    {
+      "item": "molten-copper",
+      "group": "Build here",
+      "name": "Molten copper from lava",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "2 ×",
+      "machineName": "Foundry"
+    },
+    {
+      "item": "tungsten-carbide",
+      "group": "Build here",
+      "name": "Tungsten carbide",
+      "badges": [],
+      "need": "120/min",
+      "belts": "1/8 belt",
+      "machines": "3 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "tungsten-plate",
+      "group": "Build here",
+      "name": "Tungsten plate",
+      "badges": [],
+      "need": "80/min",
+      "belts": "1/11 belt",
+      "machines": "3 ×",
+      "machineName": "Foundry"
+    },
+    {
+      "item": "molten-iron",
+      "group": "Build here",
+      "name": "Molten iron from lava",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Foundry"
+    },
+    {
+      "item": "carbon",
+      "group": "Build here",
+      "name": "Carbon",
+      "badges": [],
+      "need": "120/min",
+      "belts": "1/8 belt",
+      "machines": "2 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "tungsten-ore",
+      "group": "Mine or pipe in",
+      "name": "Tungsten ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "453.3/min",
+      "belts": "1/2 belt",
+      "machines": "16 ×",
+      "machineName": "Big mining drill"
+    },
+    {
+      "item": "coal",
+      "group": "Mine or pipe in",
+      "name": "Coal",
+      "badges": [
+        "mined"
+      ],
+      "need": "240/min",
+      "belts": "0.27 belts",
+      "machines": "8 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "calcite",
+      "group": "Mine or pipe in",
+      "name": "Calcite",
+      "badges": [
+        "mined"
+      ],
+      "need": "22.8/min",
+      "belts": "1/40 belt",
+      "machines": "1 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "sulfuric-acid",
+      "group": "Mine or pipe in",
+      "name": "Sulfuric acid",
+      "badges": [
+        "piped in"
+      ],
+      "need": "3600/min",
+      "belts": "pipe",
+      "machines": "6 ×",
+      "machineName": "Pumpjack"
+    },
+    {
+      "item": "lava",
+      "group": "Mine or pipe in",
+      "name": "Lava",
+      "badges": [
+        "piped in"
+      ],
+      "need": "11377.8/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "__leftover",
+      "name": "Left over",
+      "sub": "Nothing here uses it",
+      "rate": ""
+    },
+    {
+      "node": "calcite",
+      "name": "Calcite",
+      "sub": "1 × Electric mining drill",
+      "rate": "22.8/min"
+    },
+    {
+      "node": "carbon",
+      "name": "Carbon",
+      "sub": "2 × Chemical plant",
+      "rate": "120/min"
+    },
+    {
+      "node": "coal",
+      "name": "Coal",
+      "sub": "8 × Electric mining drill",
+      "rate": "240/min"
+    },
+    {
+      "node": "lava",
+      "name": "Lava",
+      "sub": "1 × Offshore pump",
+      "rate": "11377.8/min"
+    },
+    {
+      "node": "metallurgic-science-pack",
+      "name": "Metallurgic science pack",
+      "sub": "2 × Foundry",
+      "rate": "60/min"
+    },
+    {
+      "node": "molten-copper-from-lava",
+      "name": "Molten copper from lava",
+      "sub": "2 × Foundry",
+      "rate": ""
+    },
+    {
+      "node": "molten-iron-from-lava",
+      "name": "Molten iron from lava",
+      "sub": "1 × Foundry",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "sulfuric-acid-geyser",
+      "name": "Sulfuric acid",
+      "sub": "6 × Pumpjack",
+      "rate": "3600/min"
+    },
+    {
+      "node": "tungsten-carbide",
+      "name": "Tungsten carbide",
+      "sub": "3 × Assembling machine 2",
+      "rate": "120/min"
+    },
+    {
+      "node": "tungsten-ore",
+      "name": "Tungsten ore",
+      "sub": "16 × Big mining drill",
+      "rate": "453.3/min"
+    },
+    {
+      "node": "tungsten-plate",
+      "name": "Tungsten plate",
+      "sub": "3 × Foundry",
+      "rate": "80/min"
+    }
+  ]
+}

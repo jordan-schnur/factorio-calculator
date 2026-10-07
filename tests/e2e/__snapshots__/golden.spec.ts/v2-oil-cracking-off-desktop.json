@@ -1,0 +1,110 @@
+{
+  "title": "Plastic bar 60/min · Factorio Calculator",
+  "fragment": {
+    "data": "2-0-55",
+    "disable": "heavy-oil-cracking,light-oil-cracking",
+    "items": "plastic-bar:r:60"
+  },
+  "footer": {
+    "totals": "6 machines · 761.5 kW",
+    "bring": "Everything is made here from raw ore, gas and water."
+  },
+  "rows": [
+    {
+      "item": "plastic-bar",
+      "group": "Build here",
+      "name": "Plastic bar",
+      "badges": [
+        "target"
+      ],
+      "need": "60/min",
+      "belts": "1/15 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "heavy-oil",
+      "group": "Build here",
+      "name": "Advanced oil processing",
+      "badges": [],
+      "need": "3 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Oil refinery"
+    },
+    {
+      "item": "coal",
+      "group": "Mine or pipe in",
+      "name": "Coal",
+      "badges": [
+        "mined"
+      ],
+      "need": "30/min",
+      "belts": "1/30 belt",
+      "machines": "1 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "water",
+      "group": "Mine or pipe in",
+      "name": "Water",
+      "badges": [
+        "piped in"
+      ],
+      "need": "545.5/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    },
+    {
+      "item": "crude-oil",
+      "group": "Mine or pipe in",
+      "name": "Crude oil",
+      "badges": [
+        "piped in"
+      ],
+      "need": "1090.9/min",
+      "belts": "pipe",
+      "machines": "2 ×",
+      "machineName": "Pumpjack"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "__leftover",
+      "name": "Left over",
+      "sub": "Nothing here uses it",
+      "rate": ""
+    },
+    {
+      "node": "advanced-oil-processing",
+      "name": "Advanced oil processing",
+      "sub": "1 × Oil refinery",
+      "rate": ""
+    },
+    {
+      "node": "coal",
+      "name": "Coal",
+      "sub": "1 × Electric mining drill",
+      "rate": "30/min"
+    },
+    {
+      "node": "crude-oil",
+      "name": "Crude oil",
+      "sub": "2 × Pumpjack",
+      "rate": "1090.9/min"
+    },
+    {
+      "node": "plastic-bar",
+      "name": "Plastic bar",
+      "sub": "1 × Chemical plant",
+      "rate": "60/min"
+    },
+    {
+      "node": "water",
+      "name": "Water",
+      "sub": "1 × Offshore pump",
+      "rate": "545.5/min"
+    }
+  ]
+}

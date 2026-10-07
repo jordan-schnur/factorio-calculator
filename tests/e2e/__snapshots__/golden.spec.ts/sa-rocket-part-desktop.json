@@ -1,0 +1,380 @@
+{
+  "title": "Rocket part 10/min · Factorio Calculator",
+  "fragment": {
+    "data": "space-age-2-0-77",
+    "items": "rocket-part:r:10",
+    "priority": "ammoniacal-solution=10,heavy-oil=10,water=10,lava=10;crude-oil=10,sulfuric-acid-geyser=10,lithium-brine=10,fluorine-vent=10,iron-ore=100,copper-ore=100,coal=100,stone=100,uranium-ore=100,tungsten-ore=100,calcite=100,scrap=100,yumako-tree=100,jellystem=100;D-lane-splitter=100,D-coin=100,D-electric-energy-interface=100,D-simple-entity-with-force=100,D-simple-entity-with-owner=100,D-infinity-cargo-wagon=100,D-burner-generator=100,D-linked-chest=100,D-proxy-container=100,D-linked-belt=100,D-one-way-valve=100,D-overflow-valve=100,D-top-up-valve=100,D-empty-module-slot=100,D-science=100,D-promethium-asteroid-chunk=100,D-blueprint=100,D-deconstruction-planner=100,D-blueprint-book=100,D-recycler=100,D-copper-bacteria=100,D-iron-bacteria=100,D-overgrowth-yumako-soil=100,D-overgrowth-jellynut-soil=100,D-space-science-pack=100,D-metallurgic-science-pack=100,D-agricultural-science-pack=100,D-electromagnetic-science-pack=100,D-cryogenic-science-pack=100,D-oxide-asteroid-chunk=100,D-metallic-asteroid-chunk=100,D-carbonic-asteroid-chunk=100,D-thruster-fuel=100,D-thruster-oxidizer=100,D-foundry=100,D-turbo-underground-belt=100,D-turbo-splitter=100,D-big-mining-drill=100,D-biochamber=100,D-holmium-ore=100,D-electromagnetic-plant=100,D-lightning-collector=100,D-cryogenic-plant=100,D-fusion-reactor=100,D-fusion-generator=100,D-promethium-science-pack=100,D-artificial-yumako-soil=100,D-artificial-jellynut-soil=100,D-turbo-transport-belt=100,D-pentapod-egg=100,D-lightning-rod=100,D-quantum-processor=100,D-tungsten-ore=100,D-calcite=100,D-scrap=100,D-lithium-brine=100,D-fluorine=100,D-ammoniacal-solution=100,D-lava=100,D-yumako=100,D-jellynut=100"
+  },
+  "footer": {
+    "totals": "104 machines · 12.3 MW",
+    "bring": "Everything is made here from raw ore, gas and water."
+  },
+  "rows": [
+    {
+      "item": "rocket-part",
+      "group": "Build here",
+      "name": "Rocket part",
+      "badges": [
+        "target"
+      ],
+      "need": "10/min",
+      "belts": "1/90 belt",
+      "machines": "1 ×",
+      "machineName": "Rocket silo"
+    },
+    {
+      "item": "processing-unit",
+      "group": "Build here",
+      "name": "Processing unit",
+      "badges": [],
+      "need": "10/min",
+      "belts": "1/90 belt",
+      "machines": "3 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "low-density-structure",
+      "group": "Build here",
+      "name": "Low density structure",
+      "badges": [],
+      "need": "10/min",
+      "belts": "1/90 belt",
+      "machines": "5 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "rocket-fuel",
+      "group": "Build here",
+      "name": "Rocket fuel",
+      "badges": [],
+      "need": "10/min",
+      "belts": "1/90 belt",
+      "machines": "4 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "solid-fuel",
+      "group": "Build here",
+      "name": "Solid fuel",
+      "badges": [],
+      "need": "100/min",
+      "belts": "1/9 belt",
+      "machines": "2 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "sulfuric-acid",
+      "group": "Build here",
+      "name": "Sulfuric acid",
+      "badges": [],
+      "need": "50/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "advanced-circuit",
+      "group": "Build here",
+      "name": "Advanced circuit",
+      "badges": [],
+      "need": "20/min",
+      "belts": "1/45 belt",
+      "machines": "4 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "steel-plate",
+      "group": "Build here",
+      "name": "Steel plate",
+      "badges": [],
+      "need": "20/min",
+      "belts": "1/45 belt",
+      "machines": "3 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "electronic-circuit",
+      "group": "Build here",
+      "name": "Electronic circuit",
+      "badges": [],
+      "need": "240/min",
+      "belts": "0.27 belts",
+      "machines": "4 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "plastic-bar",
+      "group": "Build here",
+      "name": "Plastic bar",
+      "badges": [],
+      "need": "90/min",
+      "belts": "1/10 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "sulfur",
+      "group": "Build here",
+      "name": "Sulfur",
+      "badges": [],
+      "need": "5/min",
+      "belts": "1/180 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "petroleum-gas",
+      "group": "Build here",
+      "name": "Petroleum gas",
+      "badges": [],
+      "need": "975/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "copper-cable",
+      "group": "Build here",
+      "name": "Copper cable",
+      "badges": [],
+      "need": "800/min",
+      "belts": "8/9 belt",
+      "machines": "7 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "iron-plate",
+      "group": "Build here",
+      "name": "Iron plate",
+      "badges": [],
+      "need": "341/min",
+      "belts": "3/8 belt",
+      "machines": "10 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "light-oil",
+      "group": "Build here",
+      "name": "Light oil",
+      "badges": [],
+      "need": "1117.0/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "copper-plate",
+      "group": "Build here",
+      "name": "Copper plate",
+      "badges": [],
+      "need": "600/min",
+      "belts": "2/3 belt",
+      "machines": "16 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "heavy-oil",
+      "group": "Build here",
+      "name": "Advanced oil processing",
+      "badges": [],
+      "need": "3 outputs",
+      "belts": "",
+      "machines": "2 ×",
+      "machineName": "Oil refinery"
+    },
+    {
+      "item": "iron-ore",
+      "group": "Mine or pipe in",
+      "name": "Iron ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "341/min",
+      "belts": "3/8 belt",
+      "machines": "12 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "copper-ore",
+      "group": "Mine or pipe in",
+      "name": "Copper ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "600/min",
+      "belts": "2/3 belt",
+      "machines": "20 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "coal",
+      "group": "Mine or pipe in",
+      "name": "Coal",
+      "badges": [
+        "mined"
+      ],
+      "need": "45/min",
+      "belts": "1/20 belt",
+      "machines": "2 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "crude-oil",
+      "group": "Mine or pipe in",
+      "name": "Crude oil",
+      "badges": [
+        "piped in"
+      ],
+      "need": "1752.1/min",
+      "belts": "pipe",
+      "machines": "3 ×",
+      "machineName": "Pumpjack"
+    },
+    {
+      "item": "water",
+      "group": "Mine or pipe in",
+      "name": "Water",
+      "badges": [
+        "piped in"
+      ],
+      "need": "1396.6/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "advanced-circuit",
+      "name": "Advanced circuit",
+      "sub": "4 × Assembling machine 1",
+      "rate": "20/min"
+    },
+    {
+      "node": "advanced-oil-processing",
+      "name": "Advanced oil processing",
+      "sub": "2 × Oil refinery",
+      "rate": "3 outputs"
+    },
+    {
+      "node": "coal",
+      "name": "Coal",
+      "sub": "2 × Electric mining drill",
+      "rate": "45/min"
+    },
+    {
+      "node": "copper-cable",
+      "name": "Copper cable",
+      "sub": "7 × Assembling machine 1",
+      "rate": "800/min"
+    },
+    {
+      "node": "copper-ore",
+      "name": "Copper ore",
+      "sub": "20 × Electric mining drill",
+      "rate": "600/min"
+    },
+    {
+      "node": "copper-plate",
+      "name": "Copper plate",
+      "sub": "16 × Electric furnace",
+      "rate": "600/min"
+    },
+    {
+      "node": "crude-oil",
+      "name": "Crude oil",
+      "sub": "3 × Pumpjack",
+      "rate": "1752.1/min"
+    },
+    {
+      "node": "electronic-circuit",
+      "name": "Electronic circuit",
+      "sub": "4 × Assembling machine 1",
+      "rate": "240/min"
+    },
+    {
+      "node": "heavy-oil-cracking",
+      "name": "Light oil",
+      "sub": "1 × Chemical plant",
+      "rate": "328.5/min"
+    },
+    {
+      "node": "iron-ore",
+      "name": "Iron ore",
+      "sub": "12 × Electric mining drill",
+      "rate": "341/min"
+    },
+    {
+      "node": "iron-plate",
+      "name": "Iron plate",
+      "sub": "10 × Electric furnace",
+      "rate": "341/min"
+    },
+    {
+      "node": "light-oil-cracking",
+      "name": "Petroleum gas",
+      "sub": "1 × Chemical plant",
+      "rate": "11.3/min"
+    },
+    {
+      "node": "low-density-structure",
+      "name": "Low density structure",
+      "sub": "5 × Assembling machine 1",
+      "rate": "10/min"
+    },
+    {
+      "node": "plastic-bar",
+      "name": "Plastic bar",
+      "sub": "1 × Chemical plant",
+      "rate": "90/min"
+    },
+    {
+      "node": "processing-unit",
+      "name": "Processing unit",
+      "sub": "3 × Assembling machine 2",
+      "rate": "10/min"
+    },
+    {
+      "node": "rocket-fuel",
+      "name": "Rocket fuel",
+      "sub": "4 × Assembling machine 2",
+      "rate": "10/min"
+    },
+    {
+      "node": "rocket-part",
+      "name": "Rocket part",
+      "sub": "1 × Rocket silo",
+      "rate": "10/min"
+    },
+    {
+      "node": "solid-fuel-from-light-oil",
+      "name": "Solid fuel",
+      "sub": "2 × Chemical plant",
+      "rate": "100/min"
+    },
+    {
+      "node": "steel-plate",
+      "name": "Steel plate",
+      "sub": "3 × Electric furnace",
+      "rate": "20/min"
+    },
+    {
+      "node": "sulfur",
+      "name": "Sulfur",
+      "sub": "1 × Chemical plant",
+      "rate": "5/min"
+    },
+    {
+      "node": "sulfuric-acid",
+      "name": "Sulfuric acid",
+      "sub": "1 × Chemical plant",
+      "rate": "50/min"
+    },
+    {
+      "node": "water",
+      "name": "Water",
+      "sub": "1 × Offshore pump",
+      "rate": "1396.6/min"
+    }
+  ]
+}

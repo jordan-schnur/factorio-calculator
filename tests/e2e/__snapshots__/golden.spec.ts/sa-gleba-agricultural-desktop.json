@@ -1,0 +1,169 @@
+{
+  "title": "Agricultural science pack 60/min · Factorio Calculator",
+  "fragment": {
+    "data": "space-age-2-0-77",
+    "items": "agricultural-science-pack:r:60",
+    "planet": "gleba",
+    "priority": "ammoniacal-solution=10,heavy-oil=10,water=10,lava=10;crude-oil=10,sulfuric-acid-geyser=10,lithium-brine=10,fluorine-vent=10,iron-ore=100,copper-ore=100,coal=100,stone=100,uranium-ore=100,tungsten-ore=100,calcite=100,scrap=100,yumako-tree=100,jellystem=100;D-lane-splitter=100,D-coin=100,D-electric-energy-interface=100,D-simple-entity-with-force=100,D-simple-entity-with-owner=100,D-infinity-cargo-wagon=100,D-burner-generator=100,D-linked-chest=100,D-proxy-container=100,D-linked-belt=100,D-one-way-valve=100,D-overflow-valve=100,D-top-up-valve=100,D-empty-module-slot=100,D-science=100,D-promethium-asteroid-chunk=100,D-blueprint=100,D-deconstruction-planner=100,D-blueprint-book=100,D-recycler=100,D-space-science-pack=100,D-metallurgic-science-pack=100,D-electromagnetic-science-pack=100,D-cryogenic-science-pack=100,D-oxide-asteroid-chunk=100,D-metallic-asteroid-chunk=100,D-carbonic-asteroid-chunk=100,D-thruster-fuel=100,D-thruster-oxidizer=100,D-foundry=100,D-turbo-underground-belt=100,D-turbo-splitter=100,D-big-mining-drill=100,D-holmium-ore=100,D-electromagnetic-plant=100,D-lightning-collector=100,D-cryogenic-plant=100,D-fusion-reactor=100,D-fusion-generator=100,D-promethium-science-pack=100,D-tree-seed=100,D-raw-fish=100,D-biter-egg=100,D-turbo-transport-belt=100,D-lightning-rod=100,D-quantum-processor=100,D-uranium-ore=100,D-crude-oil=100,D-tungsten-ore=100,D-calcite=100,D-scrap=100,D-lithium-brine=100,D-fluorine=100,D-ammoniacal-solution=100,D-lava=100,D-wood=100"
+  },
+  "footer": {
+    "totals": "14 machines · 3.6 MW",
+    "bring": "Everything is made here from raw ore, gas and water."
+  },
+  "rows": [
+    {
+      "item": "agricultural-science-pack",
+      "group": "Build here",
+      "name": "Agricultural science pack",
+      "badges": [
+        "target"
+      ],
+      "need": "60/min",
+      "belts": "1/15 belt",
+      "machines": "2 ×",
+      "machineName": "Biochamber"
+    },
+    {
+      "item": "pentapod-egg",
+      "group": "Build here",
+      "name": "Pentapod egg",
+      "badges": [],
+      "need": "66.7/min",
+      "belts": "1/14 belt",
+      "machines": "4 ×",
+      "machineName": "Biochamber"
+    },
+    {
+      "item": "yumako-seed",
+      "group": "Build here",
+      "name": "Yumako processing",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "3 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "jellynut-seed",
+      "group": "Build here",
+      "name": "Jellynut processing",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "2 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "nutrients",
+      "group": "Build here",
+      "name": "Nutrients",
+      "badges": [],
+      "need": "800/min",
+      "belts": "8/9 belt",
+      "machines": "1 ×",
+      "machineName": "Biochamber"
+    },
+    {
+      "item": "bioflux",
+      "group": "Build here",
+      "name": "Bioflux",
+      "badges": [],
+      "need": "106.7/min",
+      "belts": "1/8 belt",
+      "machines": "1 ×",
+      "machineName": "Biochamber"
+    },
+    {
+      "item": "yumako",
+      "group": "Mine or pipe in",
+      "name": "Yumako",
+      "badges": [
+        "mined"
+      ],
+      "need": "133.3/min",
+      "belts": "1/7 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "jellynut",
+      "group": "Mine or pipe in",
+      "name": "Jellynut",
+      "badges": [
+        "mined"
+      ],
+      "need": "53.3/min",
+      "belts": "1/17 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "water",
+      "group": "Mine or pipe in",
+      "name": "Water",
+      "badges": [
+        "piped in"
+      ],
+      "need": "1600/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "agricultural-science-pack",
+      "name": "Agricultural science pack",
+      "sub": "2 × Biochamber",
+      "rate": "60/min"
+    },
+    {
+      "node": "bioflux",
+      "name": "Bioflux",
+      "sub": "1 × Biochamber",
+      "rate": "106.7/min"
+    },
+    {
+      "node": "jellynut-processing",
+      "name": "Jellynut processing",
+      "sub": "2 × Assembling machine 2",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "jellystem",
+      "name": "Jellynut",
+      "sub": "",
+      "rate": "53.3/min"
+    },
+    {
+      "node": "nutrients-from-bioflux",
+      "name": "Nutrients",
+      "sub": "1 × Biochamber",
+      "rate": "800/min"
+    },
+    {
+      "node": "pentapod-egg",
+      "name": "Pentapod egg",
+      "sub": "4 × Biochamber",
+      "rate": "66.7/min"
+    },
+    {
+      "node": "water",
+      "name": "Water",
+      "sub": "1 × Offshore pump",
+      "rate": "1600/min"
+    },
+    {
+      "node": "yumako-processing",
+      "name": "Yumako processing",
+      "sub": "3 × Assembling machine 2",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "yumako-tree",
+      "name": "Yumako",
+      "sub": "",
+      "rate": "133.3/min"
+    }
+  ]
+}

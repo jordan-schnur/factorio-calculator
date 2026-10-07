@@ -1,0 +1,191 @@
+{
+  "title": "Space science pack 60/min · Factorio Calculator",
+  "fragment": {
+    "data": "space-age-2-0-77",
+    "items": "space-science-pack:r:60",
+    "planet": "space-platform",
+    "priority": "ammoniacal-solution=10,heavy-oil=10,water=10,lava=10;crude-oil=10,sulfuric-acid-geyser=10,lithium-brine=10,fluorine-vent=10,iron-ore=100,copper-ore=100,coal=100,stone=100,uranium-ore=100,tungsten-ore=100,calcite=100,scrap=100,yumako-tree=100,jellystem=100;D-lane-splitter=100,D-coin=100,D-electric-energy-interface=100,D-simple-entity-with-force=100,D-simple-entity-with-owner=100,D-infinity-cargo-wagon=100,D-burner-generator=100,D-linked-chest=100,D-proxy-container=100,D-linked-belt=100,D-one-way-valve=100,D-overflow-valve=100,D-top-up-valve=100,D-empty-module-slot=100,D-science=100,D-promethium-asteroid-chunk=100,D-blueprint=100,D-deconstruction-planner=100,D-blueprint-book=100,D-recycler=100,D-copper-bacteria=100,D-iron-bacteria=100,D-overgrowth-yumako-soil=100,D-overgrowth-jellynut-soil=100,D-metallurgic-science-pack=100,D-agricultural-science-pack=100,D-electromagnetic-science-pack=100,D-cryogenic-science-pack=100,D-foundry=100,D-turbo-underground-belt=100,D-turbo-splitter=100,D-big-mining-drill=100,D-biochamber=100,D-holmium-ore=100,D-electromagnetic-plant=100,D-lightning-collector=100,D-cryogenic-plant=100,D-fusion-reactor=100,D-fusion-generator=100,D-tree-seed=100,D-raw-fish=100,D-artificial-yumako-soil=100,D-artificial-jellynut-soil=100,D-biter-egg=100,D-turbo-transport-belt=100,D-pentapod-egg=100,D-lightning-rod=100,D-uranium-ore=100,D-crude-oil=100,D-tungsten-ore=100,D-scrap=100,D-lithium-brine=100,D-fluorine=100,D-ammoniacal-solution=100,D-lava=100,D-yumako=100,D-jellynut=100,D-wood=100"
+  },
+  "footer": {
+    "totals": "10 machines · 1.1 MW",
+    "bring": "Brought in: iron bacteria 24/min, raw fish 2.4/min, ammoniacal solution 120/min"
+  },
+  "rows": [
+    {
+      "item": "space-science-pack",
+      "group": "Build here",
+      "name": "Space science pack",
+      "badges": [
+        "target"
+      ],
+      "need": "60/min",
+      "belts": "1/15 belt",
+      "machines": "6 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "iron-plate",
+      "group": "Build here",
+      "name": "Iron plate",
+      "badges": [],
+      "need": "24/min",
+      "belts": "1/38 belt",
+      "machines": "1 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "carbon",
+      "group": "Build here",
+      "name": "Carbon",
+      "badges": [],
+      "need": "12/min",
+      "belts": "1/75 belt",
+      "machines": "1 ×",
+      "machineName": "Biochamber"
+    },
+    {
+      "item": "ice",
+      "group": "Build here",
+      "name": "Ammoniacal solution separation",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "spoilage",
+      "group": "Build here",
+      "name": "Spoilage",
+      "badges": [],
+      "need": "48/min",
+      "belts": "1/19 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "iron-ore",
+      "group": "Build here",
+      "name": "Iron ore",
+      "badges": [],
+      "need": "24/min",
+      "belts": "1/38 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "nutrients",
+      "group": "Build here",
+      "name": "Nutrients",
+      "badges": [],
+      "need": "48/min",
+      "belts": "1/19 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "iron-bacteria",
+      "group": "Bring in from another build",
+      "name": "Iron bacteria",
+      "badges": [
+        "brought in"
+      ],
+      "need": "24/min",
+      "belts": "1/38 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "raw-fish",
+      "group": "Bring in from another build",
+      "name": "Raw fish",
+      "badges": [
+        "brought in"
+      ],
+      "need": "2.4/min",
+      "belts": "1/375 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "ammoniacal-solution",
+      "group": "Bring in from another build",
+      "name": "Ammoniacal solution",
+      "badges": [
+        "brought in"
+      ],
+      "need": "120/min",
+      "belts": "pipe",
+      "machines": "",
+      "machineName": ""
+    }
+  ],
+  "nodes": [
+    {
+      "node": "__leftover",
+      "name": "Left over",
+      "sub": "Nothing here uses it",
+      "rate": ""
+    },
+    {
+      "node": "ammoniacal-solution-separation",
+      "name": "Ammoniacal solution separation",
+      "sub": "1 × Chemical plant",
+      "rate": ""
+    },
+    {
+      "node": "burnt-spoilage",
+      "name": "Carbon",
+      "sub": "1 × Biochamber",
+      "rate": "12/min"
+    },
+    {
+      "node": "in:ammoniacal-solution",
+      "name": "Ammoniacal solution",
+      "sub": "",
+      "rate": "120/min"
+    },
+    {
+      "node": "in:iron-bacteria",
+      "name": "Iron bacteria",
+      "sub": "",
+      "rate": "24/min"
+    },
+    {
+      "node": "in:raw-fish",
+      "name": "Raw fish",
+      "sub": "",
+      "rate": "2.4/min"
+    },
+    {
+      "node": "iron-bacteria-spoilage",
+      "name": "Iron ore",
+      "sub": "",
+      "rate": "24/min"
+    },
+    {
+      "node": "iron-plate",
+      "name": "Iron plate",
+      "sub": "1 × Electric furnace",
+      "rate": "24/min"
+    },
+    {
+      "node": "nutrients-from-fish",
+      "name": "Nutrients",
+      "sub": "1 × Assembling machine 2",
+      "rate": "48/min"
+    },
+    {
+      "node": "nutrients-spoilage",
+      "name": "Spoilage",
+      "sub": "",
+      "rate": "48/min"
+    },
+    {
+      "node": "space-science-pack",
+      "name": "Space science pack",
+      "sub": "6 × Assembling machine 1",
+      "rate": "60/min"
+    }
+  ]
+}

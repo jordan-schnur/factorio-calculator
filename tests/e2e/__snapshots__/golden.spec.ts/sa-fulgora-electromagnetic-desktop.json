@@ -1,0 +1,269 @@
+{
+  "title": "Electromagnetic science pack 60/min · Factorio Calculator",
+  "fragment": {
+    "data": "space-age-2-0-77",
+    "items": "electromagnetic-science-pack:r:60",
+    "planet": "fulgora",
+    "priority": "ammoniacal-solution=10,heavy-oil=10,water=10,lava=10;crude-oil=10,sulfuric-acid-geyser=10,lithium-brine=10,fluorine-vent=10,iron-ore=100,copper-ore=100,coal=100,stone=100,uranium-ore=100,tungsten-ore=100,calcite=100,scrap=100,yumako-tree=100,jellystem=100;D-lane-splitter=100,D-coin=100,D-electric-energy-interface=100,D-simple-entity-with-force=100,D-simple-entity-with-owner=100,D-infinity-cargo-wagon=100,D-burner-generator=100,D-linked-chest=100,D-proxy-container=100,D-linked-belt=100,D-one-way-valve=100,D-overflow-valve=100,D-top-up-valve=100,D-empty-module-slot=100,D-science=100,D-promethium-asteroid-chunk=100,D-blueprint=100,D-deconstruction-planner=100,D-blueprint-book=100,D-copper-bacteria=100,D-iron-bacteria=100,D-overgrowth-yumako-soil=100,D-overgrowth-jellynut-soil=100,D-space-science-pack=100,D-metallurgic-science-pack=100,D-agricultural-science-pack=100,D-cryogenic-science-pack=100,D-oxide-asteroid-chunk=100,D-metallic-asteroid-chunk=100,D-carbonic-asteroid-chunk=100,D-thruster-fuel=100,D-thruster-oxidizer=100,D-foundry=100,D-turbo-underground-belt=100,D-turbo-splitter=100,D-big-mining-drill=100,D-biochamber=100,D-cryogenic-plant=100,D-fusion-reactor=100,D-fusion-generator=100,D-promethium-science-pack=100,D-tree-seed=100,D-raw-fish=100,D-artificial-yumako-soil=100,D-artificial-jellynut-soil=100,D-biter-egg=100,D-turbo-transport-belt=100,D-pentapod-egg=100,D-quantum-processor=100,D-uranium-ore=100,D-crude-oil=100,D-tungsten-ore=100,D-calcite=100,D-lithium-brine=100,D-fluorine=100,D-ammoniacal-solution=100,D-lava=100,D-yumako=100,D-jellynut=100,D-wood=100"
+  },
+  "footer": {
+    "totals": "193 machines · 41.2 MW",
+    "bring": "Everything is made here from raw ore, gas and water."
+  },
+  "rows": [
+    {
+      "item": "electromagnetic-science-pack",
+      "group": "Build here",
+      "name": "Electromagnetic science pack",
+      "badges": [
+        "target"
+      ],
+      "need": "60/min",
+      "belts": "1/15 belt",
+      "machines": "4 ×",
+      "machineName": "Electromagnetic plant"
+    },
+    {
+      "item": "steel-plate",
+      "group": "Build here",
+      "name": "Low density structure recycling",
+      "badges": [],
+      "need": "3 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Recycler"
+    },
+    {
+      "item": "supercapacitor",
+      "group": "Build here",
+      "name": "Supercapacitor",
+      "badges": [],
+      "need": "40/min",
+      "belts": "1/23 belt",
+      "machines": "3 ×",
+      "machineName": "Electromagnetic plant"
+    },
+    {
+      "item": "accumulator",
+      "group": "Build here",
+      "name": "Accumulator",
+      "badges": [],
+      "need": "40/min",
+      "belts": "1/23 belt",
+      "machines": "14 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "electrolyte",
+      "group": "Build here",
+      "name": "Electrolyte",
+      "badges": [],
+      "need": "1266.7/min",
+      "belts": "pipe",
+      "machines": "4 ×",
+      "machineName": "Electromagnetic plant"
+    },
+    {
+      "item": "electronic-circuit",
+      "group": "Build here",
+      "name": "Processing unit recycling",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Recycler"
+    },
+    {
+      "item": "iron-plate",
+      "group": "Build here",
+      "name": "Iron plate",
+      "badges": [],
+      "need": "80/min",
+      "belts": "1/11 belt",
+      "machines": "1 ×",
+      "machineName": "Recycler"
+    },
+    {
+      "item": "superconductor",
+      "group": "Build here",
+      "name": "Superconductor",
+      "badges": [],
+      "need": "53.3/min",
+      "belts": "1/17 belt",
+      "machines": "1 ×",
+      "machineName": "Electromagnetic plant"
+    },
+    {
+      "item": "iron-gear-wheel",
+      "group": "Build here",
+      "name": "Scrap recycling",
+      "badges": [],
+      "need": "12 outputs",
+      "belts": "",
+      "machines": "44 ×",
+      "machineName": "Recycler"
+    },
+    {
+      "item": "light-oil",
+      "group": "Build here",
+      "name": "Light oil",
+      "badges": [],
+      "need": "88.9/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "holmium-plate",
+      "group": "Build here",
+      "name": "Holmium plate",
+      "badges": [],
+      "need": "71.1/min",
+      "belts": "1/13 belt",
+      "machines": "2 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "holmium-solution",
+      "group": "Build here",
+      "name": "Holmium solution",
+      "badges": [],
+      "need": "3266.7/min",
+      "belts": "pipe",
+      "machines": "6 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "water",
+      "group": "Build here",
+      "name": "Water",
+      "badges": [],
+      "need": "415.6/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "scrap",
+      "group": "Mine or pipe in",
+      "name": "Scrap",
+      "badges": [
+        "mined"
+      ],
+      "need": "6533.3/min",
+      "belts": "7 1/4 belts",
+      "machines": "109 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "heavy-oil",
+      "group": "Mine or pipe in",
+      "name": "Heavy oil",
+      "badges": [
+        "piped in"
+      ],
+      "need": "963.0/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "__leftover",
+      "name": "Left over",
+      "sub": "Nothing here uses it",
+      "rate": ""
+    },
+    {
+      "node": "accumulator",
+      "name": "Accumulator",
+      "sub": "14 × Assembling machine 1",
+      "rate": "40/min"
+    },
+    {
+      "node": "electrolyte",
+      "name": "Electrolyte",
+      "sub": "4 × Electromagnetic plant",
+      "rate": "1266.7/min"
+    },
+    {
+      "node": "electromagnetic-science-pack",
+      "name": "Electromagnetic science pack",
+      "sub": "4 × Electromagnetic plant",
+      "rate": "60/min"
+    },
+    {
+      "node": "heavy-oil",
+      "name": "Heavy oil",
+      "sub": "1 × Offshore pump",
+      "rate": "963.0/min"
+    },
+    {
+      "node": "heavy-oil-cracking",
+      "name": "Light oil",
+      "sub": "1 × Chemical plant",
+      "rate": "88.9/min"
+    },
+    {
+      "node": "holmium-plate",
+      "name": "Holmium plate",
+      "sub": "2 × Assembling machine 2",
+      "rate": "71.1/min"
+    },
+    {
+      "node": "holmium-solution",
+      "name": "Holmium solution",
+      "sub": "6 × Chemical plant",
+      "rate": "3266.7/min"
+    },
+    {
+      "node": "ice-melting",
+      "name": "Water",
+      "sub": "1 × Chemical plant",
+      "rate": "415.6/min"
+    },
+    {
+      "node": "iron-gear-wheel-recycling",
+      "name": "Iron plate",
+      "sub": "1 × Recycler",
+      "rate": "80/min"
+    },
+    {
+      "node": "low-density-structure-recycling",
+      "name": "Low density structure recycling",
+      "sub": "1 × Recycler",
+      "rate": ""
+    },
+    {
+      "node": "processing-unit-recycling",
+      "name": "Processing unit recycling",
+      "sub": "1 × Recycler",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "scrap",
+      "name": "Scrap",
+      "sub": "109 × Electric mining drill",
+      "rate": "6533.3/min"
+    },
+    {
+      "node": "scrap-recycling",
+      "name": "Scrap recycling",
+      "sub": "44 × Recycler",
+      "rate": ""
+    },
+    {
+      "node": "supercapacitor",
+      "name": "Supercapacitor",
+      "sub": "3 × Electromagnetic plant",
+      "rate": "40/min"
+    },
+    {
+      "node": "superconductor",
+      "name": "Superconductor",
+      "sub": "1 × Electromagnetic plant",
+      "rate": "53.3/min"
+    }
+  ]
+}

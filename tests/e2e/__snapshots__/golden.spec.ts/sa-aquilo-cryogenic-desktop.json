@@ -1,0 +1,327 @@
+{
+  "title": "Cryogenic science pack 60/min · Factorio Calculator",
+  "fragment": {
+    "data": "space-age-2-0-77",
+    "items": "cryogenic-science-pack:r:60",
+    "planet": "aquilo",
+    "priority": "ammoniacal-solution=10,heavy-oil=10,water=10,lava=10;crude-oil=10,sulfuric-acid-geyser=10,lithium-brine=10,fluorine-vent=10,iron-ore=100,copper-ore=100,coal=100,stone=100,uranium-ore=100,tungsten-ore=100,calcite=100,scrap=100,yumako-tree=100,jellystem=100;D-lane-splitter=100,D-coin=100,D-electric-energy-interface=100,D-simple-entity-with-force=100,D-simple-entity-with-owner=100,D-infinity-cargo-wagon=100,D-burner-generator=100,D-linked-chest=100,D-proxy-container=100,D-linked-belt=100,D-one-way-valve=100,D-overflow-valve=100,D-top-up-valve=100,D-empty-module-slot=100,D-science=100,D-promethium-asteroid-chunk=100,D-blueprint=100,D-deconstruction-planner=100,D-blueprint-book=100,D-recycler=100,D-copper-bacteria=100,D-iron-bacteria=100,D-overgrowth-yumako-soil=100,D-overgrowth-jellynut-soil=100,D-space-science-pack=100,D-metallurgic-science-pack=100,D-agricultural-science-pack=100,D-electromagnetic-science-pack=100,D-oxide-asteroid-chunk=100,D-metallic-asteroid-chunk=100,D-carbonic-asteroid-chunk=100,D-thruster-fuel=100,D-thruster-oxidizer=100,D-foundry=100,D-turbo-underground-belt=100,D-turbo-splitter=100,D-big-mining-drill=100,D-biochamber=100,D-holmium-ore=100,D-electromagnetic-plant=100,D-lightning-collector=100,D-promethium-science-pack=100,D-tree-seed=100,D-raw-fish=100,D-artificial-yumako-soil=100,D-artificial-jellynut-soil=100,D-biter-egg=100,D-turbo-transport-belt=100,D-pentapod-egg=100,D-lightning-rod=100,D-uranium-ore=100,D-tungsten-ore=100,D-calcite=100,D-scrap=100,D-lava=100,D-yumako=100,D-jellynut=100,D-wood=100"
+  },
+  "footer": {
+    "totals": "44 machines · 21.6 MW",
+    "bring": "Brought in: holmium ore 5.1/min, lava 56.5/min, calcite 0.1/min"
+  },
+  "rows": [
+    {
+      "item": "cryogenic-science-pack",
+      "group": "Build here",
+      "name": "Cryogenic science pack",
+      "badges": [
+        "target"
+      ],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "10 ×",
+      "machineName": "Cryogenic plant"
+    },
+    {
+      "item": "molten-copper",
+      "group": "Build here",
+      "name": "Molten copper from lava",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Foundry"
+    },
+    {
+      "item": "fluoroketone-cold",
+      "group": "Build here",
+      "name": "Fluoroketone (Cold)",
+      "badges": [],
+      "need": "360/min",
+      "belts": "pipe",
+      "machines": "2 ×",
+      "machineName": "Cryogenic plant"
+    },
+    {
+      "item": "fluoroketone-hot",
+      "group": "Build here",
+      "name": "Fluoroketone (Hot)",
+      "badges": [],
+      "need": "360/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Cryogenic plant"
+    },
+    {
+      "item": "lithium-plate",
+      "group": "Build here",
+      "name": "Lithium plate",
+      "badges": [],
+      "need": "60/min",
+      "belts": "1/15 belt",
+      "machines": "4 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "solid-fuel",
+      "group": "Build here",
+      "name": "Solid fuel",
+      "badges": [],
+      "need": "3.6/min",
+      "belts": "1/250 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "lithium",
+      "group": "Build here",
+      "name": "Lithium",
+      "badges": [],
+      "need": "63.6/min",
+      "belts": "1/14 belt",
+      "machines": "5 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "holmium-plate",
+      "group": "Build here",
+      "name": "Holmium plate",
+      "badges": [],
+      "need": "12.7/min",
+      "belts": "1/71 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "holmium-solution",
+      "group": "Build here",
+      "name": "Holmium solution",
+      "badges": [],
+      "need": "254.4/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "water",
+      "group": "Build here",
+      "name": "Water",
+      "badges": [],
+      "need": "25.4/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "ice",
+      "group": "Build here",
+      "name": "Ammoniacal solution separation",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "holmium-ore",
+      "group": "Bring in from another build",
+      "name": "Holmium ore",
+      "badges": [
+        "brought in"
+      ],
+      "need": "5.1/min",
+      "belts": "1/177 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "lava",
+      "group": "Bring in from another build",
+      "name": "Lava",
+      "badges": [
+        "brought in"
+      ],
+      "need": "56.5/min",
+      "belts": "pipe",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "calcite",
+      "group": "Bring in from another build",
+      "name": "Calcite",
+      "badges": [
+        "brought in"
+      ],
+      "need": "0.1/min",
+      "belts": "1/7960 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "ammoniacal-solution",
+      "group": "Mine or pipe in",
+      "name": "Ammoniacal solution",
+      "badges": [
+        "piped in"
+      ],
+      "need": "1812.7/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    },
+    {
+      "item": "crude-oil",
+      "group": "Mine or pipe in",
+      "name": "Crude oil",
+      "badges": [
+        "piped in"
+      ],
+      "need": "21.6/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Pumpjack"
+    },
+    {
+      "item": "lithium-brine",
+      "group": "Mine or pipe in",
+      "name": "Lithium brine",
+      "badges": [
+        "piped in"
+      ],
+      "need": "636/min",
+      "belts": "pipe",
+      "machines": "11 ×",
+      "machineName": "Pumpjack"
+    },
+    {
+      "item": "fluorine",
+      "group": "Mine or pipe in",
+      "name": "Fluorine",
+      "badges": [
+        "piped in"
+      ],
+      "need": "180/min",
+      "belts": "pipe",
+      "machines": "3 ×",
+      "machineName": "Pumpjack"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "__leftover",
+      "name": "Left over",
+      "sub": "Nothing here uses it",
+      "rate": ""
+    },
+    {
+      "node": "ammoniacal-solution",
+      "name": "Ammoniacal solution",
+      "sub": "1 × Offshore pump",
+      "rate": "1812.7/min"
+    },
+    {
+      "node": "ammoniacal-solution-separation",
+      "name": "Ammoniacal solution separation",
+      "sub": "1 × Chemical plant",
+      "rate": ""
+    },
+    {
+      "node": "crude-oil",
+      "name": "Crude oil",
+      "sub": "1 × Pumpjack",
+      "rate": "21.6/min"
+    },
+    {
+      "node": "cryogenic-science-pack",
+      "name": "Cryogenic science pack",
+      "sub": "10 × Cryogenic plant",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "fluorine-vent",
+      "name": "Fluorine",
+      "sub": "3 × Pumpjack",
+      "rate": "180/min"
+    },
+    {
+      "node": "fluoroketone",
+      "name": "Fluoroketone (Hot)",
+      "sub": "1 × Cryogenic plant",
+      "rate": "180/min"
+    },
+    {
+      "node": "fluoroketone-cooling",
+      "name": "Fluoroketone (Cold)",
+      "sub": "2 × Cryogenic plant",
+      "rate": "360/min"
+    },
+    {
+      "node": "holmium-plate",
+      "name": "Holmium plate",
+      "sub": "1 × Assembling machine 2",
+      "rate": "12.7/min"
+    },
+    {
+      "node": "holmium-solution",
+      "name": "Holmium solution",
+      "sub": "1 × Chemical plant",
+      "rate": "254.4/min"
+    },
+    {
+      "node": "ice-melting",
+      "name": "Water",
+      "sub": "1 × Chemical plant",
+      "rate": "25.4/min"
+    },
+    {
+      "node": "in:calcite",
+      "name": "Calcite",
+      "sub": "",
+      "rate": "0.1/min"
+    },
+    {
+      "node": "in:holmium-ore",
+      "name": "Holmium ore",
+      "sub": "",
+      "rate": "5.1/min"
+    },
+    {
+      "node": "in:lava",
+      "name": "Lava",
+      "sub": "",
+      "rate": "56.5/min"
+    },
+    {
+      "node": "lithium",
+      "name": "Lithium",
+      "sub": "5 × Chemical plant",
+      "rate": "63.6/min"
+    },
+    {
+      "node": "lithium-brine",
+      "name": "Lithium brine",
+      "sub": "11 × Pumpjack",
+      "rate": "636/min"
+    },
+    {
+      "node": "lithium-plate",
+      "name": "Lithium plate",
+      "sub": "4 × Electric furnace",
+      "rate": "60/min"
+    },
+    {
+      "node": "molten-copper-from-lava",
+      "name": "Molten copper from lava",
+      "sub": "1 × Foundry",
+      "rate": ""
+    },
+    {
+      "node": "solid-fuel-from-ammonia",
+      "name": "Solid fuel",
+      "sub": "1 × Chemical plant",
+      "rate": "3.6/min"
+    }
+  ]
+}

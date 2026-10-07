@@ -1,0 +1,234 @@
+{
+  "title": "Uranium fuel cell 10/min · Factorio Calculator",
+  "fragment": {
+    "data": "space-age-2-0-77",
+    "items": "uranium-fuel-cell:r:10",
+    "priority": "ammoniacal-solution=10,heavy-oil=10,water=10,lava=10;crude-oil=10,sulfuric-acid-geyser=10,lithium-brine=10,fluorine-vent=10,iron-ore=100,copper-ore=100,coal=100,stone=100,uranium-ore=100,tungsten-ore=100,calcite=100,scrap=100,yumako-tree=100,jellystem=100;D-lane-splitter=100,D-coin=100,D-electric-energy-interface=100,D-simple-entity-with-force=100,D-simple-entity-with-owner=100,D-infinity-cargo-wagon=100,D-burner-generator=100,D-linked-chest=100,D-proxy-container=100,D-linked-belt=100,D-one-way-valve=100,D-overflow-valve=100,D-top-up-valve=100,D-empty-module-slot=100,D-science=100,D-promethium-asteroid-chunk=100,D-blueprint=100,D-deconstruction-planner=100,D-blueprint-book=100,D-recycler=100,D-copper-bacteria=100,D-iron-bacteria=100,D-overgrowth-yumako-soil=100,D-overgrowth-jellynut-soil=100,D-space-science-pack=100,D-metallurgic-science-pack=100,D-agricultural-science-pack=100,D-electromagnetic-science-pack=100,D-cryogenic-science-pack=100,D-oxide-asteroid-chunk=100,D-metallic-asteroid-chunk=100,D-carbonic-asteroid-chunk=100,D-thruster-fuel=100,D-thruster-oxidizer=100,D-foundry=100,D-turbo-underground-belt=100,D-turbo-splitter=100,D-big-mining-drill=100,D-biochamber=100,D-holmium-ore=100,D-electromagnetic-plant=100,D-lightning-collector=100,D-cryogenic-plant=100,D-fusion-reactor=100,D-fusion-generator=100,D-promethium-science-pack=100,D-artificial-yumako-soil=100,D-artificial-jellynut-soil=100,D-turbo-transport-belt=100,D-pentapod-egg=100,D-lightning-rod=100,D-quantum-processor=100,D-tungsten-ore=100,D-calcite=100,D-scrap=100,D-lithium-brine=100,D-fluorine=100,D-ammoniacal-solution=100,D-lava=100,D-yumako=100,D-jellynut=100"
+  },
+  "footer": {
+    "totals": "31 machines · 3.7 MW",
+    "bring": "Everything is made here from raw ore, gas and water."
+  },
+  "rows": [
+    {
+      "item": "uranium-fuel-cell",
+      "group": "Build here",
+      "name": "Uranium fuel cell",
+      "badges": [
+        "target"
+      ],
+      "need": "10/min",
+      "belts": "1/90 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "uranium-235",
+      "group": "Build here",
+      "name": "Uranium processing",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "5 ×",
+      "machineName": "Centrifuge"
+    },
+    {
+      "item": "uranium-235",
+      "group": "Build here",
+      "name": "Kovarex enrichment process",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Centrifuge"
+    },
+    {
+      "item": "sulfuric-acid",
+      "group": "Build here",
+      "name": "Sulfuric acid",
+      "badges": [],
+      "need": "217.0/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "sulfur",
+      "group": "Build here",
+      "name": "Sulfur",
+      "badges": [],
+      "need": "21.7/min",
+      "belts": "1/41 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "iron-plate",
+      "group": "Build here",
+      "name": "Iron plate",
+      "badges": [],
+      "need": "14.3/min",
+      "belts": "1/63 belt",
+      "machines": "1 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "petroleum-gas",
+      "group": "Build here",
+      "name": "Petroleum gas",
+      "badges": [],
+      "need": "325.4/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "light-oil",
+      "group": "Build here",
+      "name": "Light oil",
+      "badges": [],
+      "need": "212.8/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "heavy-oil",
+      "group": "Build here",
+      "name": "Advanced oil processing",
+      "badges": [],
+      "need": "3 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Oil refinery"
+    },
+    {
+      "item": "iron-ore",
+      "group": "Mine or pipe in",
+      "name": "Iron ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "14.3/min",
+      "belts": "1/63 belt",
+      "machines": "1 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "uranium-ore",
+      "group": "Mine or pipe in",
+      "name": "Uranium ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "217.0/min",
+      "belts": "1/4 belt",
+      "machines": "15 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "water",
+      "group": "Mine or pipe in",
+      "name": "Water",
+      "badges": [
+        "piped in"
+      ],
+      "need": "1201.6/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    },
+    {
+      "item": "crude-oil",
+      "group": "Mine or pipe in",
+      "name": "Crude oil",
+      "badges": [
+        "piped in"
+      ],
+      "need": "333.8/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Pumpjack"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "advanced-oil-processing",
+      "name": "Advanced oil processing",
+      "sub": "1 × Oil refinery",
+      "rate": "3 outputs"
+    },
+    {
+      "node": "crude-oil",
+      "name": "Crude oil",
+      "sub": "1 × Pumpjack",
+      "rate": "333.8/min"
+    },
+    {
+      "node": "heavy-oil-cracking",
+      "name": "Light oil",
+      "sub": "1 × Chemical plant",
+      "rate": "62.6/min"
+    },
+    {
+      "node": "iron-ore",
+      "name": "Iron ore",
+      "sub": "1 × Electric mining drill",
+      "rate": "14.3/min"
+    },
+    {
+      "node": "iron-plate",
+      "name": "Iron plate",
+      "sub": "1 × Electric furnace",
+      "rate": "14.3/min"
+    },
+    {
+      "node": "kovarex-enrichment-process",
+      "name": "Kovarex enrichment process",
+      "sub": "1 × Centrifuge",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "light-oil-cracking",
+      "name": "Petroleum gas",
+      "sub": "1 × Chemical plant",
+      "rate": "141.9/min"
+    },
+    {
+      "node": "sulfur",
+      "name": "Sulfur",
+      "sub": "1 × Chemical plant",
+      "rate": "21.7/min"
+    },
+    {
+      "node": "sulfuric-acid",
+      "name": "Sulfuric acid",
+      "sub": "1 × Chemical plant",
+      "rate": "217.0/min"
+    },
+    {
+      "node": "uranium-fuel-cell",
+      "name": "Uranium fuel cell",
+      "sub": "1 × Assembling machine 1",
+      "rate": "10/min"
+    },
+    {
+      "node": "uranium-ore",
+      "name": "Uranium ore",
+      "sub": "15 × Electric mining drill",
+      "rate": "217.0/min"
+    },
+    {
+      "node": "uranium-processing",
+      "name": "Uranium processing",
+      "sub": "5 × Centrifuge",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "water",
+      "name": "Water",
+      "sub": "1 × Offshore pump",
+      "rate": "1201.6/min"
+    }
+  ]
+}

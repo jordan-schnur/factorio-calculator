@@ -1,0 +1,347 @@
+{
+  "title": "Chemical science pack 30/min · Factorio Calculator",
+  "fragment": {
+    "data": "1-1-110x",
+    "items": "chemical-science-pack:r:30"
+  },
+  "footer": {
+    "totals": "145 machines · 17.0 MW",
+    "bring": "Everything is made here from raw ore, gas and water."
+  },
+  "rows": [
+    {
+      "item": "chemical-science-pack",
+      "group": "Build here",
+      "name": "Chemical science pack",
+      "badges": [
+        "target"
+      ],
+      "need": "30/min",
+      "belts": "1/30 belt",
+      "machines": "12 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "advanced-circuit",
+      "group": "Build here",
+      "name": "Advanced circuit",
+      "badges": [],
+      "need": "45/min",
+      "belts": "1/20 belt",
+      "machines": "9 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "engine-unit",
+      "group": "Build here",
+      "name": "Engine unit",
+      "badges": [],
+      "need": "30/min",
+      "belts": "1/30 belt",
+      "machines": "10 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "sulfur",
+      "group": "Build here",
+      "name": "Sulfur",
+      "badges": [],
+      "need": "15/min",
+      "belts": "1/60 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "plastic-bar",
+      "group": "Build here",
+      "name": "Plastic bar",
+      "badges": [],
+      "need": "180/min",
+      "belts": "1/5 belt",
+      "machines": "2 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "electronic-circuit",
+      "group": "Build here",
+      "name": "Electronic circuit",
+      "badges": [],
+      "need": "90/min",
+      "belts": "1/10 belt",
+      "machines": "2 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "pipe",
+      "group": "Build here",
+      "name": "Pipe",
+      "badges": [],
+      "need": "60/min",
+      "belts": "1/15 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "steel-plate",
+      "group": "Build here",
+      "name": "Steel plate",
+      "badges": [],
+      "need": "30/min",
+      "belts": "1/30 belt",
+      "machines": "8 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "iron-gear-wheel",
+      "group": "Build here",
+      "name": "Iron gear wheel",
+      "badges": [],
+      "need": "30/min",
+      "belts": "1/30 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "petroleum-gas",
+      "group": "Build here",
+      "name": "Petroleum gas",
+      "badges": [],
+      "need": "2025/min",
+      "belts": "pipe",
+      "machines": "2 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "copper-cable",
+      "group": "Build here",
+      "name": "Copper cable",
+      "badges": [],
+      "need": "1080/min",
+      "belts": "1 1/5 belts",
+      "machines": "9 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "iron-plate",
+      "group": "Build here",
+      "name": "Iron plate",
+      "badges": [],
+      "need": "720/min",
+      "belts": "4/5 belt",
+      "machines": "20 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "light-oil",
+      "group": "Build here",
+      "name": "Light oil",
+      "badges": [],
+      "need": "1324.0/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "copper-plate",
+      "group": "Build here",
+      "name": "Copper plate",
+      "badges": [],
+      "need": "540/min",
+      "belts": "3/5 belt",
+      "machines": "15 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "heavy-oil",
+      "group": "Build here",
+      "name": "Advanced oil processing",
+      "badges": [],
+      "need": "3 outputs",
+      "belts": "",
+      "machines": "2 ×",
+      "machineName": "Oil refinery"
+    },
+    {
+      "item": "iron-ore",
+      "group": "Mine or pipe in",
+      "name": "Iron ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "720/min",
+      "belts": "4/5 belt",
+      "machines": "24 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "copper-ore",
+      "group": "Mine or pipe in",
+      "name": "Copper ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "540/min",
+      "belts": "3/5 belt",
+      "machines": "18 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "coal",
+      "group": "Mine or pipe in",
+      "name": "Coal",
+      "badges": [
+        "mined"
+      ],
+      "need": "90/min",
+      "belts": "1/10 belt",
+      "machines": "3 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "water",
+      "group": "Mine or pipe in",
+      "name": "Water",
+      "badges": [
+        "piped in"
+      ],
+      "need": "2976.9/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    },
+    {
+      "item": "crude-oil",
+      "group": "Mine or pipe in",
+      "name": "Crude oil",
+      "badges": [
+        "piped in"
+      ],
+      "need": "2076.9/min",
+      "belts": "pipe",
+      "machines": "4 ×",
+      "machineName": "Pumpjack"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "advanced-circuit",
+      "name": "Advanced circuit",
+      "sub": "9 × Assembling machine 1",
+      "rate": "45/min"
+    },
+    {
+      "node": "advanced-oil-processing",
+      "name": "Advanced oil processing",
+      "sub": "2 × Oil refinery",
+      "rate": "3 outputs"
+    },
+    {
+      "node": "chemical-science-pack",
+      "name": "Chemical science pack",
+      "sub": "12 × Assembling machine 1",
+      "rate": "30/min"
+    },
+    {
+      "node": "coal",
+      "name": "Coal",
+      "sub": "3 × Electric mining drill",
+      "rate": "90/min"
+    },
+    {
+      "node": "copper-cable",
+      "name": "Copper cable",
+      "sub": "9 × Assembling machine 1",
+      "rate": "1080/min"
+    },
+    {
+      "node": "copper-ore",
+      "name": "Copper ore",
+      "sub": "18 × Electric mining drill",
+      "rate": "540/min"
+    },
+    {
+      "node": "copper-plate",
+      "name": "Copper plate",
+      "sub": "15 × Electric furnace",
+      "rate": "540/min"
+    },
+    {
+      "node": "crude-oil",
+      "name": "Crude oil",
+      "sub": "4 × Pumpjack",
+      "rate": "2076.9/min"
+    },
+    {
+      "node": "electronic-circuit",
+      "name": "Electronic circuit",
+      "sub": "2 × Assembling machine 1",
+      "rate": "90/min"
+    },
+    {
+      "node": "engine-unit",
+      "name": "Engine unit",
+      "sub": "10 × Assembling machine 1",
+      "rate": "30/min"
+    },
+    {
+      "node": "heavy-oil-cracking",
+      "name": "Light oil",
+      "sub": "1 × Chemical plant",
+      "rate": "389.4/min"
+    },
+    {
+      "node": "iron-gear-wheel",
+      "name": "Iron gear wheel",
+      "sub": "1 × Assembling machine 1",
+      "rate": "30/min"
+    },
+    {
+      "node": "iron-ore",
+      "name": "Iron ore",
+      "sub": "24 × Electric mining drill",
+      "rate": "720/min"
+    },
+    {
+      "node": "iron-plate",
+      "name": "Iron plate",
+      "sub": "20 × Electric furnace",
+      "rate": "720/min"
+    },
+    {
+      "node": "light-oil-cracking",
+      "name": "Petroleum gas",
+      "sub": "2 × Chemical plant",
+      "rate": "882.7/min"
+    },
+    {
+      "node": "pipe",
+      "name": "Pipe",
+      "sub": "1 × Assembling machine 1",
+      "rate": "60/min"
+    },
+    {
+      "node": "plastic-bar",
+      "name": "Plastic bar",
+      "sub": "2 × Chemical plant",
+      "rate": "180/min"
+    },
+    {
+      "node": "steel-plate",
+      "name": "Steel plate",
+      "sub": "8 × Electric furnace",
+      "rate": "30/min"
+    },
+    {
+      "node": "sulfur",
+      "name": "Sulfur",
+      "sub": "1 × Chemical plant",
+      "rate": "15/min"
+    },
+    {
+      "node": "water",
+      "name": "Water",
+      "sub": "1 × Offshore pump",
+      "rate": "2976.9/min"
+    }
+  ]
+}

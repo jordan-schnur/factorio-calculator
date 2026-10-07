@@ -1,0 +1,811 @@
+{
+  "title": "Quantum processor 10/min · Factorio Calculator",
+  "fragment": {
+    "data": "space-age-2-0-77",
+    "items": "quantum-processor:r:10",
+    "planet": "nauvis,vulcanus,gleba,fulgora,aquilo",
+    "priority": "ammoniacal-solution=10,heavy-oil=10,water=10,lava=10;crude-oil=10,sulfuric-acid-geyser=10,lithium-brine=10,fluorine-vent=10,iron-ore=100,copper-ore=100,coal=100,stone=100,uranium-ore=100,tungsten-ore=100,calcite=100,scrap=100,yumako-tree=100,jellystem=100;D-lane-splitter=100,D-coin=100,D-electric-energy-interface=100,D-simple-entity-with-force=100,D-simple-entity-with-owner=100,D-infinity-cargo-wagon=100,D-burner-generator=100,D-linked-chest=100,D-proxy-container=100,D-linked-belt=100,D-one-way-valve=100,D-overflow-valve=100,D-top-up-valve=100,D-empty-module-slot=100,D-science=100,D-promethium-asteroid-chunk=100,D-blueprint=100,D-deconstruction-planner=100,D-blueprint-book=100,D-space-science-pack=100,D-oxide-asteroid-chunk=100,D-metallic-asteroid-chunk=100,D-carbonic-asteroid-chunk=100,D-thruster-fuel=100,D-thruster-oxidizer=100,D-promethium-science-pack=100"
+  },
+  "footer": {
+    "totals": "50 machines · 8.0 MW",
+    "bring": "Everything is made here from raw ore, gas and water."
+  },
+  "rows": [
+    {
+      "item": "quantum-processor",
+      "group": "Build here",
+      "name": "Quantum processor",
+      "badges": [
+        "target"
+      ],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "2 ×",
+      "machineName": "Electromagnetic plant"
+    },
+    {
+      "item": "steel-plate",
+      "group": "Build here",
+      "name": "Low density structure recycling",
+      "badges": [],
+      "need": "3 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Recycler"
+    },
+    {
+      "item": "stone-brick",
+      "group": "Build here",
+      "name": "Concrete recycling",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Recycler"
+    },
+    {
+      "item": "fluoroketone-cold",
+      "group": "Build here",
+      "name": "Fluoroketone (Cold)",
+      "badges": [],
+      "need": "66.7/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Cryogenic plant"
+    },
+    {
+      "item": "yumako-seed",
+      "group": "Build here",
+      "name": "Yumako processing",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "jellynut-seed",
+      "group": "Build here",
+      "name": "Jellynut processing",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "fluoroketone-hot",
+      "group": "Build here",
+      "name": "Fluoroketone (Hot)",
+      "badges": [],
+      "need": "66.7/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Cryogenic plant"
+    },
+    {
+      "item": "lithium-plate",
+      "group": "Build here",
+      "name": "Lithium plate",
+      "badges": [],
+      "need": "13.3/min",
+      "belts": "1/68 belt",
+      "machines": "1 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "tungsten-carbide",
+      "group": "Build here",
+      "name": "Tungsten carbide",
+      "badges": [],
+      "need": "6.7/min",
+      "belts": "1/135 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "processing-unit",
+      "group": "Build here",
+      "name": "Processing unit",
+      "badges": [],
+      "need": "6.7/min",
+      "belts": "1/135 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "superconductor",
+      "group": "Build here",
+      "name": "Superconductor",
+      "badges": [],
+      "need": "6.7/min",
+      "belts": "1/135 belt",
+      "machines": "1 ×",
+      "machineName": "Electromagnetic plant"
+    },
+    {
+      "item": "carbon-fiber",
+      "group": "Build here",
+      "name": "Carbon fiber",
+      "badges": [],
+      "need": "6.7/min",
+      "belts": "1/135 belt",
+      "machines": "1 ×",
+      "machineName": "Biochamber"
+    },
+    {
+      "item": "sulfuric-acid",
+      "group": "Build here",
+      "name": "Sulfuric acid",
+      "badges": [],
+      "need": "80.2/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "electronic-circuit",
+      "group": "Build here",
+      "name": "Electronic circuit",
+      "badges": [],
+      "need": "54.0/min",
+      "belts": "1/17 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "electronic-circuit",
+      "group": "Build here",
+      "name": "Advanced circuit recycling",
+      "badges": [],
+      "need": "3 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Recycler"
+    },
+    {
+      "item": "lithium",
+      "group": "Build here",
+      "name": "Lithium",
+      "badges": [],
+      "need": "13.7/min",
+      "belts": "1/66 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "carbon",
+      "group": "Build here",
+      "name": "Carbon",
+      "badges": [],
+      "need": "11.1/min",
+      "belts": "1/81 belt",
+      "machines": "1 ×",
+      "machineName": "Biochamber"
+    },
+    {
+      "item": "copper-cable",
+      "group": "Build here",
+      "name": "Copper cable",
+      "badges": [],
+      "need": "161.3/min",
+      "belts": "0.18 belts",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "copper-cable",
+      "group": "Build here",
+      "name": "Copper cable",
+      "badges": [],
+      "need": "161.3/min",
+      "belts": "0.18 belts",
+      "machines": "1 ×",
+      "machineName": "Foundry"
+    },
+    {
+      "item": "iron-plate",
+      "group": "Build here",
+      "name": "Iron plate",
+      "badges": [],
+      "need": "55.4/min",
+      "belts": "1/16 belt",
+      "machines": "1 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "iron-plate",
+      "group": "Build here",
+      "name": "Iron plate",
+      "badges": [],
+      "need": "55.4/min",
+      "belts": "1/16 belt",
+      "machines": "1 ×",
+      "machineName": "Recycler"
+    },
+    {
+      "item": "iron-plate",
+      "group": "Build here",
+      "name": "Battery recycling",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Recycler"
+    },
+    {
+      "item": "spoilage",
+      "group": "Build here",
+      "name": "Spoilage",
+      "badges": [],
+      "need": "44.4/min",
+      "belts": "1/20 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "sulfur",
+      "group": "Build here",
+      "name": "Sulfur",
+      "badges": [],
+      "need": "8.0/min",
+      "belts": "1/112 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "holmium-plate",
+      "group": "Build here",
+      "name": "Holmium plate",
+      "badges": [],
+      "need": "5.0/min",
+      "belts": "1/182 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "molten-copper",
+      "group": "Build here",
+      "name": "Molten copper",
+      "badges": [],
+      "need": "225.8/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Foundry"
+    },
+    {
+      "item": "petroleum-gas",
+      "group": "Build here",
+      "name": "Petroleum gas",
+      "badges": [],
+      "need": "120.3/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "holmium-solution",
+      "group": "Build here",
+      "name": "Holmium solution",
+      "badges": [],
+      "need": "99.1/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "nutrients",
+      "group": "Build here",
+      "name": "Nutrients",
+      "badges": [],
+      "need": "44.4/min",
+      "belts": "1/20 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "iron-gear-wheel",
+      "group": "Build here",
+      "name": "Scrap recycling",
+      "badges": [],
+      "need": "12 outputs",
+      "belts": "",
+      "machines": "2 ×",
+      "machineName": "Recycler"
+    },
+    {
+      "item": "iron-ore",
+      "group": "Build here",
+      "name": "Iron ore",
+      "badges": [],
+      "need": "33.6/min",
+      "belts": "1/27 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "light-oil",
+      "group": "Build here",
+      "name": "Light oil",
+      "badges": [],
+      "need": "191.5/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "iron-bacteria",
+      "group": "Build here",
+      "name": "Iron bacteria",
+      "badges": [],
+      "need": "40.7/min",
+      "belts": "1/22 belt",
+      "machines": "1 ×",
+      "machineName": "Biochamber"
+    },
+    {
+      "item": "copper-ore",
+      "group": "Build here",
+      "name": "Copper ore",
+      "badges": [],
+      "need": "15.1/min",
+      "belts": "1/60 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "biter-egg",
+      "group": "Build here",
+      "name": "Biter egg",
+      "badges": [],
+      "need": "2.2/min",
+      "belts": "1/405 belt",
+      "machines": "1 ×",
+      "machineName": "Captive biter spawner"
+    },
+    {
+      "item": "water",
+      "group": "Build here",
+      "name": "Water",
+      "badges": [],
+      "need": "662.4/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "copper-bacteria",
+      "group": "Build here",
+      "name": "Copper bacteria",
+      "badges": [],
+      "need": "18.4/min",
+      "belts": "1/49 belt",
+      "machines": "1 ×",
+      "machineName": "Biochamber"
+    },
+    {
+      "item": "ice",
+      "group": "Build here",
+      "name": "Ammoniacal solution separation",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "bioflux",
+      "group": "Build here",
+      "name": "Bioflux",
+      "badges": [],
+      "need": "10.7/min",
+      "belts": "1/84 belt",
+      "machines": "1 ×",
+      "machineName": "Biochamber"
+    },
+    {
+      "item": "tungsten-ore",
+      "group": "Mine or pipe in",
+      "name": "Tungsten ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "13.3/min",
+      "belts": "1/68 belt",
+      "machines": "1 ×",
+      "machineName": "Big mining drill"
+    },
+    {
+      "item": "scrap",
+      "group": "Mine or pipe in",
+      "name": "Scrap",
+      "badges": [
+        "mined"
+      ],
+      "need": "198.2/min",
+      "belts": "2/9 belt",
+      "machines": "4 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "yumako",
+      "group": "Mine or pipe in",
+      "name": "Yumako",
+      "badges": [
+        "mined"
+      ],
+      "need": "35.6/min",
+      "belts": "1/25 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "jellynut",
+      "group": "Mine or pipe in",
+      "name": "Jellynut",
+      "badges": [
+        "mined"
+      ],
+      "need": "5.4/min",
+      "belts": "1/168 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "calcite",
+      "group": "Mine or pipe in",
+      "name": "Calcite",
+      "badges": [
+        "mined"
+      ],
+      "need": "0.3/min",
+      "belts": "1/2989 belt",
+      "machines": "1 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "ammoniacal-solution",
+      "group": "Mine or pipe in",
+      "name": "Ammoniacal solution",
+      "badges": [
+        "piped in"
+      ],
+      "need": "232.1/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    },
+    {
+      "item": "heavy-oil",
+      "group": "Mine or pipe in",
+      "name": "Heavy oil",
+      "badges": [
+        "piped in"
+      ],
+      "need": "255.3/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    },
+    {
+      "item": "lithium-brine",
+      "group": "Mine or pipe in",
+      "name": "Lithium brine",
+      "badges": [
+        "piped in"
+      ],
+      "need": "136.7/min",
+      "belts": "pipe",
+      "machines": "3 ×",
+      "machineName": "Pumpjack"
+    },
+    {
+      "item": "fluorine",
+      "group": "Mine or pipe in",
+      "name": "Fluorine",
+      "badges": [
+        "piped in"
+      ],
+      "need": "16.7/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Pumpjack"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "__leftover",
+      "name": "Left over",
+      "sub": "Nothing here uses it",
+      "rate": ""
+    },
+    {
+      "node": "advanced-circuit-recycling",
+      "name": "Advanced circuit recycling",
+      "sub": "1 × Recycler",
+      "rate": "3 outputs"
+    },
+    {
+      "node": "ammoniacal-solution",
+      "name": "Ammoniacal solution",
+      "sub": "1 × Offshore pump",
+      "rate": "232.1/min"
+    },
+    {
+      "node": "ammoniacal-solution-separation",
+      "name": "Ammoniacal solution separation",
+      "sub": "1 × Chemical plant",
+      "rate": ""
+    },
+    {
+      "node": "battery-recycling",
+      "name": "Battery recycling",
+      "sub": "1 × Recycler",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "bioflux",
+      "name": "Bioflux",
+      "sub": "1 × Biochamber",
+      "rate": "10.7/min"
+    },
+    {
+      "node": "biter-egg",
+      "name": "Biter egg",
+      "sub": "1 × Captive biter spawner",
+      "rate": "2.2/min"
+    },
+    {
+      "node": "burnt-spoilage",
+      "name": "Carbon",
+      "sub": "1 × Biochamber",
+      "rate": "11.1/min"
+    },
+    {
+      "node": "calcite",
+      "name": "Calcite",
+      "sub": "1 × Electric mining drill",
+      "rate": "0.3/min"
+    },
+    {
+      "node": "carbon-fiber",
+      "name": "Carbon fiber",
+      "sub": "1 × Biochamber",
+      "rate": "6.7/min"
+    },
+    {
+      "node": "casting-copper-cable",
+      "name": "Copper cable",
+      "sub": "1 × Foundry",
+      "rate": "135.5/min"
+    },
+    {
+      "node": "concrete-recycling",
+      "name": "Concrete recycling",
+      "sub": "1 × Recycler",
+      "rate": ""
+    },
+    {
+      "node": "copper-bacteria-cultivation",
+      "name": "Copper bacteria",
+      "sub": "1 × Biochamber",
+      "rate": "18.4/min"
+    },
+    {
+      "node": "copper-bacteria-spoilage",
+      "name": "Copper ore",
+      "sub": "",
+      "rate": "15.1/min"
+    },
+    {
+      "node": "copper-cable",
+      "name": "Copper cable",
+      "sub": "1 × Assembling machine 1",
+      "rate": "19.3/min"
+    },
+    {
+      "node": "electronic-circuit",
+      "name": "Electronic circuit",
+      "sub": "1 × Assembling machine 1",
+      "rate": "53.8/min"
+    },
+    {
+      "node": "fluorine-vent",
+      "name": "Fluorine",
+      "sub": "1 × Pumpjack",
+      "rate": "16.7/min"
+    },
+    {
+      "node": "fluoroketone",
+      "name": "Fluoroketone (Hot)",
+      "sub": "1 × Cryogenic plant",
+      "rate": "16.7/min"
+    },
+    {
+      "node": "fluoroketone-cooling",
+      "name": "Fluoroketone (Cold)",
+      "sub": "1 × Cryogenic plant",
+      "rate": "66.7/min"
+    },
+    {
+      "node": "heavy-oil",
+      "name": "Heavy oil",
+      "sub": "1 × Offshore pump",
+      "rate": "255.3/min"
+    },
+    {
+      "node": "heavy-oil-cracking",
+      "name": "Light oil",
+      "sub": "1 × Chemical plant",
+      "rate": "191.5/min"
+    },
+    {
+      "node": "holmium-plate",
+      "name": "Holmium plate",
+      "sub": "1 × Assembling machine 2",
+      "rate": "5.0/min"
+    },
+    {
+      "node": "holmium-solution",
+      "name": "Holmium solution",
+      "sub": "1 × Chemical plant",
+      "rate": "99.1/min"
+    },
+    {
+      "node": "ice-melting",
+      "name": "Water",
+      "sub": "1 × Chemical plant",
+      "rate": "662.4/min"
+    },
+    {
+      "node": "iron-bacteria-cultivation",
+      "name": "Iron bacteria",
+      "sub": "1 × Biochamber",
+      "rate": "40.7/min"
+    },
+    {
+      "node": "iron-bacteria-spoilage",
+      "name": "Iron ore",
+      "sub": "",
+      "rate": "33.3/min"
+    },
+    {
+      "node": "iron-gear-wheel-recycling",
+      "name": "Iron plate",
+      "sub": "1 × Recycler",
+      "rate": "19.8/min"
+    },
+    {
+      "node": "iron-plate",
+      "name": "Iron plate",
+      "sub": "1 × Electric furnace",
+      "rate": "33.6/min"
+    },
+    {
+      "node": "jellynut-processing",
+      "name": "Jellynut processing",
+      "sub": "1 × Assembling machine 2",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "jellystem",
+      "name": "Jellynut",
+      "sub": "",
+      "rate": "5.4/min"
+    },
+    {
+      "node": "light-oil-cracking",
+      "name": "Petroleum gas",
+      "sub": "1 × Chemical plant",
+      "rate": "120.3/min"
+    },
+    {
+      "node": "lithium",
+      "name": "Lithium",
+      "sub": "1 × Chemical plant",
+      "rate": "13.7/min"
+    },
+    {
+      "node": "lithium-brine",
+      "name": "Lithium brine",
+      "sub": "3 × Pumpjack",
+      "rate": "136.7/min"
+    },
+    {
+      "node": "lithium-plate",
+      "name": "Lithium plate",
+      "sub": "1 × Electric furnace",
+      "rate": "13.3/min"
+    },
+    {
+      "node": "low-density-structure-recycling",
+      "name": "Low density structure recycling",
+      "sub": "1 × Recycler",
+      "rate": ""
+    },
+    {
+      "node": "molten-copper",
+      "name": "Molten copper",
+      "sub": "1 × Foundry",
+      "rate": "225.8/min"
+    },
+    {
+      "node": "nutrients-from-biter-egg",
+      "name": "Nutrients",
+      "sub": "1 × Assembling machine 2",
+      "rate": "44.4/min"
+    },
+    {
+      "node": "nutrients-spoilage",
+      "name": "Spoilage",
+      "sub": "",
+      "rate": "44.4/min"
+    },
+    {
+      "node": "processing-unit",
+      "name": "Processing unit",
+      "sub": "1 × Assembling machine 2",
+      "rate": "2.7/min"
+    },
+    {
+      "node": "quantum-processor",
+      "name": "Quantum processor",
+      "sub": "2 × Electromagnetic plant",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "scrap",
+      "name": "Scrap",
+      "sub": "4 × Electric mining drill",
+      "rate": "198.2/min"
+    },
+    {
+      "node": "scrap-recycling",
+      "name": "Scrap recycling",
+      "sub": "2 × Recycler",
+      "rate": ""
+    },
+    {
+      "node": "sulfur",
+      "name": "Sulfur",
+      "sub": "1 × Chemical plant",
+      "rate": "8.0/min"
+    },
+    {
+      "node": "sulfuric-acid",
+      "name": "Sulfuric acid",
+      "sub": "1 × Chemical plant",
+      "rate": "80.2/min"
+    },
+    {
+      "node": "superconductor",
+      "name": "Superconductor",
+      "sub": "1 × Electromagnetic plant",
+      "rate": "6.7/min"
+    },
+    {
+      "node": "tungsten-carbide",
+      "name": "Tungsten carbide",
+      "sub": "1 × Assembling machine 2",
+      "rate": "6.7/min"
+    },
+    {
+      "node": "tungsten-ore",
+      "name": "Tungsten ore",
+      "sub": "1 × Big mining drill",
+      "rate": "13.3/min"
+    },
+    {
+      "node": "yumako-processing",
+      "name": "Yumako processing",
+      "sub": "1 × Assembling machine 2",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "yumako-tree",
+      "name": "Yumako",
+      "sub": "",
+      "rate": "35.6/min"
+    }
+  ]
+}

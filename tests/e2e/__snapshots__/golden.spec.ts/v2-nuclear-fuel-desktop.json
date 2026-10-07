@@ -1,0 +1,265 @@
+{
+  "title": "Nuclear fuel 1/min · Factorio Calculator",
+  "fragment": {
+    "data": "2-0-55",
+    "items": "nuclear-fuel:r:1"
+  },
+  "footer": {
+    "totals": "17 machines · 1.6 MW",
+    "bring": "Everything is made here from raw ore, gas and water."
+  },
+  "rows": [
+    {
+      "item": "nuclear-fuel",
+      "group": "Build here",
+      "name": "Nuclear fuel",
+      "badges": [
+        "target"
+      ],
+      "need": "1/min",
+      "belts": "1/900 belt",
+      "machines": "2 ×",
+      "machineName": "Centrifuge"
+    },
+    {
+      "item": "rocket-fuel",
+      "group": "Build here",
+      "name": "Rocket fuel",
+      "badges": [],
+      "need": "1/min",
+      "belts": "1/900 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 2"
+    },
+    {
+      "item": "uranium-235",
+      "group": "Build here",
+      "name": "Kovarex enrichment process",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Centrifuge"
+    },
+    {
+      "item": "uranium-235",
+      "group": "Build here",
+      "name": "Uranium processing",
+      "badges": [],
+      "need": "2 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Centrifuge"
+    },
+    {
+      "item": "solid-fuel",
+      "group": "Build here",
+      "name": "Solid fuel",
+      "badges": [],
+      "need": "10/min",
+      "belts": "1/90 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "solid-fuel",
+      "group": "Build here",
+      "name": "Solid fuel",
+      "badges": [],
+      "need": "10/min",
+      "belts": "1/90 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "light-oil",
+      "group": "Build here",
+      "name": "Light oil",
+      "badges": [],
+      "need": "92.4/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "heavy-oil",
+      "group": "Build here",
+      "name": "Advanced oil processing",
+      "badges": [],
+      "need": "3 outputs",
+      "belts": "",
+      "machines": "1 ×",
+      "machineName": "Oil refinery"
+    },
+    {
+      "item": "sulfuric-acid",
+      "group": "Build here",
+      "name": "Sulfuric acid",
+      "badges": [],
+      "need": "29.6/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "sulfur",
+      "group": "Build here",
+      "name": "Sulfur",
+      "badges": [],
+      "need": "3.0/min",
+      "belts": "1/304 belt",
+      "machines": "1 ×",
+      "machineName": "Chemical plant"
+    },
+    {
+      "item": "iron-plate",
+      "group": "Build here",
+      "name": "Iron plate",
+      "badges": [],
+      "need": "0.6/min",
+      "belts": "1/1521 belt",
+      "machines": "1 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "uranium-ore",
+      "group": "Mine or pipe in",
+      "name": "Uranium ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "29.6/min",
+      "belts": "1/30 belt",
+      "machines": "2 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "iron-ore",
+      "group": "Mine or pipe in",
+      "name": "Iron ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "0.6/min",
+      "belts": "1/1521 belt",
+      "machines": "1 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "water",
+      "group": "Mine or pipe in",
+      "name": "Water",
+      "badges": [
+        "piped in"
+      ],
+      "need": "203.1/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Offshore pump"
+    },
+    {
+      "item": "crude-oil",
+      "group": "Mine or pipe in",
+      "name": "Crude oil",
+      "badges": [
+        "piped in"
+      ],
+      "need": "144.9/min",
+      "belts": "pipe",
+      "machines": "1 ×",
+      "machineName": "Pumpjack"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "advanced-oil-processing",
+      "name": "Advanced oil processing",
+      "sub": "1 × Oil refinery",
+      "rate": "3 outputs"
+    },
+    {
+      "node": "crude-oil",
+      "name": "Crude oil",
+      "sub": "1 × Pumpjack",
+      "rate": "144.9/min"
+    },
+    {
+      "node": "heavy-oil-cracking",
+      "name": "Light oil",
+      "sub": "1 × Chemical plant",
+      "rate": "27.2/min"
+    },
+    {
+      "node": "iron-ore",
+      "name": "Iron ore",
+      "sub": "1 × Electric mining drill",
+      "rate": "0.6/min"
+    },
+    {
+      "node": "iron-plate",
+      "name": "Iron plate",
+      "sub": "1 × Electric furnace",
+      "rate": "0.6/min"
+    },
+    {
+      "node": "kovarex-enrichment-process",
+      "name": "Kovarex enrichment process",
+      "sub": "1 × Centrifuge",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "nuclear-fuel",
+      "name": "Nuclear fuel",
+      "sub": "2 × Centrifuge",
+      "rate": "1/min"
+    },
+    {
+      "node": "rocket-fuel",
+      "name": "Rocket fuel",
+      "sub": "1 × Assembling machine 2",
+      "rate": "1/min"
+    },
+    {
+      "node": "solid-fuel-from-light-oil",
+      "name": "Solid fuel",
+      "sub": "1 × Chemical plant",
+      "rate": "8.2/min"
+    },
+    {
+      "node": "solid-fuel-from-petroleum-gas",
+      "name": "Solid fuel",
+      "sub": "1 × Chemical plant",
+      "rate": "1.8/min"
+    },
+    {
+      "node": "sulfur",
+      "name": "Sulfur",
+      "sub": "1 × Chemical plant",
+      "rate": "3.0/min"
+    },
+    {
+      "node": "sulfuric-acid",
+      "name": "Sulfuric acid",
+      "sub": "1 × Chemical plant",
+      "rate": "29.6/min"
+    },
+    {
+      "node": "uranium-ore",
+      "name": "Uranium ore",
+      "sub": "2 × Electric mining drill",
+      "rate": "29.6/min"
+    },
+    {
+      "node": "uranium-processing",
+      "name": "Uranium processing",
+      "sub": "1 × Centrifuge",
+      "rate": "2 outputs"
+    },
+    {
+      "node": "water",
+      "name": "Water",
+      "sub": "1 × Offshore pump",
+      "rate": "203.1/min"
+    }
+  ]
+}

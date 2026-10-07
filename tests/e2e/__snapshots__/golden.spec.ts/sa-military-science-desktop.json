@@ -1,0 +1,237 @@
+{
+  "title": "Military science pack 60/min · Factorio Calculator",
+  "fragment": {
+    "data": "space-age-2-0-77",
+    "ignore": "steel-plate",
+    "items": "military-science-pack:r:60",
+    "priority": "ammoniacal-solution=10,heavy-oil=10,water=10,lava=10;crude-oil=10,sulfuric-acid-geyser=10,lithium-brine=10,fluorine-vent=10,iron-ore=100,copper-ore=100,coal=100,stone=100,uranium-ore=100,tungsten-ore=100,calcite=100,scrap=100,yumako-tree=100,jellystem=100;D-lane-splitter=100,D-coin=100,D-electric-energy-interface=100,D-simple-entity-with-force=100,D-simple-entity-with-owner=100,D-infinity-cargo-wagon=100,D-burner-generator=100,D-linked-chest=100,D-proxy-container=100,D-linked-belt=100,D-one-way-valve=100,D-overflow-valve=100,D-top-up-valve=100,D-empty-module-slot=100,D-science=100,D-promethium-asteroid-chunk=100,D-blueprint=100,D-deconstruction-planner=100,D-blueprint-book=100,D-recycler=100,D-copper-bacteria=100,D-iron-bacteria=100,D-overgrowth-yumako-soil=100,D-overgrowth-jellynut-soil=100,D-space-science-pack=100,D-metallurgic-science-pack=100,D-agricultural-science-pack=100,D-electromagnetic-science-pack=100,D-cryogenic-science-pack=100,D-oxide-asteroid-chunk=100,D-metallic-asteroid-chunk=100,D-carbonic-asteroid-chunk=100,D-thruster-fuel=100,D-thruster-oxidizer=100,D-foundry=100,D-turbo-underground-belt=100,D-turbo-splitter=100,D-big-mining-drill=100,D-biochamber=100,D-holmium-ore=100,D-electromagnetic-plant=100,D-lightning-collector=100,D-cryogenic-plant=100,D-fusion-reactor=100,D-fusion-generator=100,D-promethium-science-pack=100,D-artificial-yumako-soil=100,D-artificial-jellynut-soil=100,D-turbo-transport-belt=100,D-pentapod-egg=100,D-lightning-rod=100,D-quantum-processor=100,D-tungsten-ore=100,D-calcite=100,D-scrap=100,D-lithium-brine=100,D-fluorine=100,D-ammoniacal-solution=100,D-lava=100,D-yumako=100,D-jellynut=100"
+  },
+  "footer": {
+    "totals": "80 machines · 8.4 MW",
+    "bring": "Brought in: steel plate 15/min"
+  },
+  "rows": [
+    {
+      "item": "military-science-pack",
+      "group": "Build here",
+      "name": "Military science pack",
+      "badges": [
+        "target"
+      ],
+      "need": "60/min",
+      "belts": "1/15 belt",
+      "machines": "10 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "stone-wall",
+      "group": "Build here",
+      "name": "Wall",
+      "badges": [],
+      "need": "60/min",
+      "belts": "1/15 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "piercing-rounds-magazine",
+      "group": "Build here",
+      "name": "Piercing rounds magazine",
+      "badges": [],
+      "need": "30/min",
+      "belts": "1/30 belt",
+      "machines": "3 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "grenade",
+      "group": "Build here",
+      "name": "Grenade",
+      "badges": [],
+      "need": "30/min",
+      "belts": "1/30 belt",
+      "machines": "8 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "stone-brick",
+      "group": "Build here",
+      "name": "Stone brick",
+      "badges": [],
+      "need": "300/min",
+      "belts": "1/3 belt",
+      "machines": "8 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "firearm-magazine",
+      "group": "Build here",
+      "name": "Firearm magazine",
+      "badges": [],
+      "need": "30/min",
+      "belts": "1/30 belt",
+      "machines": "1 ×",
+      "machineName": "Assembling machine 1"
+    },
+    {
+      "item": "copper-plate",
+      "group": "Build here",
+      "name": "Copper plate",
+      "badges": [],
+      "need": "30/min",
+      "belts": "1/30 belt",
+      "machines": "1 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "iron-plate",
+      "group": "Build here",
+      "name": "Iron plate",
+      "badges": [],
+      "need": "270/min",
+      "belts": "3/10 belt",
+      "machines": "8 ×",
+      "machineName": "Electric furnace"
+    },
+    {
+      "item": "steel-plate",
+      "group": "Bring in from another build",
+      "name": "Steel plate",
+      "badges": [
+        "brought in"
+      ],
+      "need": "15/min",
+      "belts": "1/60 belt",
+      "machines": "",
+      "machineName": ""
+    },
+    {
+      "item": "iron-ore",
+      "group": "Mine or pipe in",
+      "name": "Iron ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "270/min",
+      "belts": "3/10 belt",
+      "machines": "9 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "copper-ore",
+      "group": "Mine or pipe in",
+      "name": "Copper ore",
+      "badges": [
+        "mined"
+      ],
+      "need": "30/min",
+      "belts": "1/30 belt",
+      "machines": "1 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "coal",
+      "group": "Mine or pipe in",
+      "name": "Coal",
+      "badges": [
+        "mined"
+      ],
+      "need": "300/min",
+      "belts": "1/3 belt",
+      "machines": "10 ×",
+      "machineName": "Electric mining drill"
+    },
+    {
+      "item": "stone",
+      "group": "Mine or pipe in",
+      "name": "Stone",
+      "badges": [
+        "mined"
+      ],
+      "need": "600/min",
+      "belts": "2/3 belt",
+      "machines": "20 ×",
+      "machineName": "Electric mining drill"
+    }
+  ],
+  "nodes": [
+    {
+      "node": "coal",
+      "name": "Coal",
+      "sub": "10 × Electric mining drill",
+      "rate": "300/min"
+    },
+    {
+      "node": "copper-ore",
+      "name": "Copper ore",
+      "sub": "1 × Electric mining drill",
+      "rate": "30/min"
+    },
+    {
+      "node": "copper-plate",
+      "name": "Copper plate",
+      "sub": "1 × Electric furnace",
+      "rate": "30/min"
+    },
+    {
+      "node": "firearm-magazine",
+      "name": "Firearm magazine",
+      "sub": "1 × Assembling machine 1",
+      "rate": "30/min"
+    },
+    {
+      "node": "grenade",
+      "name": "Grenade",
+      "sub": "8 × Assembling machine 1",
+      "rate": "30/min"
+    },
+    {
+      "node": "in:steel-plate",
+      "name": "Steel plate",
+      "sub": "",
+      "rate": "15/min"
+    },
+    {
+      "node": "iron-ore",
+      "name": "Iron ore",
+      "sub": "9 × Electric mining drill",
+      "rate": "270/min"
+    },
+    {
+      "node": "iron-plate",
+      "name": "Iron plate",
+      "sub": "8 × Electric furnace",
+      "rate": "270/min"
+    },
+    {
+      "node": "military-science-pack",
+      "name": "Military science pack",
+      "sub": "10 × Assembling machine 1",
+      "rate": "60/min"
+    },
+    {
+      "node": "piercing-rounds-magazine",
+      "name": "Piercing rounds magazine",
+      "sub": "3 × Assembling machine 1",
+      "rate": "30/min"
+    },
+    {
+      "node": "stone",
+      "name": "Stone",
+      "sub": "20 × Electric mining drill",
+      "rate": "600/min"
+    },
+    {
+      "node": "stone-brick",
+      "name": "Stone brick",
+      "sub": "8 × Electric furnace",
+      "rate": "300/min"
+    },
+    {
+      "node": "stone-wall",
+      "name": "Wall",
+      "sub": "1 × Assembling machine 1",
+      "rate": "60/min"
+    }
+  ]
+}
