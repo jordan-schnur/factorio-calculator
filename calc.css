@@ -232,6 +232,7 @@ div.tooltip .flow-card .dest-detail { font-size: 12px; padding-left: 10px; }
 .elbl.chip .chip-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; margin: 0; }
 .elbl.chip .chip-row.machines { color: #ffe6c0; }
 .elbl.chip .sep { color: #5a4a2a; }
+.elbl.chip { width: max-content; }
 .elbl.chip .chip-row.holds { display: block; white-space: normal; max-width: var(--chip-room, 240px); }
 .elbl.chip .chip-row.holds img { vertical-align: middle; margin-right: 4px; }
 .elbl.chip .holds-count { color: #f1be64; }

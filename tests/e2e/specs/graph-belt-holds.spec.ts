@@ -56,3 +56,14 @@ test("the Display checkbox turns it on, remembers it and keeps it out of the lin
     await page.locator(SD.beltHoldsToggle).uncheck()
     expect(await page.evaluate(key => localStorage.getItem(key), KEY)).toBeNull()
 })
+
+test("turning it on rewords the chips of a selected card straight away", async ({ calc, page }) => {
+    await calc.open(BELT)
+    await page.locator(G.nodeFor("electronic-circuit")).click()
+    let label = page.locator(G.labelFor("copper-cable", "electronic-circuit", "copper-cable"))
+    await expect.poll(() => text(label)).toContain("1 belt:")
+    await calc.openSettings()
+    await page.locator(SD.beltHoldsToggle).check()
+    await expect.poll(() => text(label)).toContain("One transport belt holds:")
+    await expect.poll(() => text(label)).not.toContain("1 belt:")
+})
