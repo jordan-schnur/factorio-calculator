@@ -1,46 +1,14 @@
-// calc/colorblind.js — the Display setting "Colour-blind labels": remembered
-// in this browser (localStorage, not the page link) and applied as a class
-// on <html>, which calc.css uses to layer icon.js's tier labels over the
-// belt-family and inserter icons -- every icon already on the page updates
-// at once, nothing is redrawn.
+// calc/colorblind.js — the "Colour-blind" Display setting: a class on <html> that calc.css uses to label tiered icons.
 
 import { tierOf } from "./colorblind-core.js"
+import { storedFlag } from "./stored-flag.js"
 
-const KEY = "calc.colorblind"
+const flag = storedFlag("calc.colorblind", "colorblind_toggle", on => document.documentElement.classList.toggle("colorblind", on))
 
-export function colorblindOn() {
-    try {
-        return localStorage.getItem(KEY) === "1"
-    } catch (e) {
-        return false
-    }
-}
+export const colorblindOn = flag.on
+export const setColorblind = flag.set
+export const applyColorblind = flag.apply
 
-export function setColorblind(on) {
-    try {
-        if (on) {
-            localStorage.setItem(KEY, "1")
-        } else {
-            localStorage.removeItem(KEY)
-        }
-    } catch (e) {
-        // private window / blocked storage: still applies for this visit
-    }
-    applyColorblind(on)
-}
-
-export function applyColorblind(on = colorblindOn()) {
-    document.documentElement.classList.toggle("colorblind", on)
-    let box = document.getElementById("colorblind_toggle")
-    if (box) {
-        box.checked = on
-    }
-}
-
-// The colour word as text, for places where an icon is drawn too small for
-// its badge to read (a graph line's label and chip): hidden by calc.css
-// unless html.colorblind, so the toggle still switches it live. null for
-// an icon that isn't told apart by colour.
 export function tierWord(obj) {
     let word = obj && tierOf(obj.key)
     if (!word) {

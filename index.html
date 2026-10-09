@@ -65,10 +65,10 @@
         })
     </script>
     <script type="module">
-        import { changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeColorblind, changeMprod, changeTitle } from "./events.js"
+        import { changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeColorblind, changeBeltHolds, changeMprod, changeTitle } from "./events.js"
         import { init } from "./init.js"
         // Module scripts are deferred, so this runs before body's onload.
-        window.handlers = { init, changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeColorblind, changeMprod, changeTitle }
+        window.handlers = { init, changeRatePrecision, changeCountPrecision, changeFormat, changeBeltFormat, changeColorblind, changeBeltHolds, changeMprod, changeTitle }
     </script>
 </head>
 
@@ -207,6 +207,9 @@ modules it loads are Factorio Companion's. See NOTICE-factorio-companion.md.-->
         </form></div>
         <div class="kv"><span class="muted" style="width: 90px;">Colour-blind</span>
             <input id="colorblind_toggle" type="checkbox" onchange="handlers.changeColorblind(event)"><label for="colorblind_toggle">Write the colour on belt, splitter and inserter icons (yellow, red, blue, green)</label>
+        </div>
+        <div class="kv"><span class="muted" style="width: 90px;">Graph lines</span>
+            <input id="belt_holds_toggle" type="checkbox" onchange="handlers.changeBeltHolds(event)"><label for="belt_holds_toggle">On hover, say how many machines fill one belt and how many it feeds</label>
         </div>
       </div>
 
