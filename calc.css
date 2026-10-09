@@ -232,6 +232,11 @@ div.tooltip .flow-card .dest-detail { font-size: 12px; padding-left: 10px; }
 .elbl.chip .chip-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; margin: 0; }
 .elbl.chip .chip-row.machines { color: #ffe6c0; }
 .elbl.chip .sep { color: #5a4a2a; }
+.elbl.chip { width: max-content; }
+.elbl.chip .chip-row.holds { display: block; white-space: normal; max-width: var(--chip-room, 240px); }
+.elbl.chip .chip-row.holds img { vertical-align: middle; margin-right: 4px; }
+.elbl.chip .holds-count { color: #f1be64; }
+.elbl.chip .holds-exact { color: #a8a8a8; font-weight: 600; }
 .node.answering .right { display: none; }
 .node .sub.answer { color: #f1be64; font-weight: 700; }
 .opt { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; background: #2a2a2a; border: none; color: #ffe6c0; font-family: inherit; font-size: 13px; cursor: pointer; text-align: left; box-shadow: inset 0 0 0 1px #1a1a1a; min-height: 44px; box-sizing: border-box; }

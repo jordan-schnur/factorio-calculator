@@ -15,6 +15,8 @@ import { spec } from "./factory.js"
 import { Rational } from "./rational.js"
 import { setTitle } from "./settings.js"
 import { setColorblind } from "./colorblind.js"
+import { setBeltHolds } from "./belt-holds.js"
+import { refreshLineChips } from "./flow.js"
 
 // tab events
 //
@@ -78,6 +80,11 @@ export function changeBeltFormat(event) {
 
 export function changeColorblind(event) {
     setColorblind(event.target.checked)
+}
+
+export function changeBeltHolds(event) {
+    setBeltHolds(event.target.checked)
+    refreshLineChips()
 }
 
 export function changeMprod(event) {
