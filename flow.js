@@ -18,7 +18,8 @@ import { RATE_LABEL } from "./table-core.js"
 import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
 import { showByproducts } from "./byproducts.js"
 import { linkMachines } from "./details.js"
-import { beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
+import { beltHoldsRow, beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
+import { beltHoldsOn } from "./belt-holds.js"
 import { tierWord } from "./colorblind.js"
 
 // The last totals a solve produced, remembered even while the Graph view
@@ -454,7 +455,7 @@ function setLineHover(edge) {
     let rate = edge.rateExact ?? Rational.from_float(edge.rate)
     let label = findLabel(edge)
     if (label && !label.classList.contains("pinned")) {
-        swapChildren(label, lineChip(item, rate), "chip")
+        swapChildren(label, lineChip(item, rate, null, holdsRows(lineMachines(edge))), "chip")
         restack()
     }
     let from = edge.source.startsWith("in:") ? null : spec.recipes.get(edge.source) || null
@@ -483,12 +484,8 @@ function textSpan(t, className) {
     return span
 }
 
-// A hovered or focused line's chip: item icon, rate, belt icon and belts
-// on the first row; `machines` adds a second row: {recipe, words} for one
-// side's machine icon and share, or bothEnds()'s {from, to, ratio} for the
-// machines at each end and the ratio between them; its `belt` (beltRow())
-// adds a third row, the machines one full belt covers.
-function lineChip(item, rate, machines = null) {
+// A line's chip: rate and belts, then `machines` (one side's share or bothEnds()), then the belt row or `holds`.
+function lineChip(item, rate, machines = null, holds = []) {
     let row = document.createElement("div")
     row.className = "chip-row"
     row.append(...withWord(item, item.icon.make(18, true)), textSpan(`${spec.format.rate(rate)}${RATE_LABEL[spec.format.rateName] || "/min"}`), textSpan("|", "sep"))
@@ -499,7 +496,7 @@ function lineChip(item, rate, machines = null) {
     } else {
         row.append(...withWord(spec.belt, spec.belt.icon.make(18, true)), textSpan(beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)))
     }
-    if (machines === null) return [row]
+    if (machines === null) return [row, ...holds]
     let second = document.createElement("div")
     second.className = "chip-row machines"
     if (machines.ratio) {
@@ -510,6 +507,7 @@ function lineChip(item, rate, machines = null) {
     } else {
         second.append(spec.getBuilding(machines.recipe).icon.make(18, true), textSpan(machines.words))
     }
+    if (holds.length > 0) return [row, second, ...holds]
     if (!machines.belt) return [row, second]
     let {belt} = machines
     let third = document.createElement("div")
@@ -520,6 +518,31 @@ function lineChip(item, rate, machines = null) {
     if (belt.from !== null && belt.to !== null) third.append(textSpan("→"))
     if (belt.to !== null) third.append(...end(belt.toRecipe, belt.to))
     return [row, second, third]
+}
+
+// With the setting on: "One transport belt holds:", then the most machines at each end one belt serves; wraps within --chip-room.
+function holdsRows(line) {
+    if (!beltHoldsOn() || !line || line.item.phase === "fluid") return []
+    let belts = spec.getBeltCount(line.rate).toFloat()
+    if (!(belts > 0) || (!line.supplier && !line.consumer)) return []
+    let head = chipRow("chip-row holds", ...withWord(spec.belt, spec.belt.icon.make(18, true)), textSpan(`One ${spec.belt.name.toLowerCase()} holds:`))
+    let end = (recipe, machines, lead, note) => {
+        let building = spec.getBuilding(recipe)
+        let r = beltHoldsRow(lead, building.name, recipe.name, machines.count / belts, note)
+        let exact = r.exact ? [textSpan(` ${r.exact}`, "holds-exact")] : []
+        return chipRow("chip-row machines holds", building.icon.make(18, true), textSpan(r.lead), textSpan(r.count, "holds-count"), textSpan(r.words), ...exact)
+    }
+    let rows = [head]
+    if (line.supplier) rows.push(end(line.from, line.supplier, "up to", "fills it"))
+    if (line.consumer) rows.push(end(line.to, line.consumer, "enough for", "uses it all"))
+    return rows
+}
+
+function chipRow(className, ...children) {
+    let row = document.createElement("div")
+    row.className = className
+    row.append(...children)
+    return row
 }
 
 // An icon followed by its colour word in colour-blind mode (belts,
@@ -613,7 +636,7 @@ function applyFocus() {
         } else if (mine) {
             machines = {recipe: outgoing ? line.from : line.to, words: machineWords(mine, outgoing ? "send" : "use"), belt: beltRow(line)}
         }
-        swapChildren(label, lineChip(line.item, line.rate, machines), "chip", focusUndo)
+        swapChildren(label, lineChip(line.item, line.rate, machines, holdsRows(line)), "chip", focusUndo)
         label.classList.add("pinned")
         focusUndo.push(() => label.classList.remove("pinned"))
         let theirs = outgoing ? line.consumer : line.supplier
@@ -932,7 +955,9 @@ function draw(totals) {
     // as tall as the module strip needs, decided once per solve too
     // (cardHeight). The strip is never part of a chip or of the machine
     // line answerOnCard swaps, so neither measurement changes on hover.
-    let laidOut = layered(model, {nodeWidth: 210, nodeHeight: cardHeight(model.nodes), ranks, colGap: chipGap(model.edges)})
+    let colGap = chipGap(model.edges)
+    document.querySelector("#flow-nodes")?.style.setProperty("--chip-room", `${colGap - CHIP_MARGIN}px`)
+    let laidOut = layered(model, {nodeWidth: 210, nodeHeight: cardHeight(model.nodes), ranks, colGap})
     lastLayout = laidOut
     focusUndo = []
     restoreLine = []

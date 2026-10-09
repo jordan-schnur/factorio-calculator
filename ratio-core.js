@@ -209,3 +209,11 @@ export function perBelt(from, to, belts) {
     let each = count => count === null ? null : ratioNumber(count / belts)
     return { from: each(from), to: each(to) }
 }
+
+// One end's row under "One belt holds": whole machines rounded down, the exact count after it unless whole.
+export function beltHoldsRow(lead, building, recipe, perBelt, note) {
+    let whole = Math.floor(perBelt + 1e-9)
+    let count = whole === 0 ? perBelt : whole
+    let exact = whole === 0 || Math.abs(perBelt - whole) < 1e-9 ? null : `(${ratioNumber(perBelt)} ${note})`
+    return { lead: `${lead} `, count: ratioNumber(count), words: ` ${plural(building, count)} on ${recipe.toLowerCase()}`, exact }
+}
