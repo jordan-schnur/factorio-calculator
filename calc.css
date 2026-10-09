@@ -330,6 +330,18 @@ h1.title, h2.title { margin: 0; }
     #make-panel.intro { padding: 20px 12px; }
     #intro-extras .guide { grid-template-columns: minmax(0, 1fr); }
 }
+/* Narrow phones (390px): a tighter top bar keeps the title, view switch and Settings on one row. */
+@media (max-width: 400px) {
+    #topbar { gap: 8px; padding: 8px 10px; }
+    #page-note:empty { display: none; }
+    #topbar .seg button { padding: 4px 8px; }
+    #settings-open { padding: 5px 10px; }
+}
+/* Narrower still (360px): the top bar wraps rather than overflow, Settings alone at the right of a second row. */
+@media (max-width: 370px) {
+    #topbar { flex-wrap: wrap; }
+    #settings-open { margin-left: auto; }
+}
 /* intro-bg.js: screenshots of real plans behind the intro, one style per
    visit (?bg=collage|drift|slideshow|sharp|none previews the others). */
 /* isolation keeps #intro-bg's negative z-index above the panel's own
