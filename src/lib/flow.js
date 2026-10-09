@@ -19,7 +19,8 @@ import { rateText } from "./table-core.js"
 import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
 import { backsUpMarker, showByproducts } from "./byproducts.svelte.js"
 import { linkMachines } from "./details.js"
-import { beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
+import { beltHoldsRow, beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
+import { beltHoldsOn } from "./belt-holds.js"
 import { tierWord } from "./colorblind.js"
 
 // The last totals a solve produced, remembered even while the Graph view
@@ -412,12 +413,7 @@ function applyLit(lit) {
     restack()
 }
 
-// Hovering one line (its path or its label) lights just that line and its
-// two cards, and answers on them instead of in a pop-up: the label turns
-// into item icon, rate, belt icon and belts (spec.format.beltFormat), the
-// sending card says how many of its machines this line takes and the
-// receiving card how many of its machines it feeds. `restoreLine` undoes
-// every swap.
+// Hovering a line lights it and its two cards, turns its label into a chip and answers on both cards; `restoreLine` undoes it.
 let restoreLine = []
 
 function setLineHover(edge) {
@@ -431,20 +427,15 @@ function setLineHover(edge) {
     }
     applyLit({nodes: new Set([edge.source, edge.target]), edges: new Set([`${edge.source}>${edge.target}`])})
     let item = spec.items.get(edge.item)
-    let totals = lastDrawnTotals
-    if (!item || !totals) return
-    let rate = edge.rateExact ?? Rational.from_float(edge.rate)
+    if (!item || !lastDrawnTotals) return
+    let line = lineMachines(edge)
     let label = findLabel(edge)
     if (label && !label.classList.contains("pinned")) {
-        swapChildren(label, lineChip(item, rate), "chip")
+        swapChildren(label, lineChip(item, edge.rateExact ?? Rational.from_float(edge.rate), null, holdsRows(line)), "chip")
         restack()
     }
-    let from = edge.source.startsWith("in:") ? null : spec.recipes.get(edge.source) || null
-    let to = spec.recipes.get(edge.target) || null
-    if (!to) return
-    let {supplier, consumer} = linkMachines(totals, item, from, to, rate)
-    if (supplier) answerOnCard(edge.source, from, supplier, "send")
-    if (consumer) answerOnCard(edge.target, to, consumer, "use")
+    if (line?.supplier) answerOnCard(edge.source, line.from, line.supplier, "send")
+    if (line?.consumer) answerOnCard(edge.target, line.to, line.consumer, "use")
 }
 
 function swapChildren(el, children, cls, undo = restoreLine) {
@@ -465,43 +456,64 @@ function textSpan(t, className) {
     return span
 }
 
-// A hovered or focused line's chip: item icon, rate, belt icon and belts
-// on the first row; `machines` adds a second row: {recipe, words} for one
-// side's machine icon and share, or bothEnds()'s {from, to, ratio} for the
-// machines at each end and the ratio between them; its `belt` (beltRow())
-// adds a third row, the machines one full belt covers.
-function lineChip(item, rate, machines = null) {
-    let row = document.createElement("div")
-    row.className = "chip-row"
-    row.append(...withWord(item, item.icon.make(18, true)), textSpan(rateText(spec.format, rate)), textSpan("|", "sep"))
-    if (item.phase === "fluid") {
-        let pipe = spec.items.get("pipe")
-        if (pipe) row.append(pipe.icon.make(18, true))
-        row.append(textSpan("pipe"))
-    } else {
-        row.append(...withWord(spec.belt, spec.belt.icon.make(18, true)), textSpan(beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)))
+// A line's chip: rate and belts, then `machines` (one side's share or bothEnds()), then the belt row or `holds`.
+function lineChip(item, rate, machines = null, holds = []) {
+    let first = item.phase === "fluid"
+        ? [spec.items.get("pipe")?.icon.make(18, true), textSpan("pipe")].filter(Boolean)
+        : [...beltIcon(), textSpan(beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat))]
+    let rows = [chipRow("chip-row", ...withWord(item, item.icon.make(18, true)), textSpan(rateText(spec.format, rate)), textSpan("|", "sep"), ...first)]
+    if (machines !== null) {
+        let icon = recipe => spec.getBuilding(recipe).icon.make(18, true)
+        rows.push(machines.ratio
+            ? chipRow("chip-row machines", icon(machines.fromRecipe), textSpan(machines.from), textSpan("→"), icon(machines.toRecipe), textSpan(machines.to), textSpan("|", "sep"), textSpan(machines.ratio))
+            : chipRow("chip-row machines", icon(machines.recipe), textSpan(machines.words)))
+        if (holds.length === 0 && machines.belt) rows.push(perBeltRow(machines.belt))
     }
-    if (machines === null) return [row]
-    let second = document.createElement("div")
-    second.className = "chip-row machines"
-    if (machines.ratio) {
-        second.append(
-            spec.getBuilding(machines.fromRecipe).icon.make(18, true), textSpan(machines.from), textSpan("→"),
-            spec.getBuilding(machines.toRecipe).icon.make(18, true), textSpan(machines.to),
-            textSpan("|", "sep"), textSpan(machines.ratio))
-    } else {
-        second.append(spec.getBuilding(machines.recipe).icon.make(18, true), textSpan(machines.words))
-    }
-    if (!machines.belt) return [row, second]
-    let {belt} = machines
-    let third = document.createElement("div")
-    third.className = "chip-row machines"
-    third.append(...withWord(spec.belt, spec.belt.icon.make(18, true)), textSpan("1 belt:"))
+    return [...rows, ...holds]
+}
+
+// "1 belt: 7.5 → 5", the machines at each end one belt covers.
+function perBeltRow(belt) {
     let end = (recipe, count) => [spec.getBuilding(recipe).icon.make(18, true), textSpan(count)]
-    if (belt.from !== null) third.append(...end(belt.fromRecipe, belt.from))
-    if (belt.from !== null && belt.to !== null) third.append(textSpan("→"))
-    if (belt.to !== null) third.append(...end(belt.toRecipe, belt.to))
-    return [row, second, third]
+    let row = chipRow("chip-row machines", ...beltIcon(), textSpan("1 belt:"))
+    if (belt.from !== null) row.append(...end(belt.fromRecipe, belt.from))
+    if (belt.from !== null && belt.to !== null) row.append(textSpan("→"))
+    if (belt.to !== null) row.append(...end(belt.toRecipe, belt.to))
+    return row
+}
+
+// With the setting on: "One transport belt holds:", then the most machines at each end one belt serves.
+function holdsRows(line) {
+    let belts = beltHoldsOn() && line ? lineBelts(line) : null
+    if (belts === null) return []
+    let end = (recipe, machines, lead, note) => {
+        let building = spec.getBuilding(recipe)
+        let r = beltHoldsRow(lead, building.name, recipe.name, machines.count / belts, note)
+        let exact = r.exact ? [textSpan(` ${r.exact}`, "holds-exact")] : []
+        return chipRow("chip-row machines holds", building.icon.make(18, true), textSpan(r.lead), textSpan(r.count, "holds-count"), textSpan(r.words), ...exact)
+    }
+    let rows = [chipRow("chip-row holds", ...beltIcon(), textSpan(`One ${spec.belt.name.toLowerCase()} holds:`))]
+    if (line.supplier) rows.push(end(line.from, line.supplier, "up to", "fills it"))
+    if (line.consumer) rows.push(end(line.to, line.consumer, "enough for", "uses it all"))
+    return rows
+}
+
+// The belts a line fills, or null for a fluid or a line with no machine at either end.
+function lineBelts(line) {
+    if (line.item.phase === "fluid" || (!line.supplier && !line.consumer)) return null
+    let belts = spec.getBeltCount(line.rate).toFloat()
+    return belts > 0 ? belts : null
+}
+
+function beltIcon() {
+    return withWord(spec.belt, spec.belt.icon.make(18, true))
+}
+
+function chipRow(className, ...children) {
+    let row = document.createElement("div")
+    row.className = className
+    row.append(...children)
+    return row
 }
 
 // An icon followed by its colour word in colour-blind mode (belts,
@@ -527,13 +539,10 @@ function bothEnds(line, root) {
     return {fromRecipe: line.from, toRecipe: line.to, ...lineRatio(whole(line.supplier), whole(line.consumer), root), belt: beltRow(line)}
 }
 
-// The machines at each end one full belt of the line covers -- copper
-// cable into advanced circuits, 5 foundries -> 180 assemblers per belt;
-// null for a fluid, or when neither end has a machine.
+// The machines at each end one full belt of the line covers (5 foundries -> 180 assemblers), or null.
 function beltRow(line) {
-    if (line.item.phase === "fluid" || (!line.supplier && !line.consumer)) return null
-    let belt = perBelt(line.supplier ? line.supplier.count : null, line.consumer ? line.consumer.count : null,
-        spec.getBeltCount(line.rate).toFloat())
+    let belts = lineBelts(line)
+    let belt = belts === null ? null : perBelt(line.supplier ? line.supplier.count : null, line.consumer ? line.consumer.count : null, belts)
     return belt && {fromRecipe: line.from, toRecipe: line.to, ...belt}
 }
 
@@ -571,6 +580,11 @@ function lineMachines(edge) {
     return {item, rate, from, to, ...linkMachines(lastDrawnTotals, item, from, to, rate)}
 }
 
+// Rebuilds the pinned chips, for a Display setting that changes what they say.
+export function refreshLineChips() {
+    applyFocus()
+}
+
 function applyFocus() {
     let had = focusUndo.length > 0
     for (let undo of focusUndo.reverse()) undo()
@@ -595,7 +609,7 @@ function applyFocus() {
         } else if (mine) {
             machines = {recipe: outgoing ? line.from : line.to, words: machineWords(mine, outgoing ? "send" : "use"), belt: beltRow(line)}
         }
-        swapChildren(label, lineChip(line.item, line.rate, machines), "chip", focusUndo)
+        swapChildren(label, lineChip(line.item, line.rate, machines, holdsRows(line)), "chip", focusUndo)
         label.classList.add("pinned")
         focusUndo.push(() => label.classList.remove("pinned"))
         let theirs = outgoing ? line.consumer : line.supplier
@@ -877,6 +891,8 @@ function lineSwatch(color, dash) {
 // either side of it (see chipGap()).
 const BASE_COL_GAP = 96
 const CHIP_MARGIN = 32
+// A chip's horizontal padding plus border, which chipGap's offsetWidth includes but a row's max-width doesn't.
+const CHIP_FRAME = 20
 const PLAIN_LABEL_H = 18
 
 // The full draw pass, called whenever the Graph view needs a picture: on a
@@ -910,11 +926,10 @@ function draw(totals) {
     // size dead.
     let ranks = rankNodes(model).rank
     ensureZoom()
-    // Wide enough for any line's chip, decided once per solve (chipGap);
-    // as tall as the module strip needs, decided once per solve too
-    // (cardHeight). The strip is never part of a chip or of the machine
-    // line answerOnCard swaps, so neither measurement changes on hover.
-    let laidOut = layered(model, {nodeWidth: 210, nodeHeight: cardHeight(model.nodes), ranks, colGap: chipGap(model.edges)})
+    // Gaps fit the widest chip (chipGap) and cards the module strip (cardHeight), so hovering never relays out.
+    let colGap = chipGap(model.edges)
+    document.querySelector("#flow-nodes")?.style.setProperty("--chip-room", `${colGap - CHIP_MARGIN - CHIP_FRAME}px`)
+    let laidOut = layered(model, {nodeWidth: 210, nodeHeight: cardHeight(model.nodes), ranks, colGap})
     lastLayout = laidOut
     focusUndo = []
     restoreLine = []

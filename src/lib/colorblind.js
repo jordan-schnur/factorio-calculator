@@ -1,8 +1,4 @@
-// calc/colorblind.js — the Display setting "Colour-blind labels": remembered
-// in this browser (localStorage, not the page link) and applied as a class
-// on <html>, which calc.css uses to layer icon.js's tier labels over the
-// belt-family and inserter icons -- every icon already on the page updates
-// at once, nothing is redrawn.
+// calc/colorblind.js — the "Colour-blind" Display setting: a class on <html> that calc.css uses to label tiered icons.
 
 import { tierOf } from "./colorblind-core.js"
 import { readStore, writeStore } from "./storage.js"

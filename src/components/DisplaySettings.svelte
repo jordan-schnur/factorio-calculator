@@ -3,7 +3,9 @@
     import RadioGroup from "./RadioGroup.svelte"
     import Section from "./Section.svelte"
     import { DEFAULT_BELT_FORMAT, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, DEFAULT_RATE_PRECISION, longRateNames } from "../lib/align.js"
+    import { beltHoldsOn, setBeltHolds } from "../lib/belt-holds.js"
     import { colorblindOn, setColorblind } from "../lib/colorblind.js"
+    import { refreshLineChips } from "../lib/flow.js"
     import { plan } from "../lib/plan.svelte.js"
     import { setRoundMachines } from "../lib/settings.js"
 
@@ -18,6 +20,7 @@
     let displayFormat = $derived(plan.spec?.format.displayFormat ?? DEFAULT_FORMAT)
     let beltFormat = $derived(plan.spec?.format.beltFormat ?? DEFAULT_BELT_FORMAT)
     let colorblind = $derived(plan.spec ? colorblindOn() : false)
+    let beltHolds = $derived(plan.spec ? beltHoldsOn() : false)
 
     function setFormat(field, value) {
         plan.spec.format[field] = value
@@ -27,6 +30,11 @@
     function setRate(rate) {
         plan.spec.format.setDisplayRate(rate)
         plan.spec.display()
+    }
+
+    function toggleBeltHolds(on) {
+        setBeltHolds(on)
+        refreshLineChips()
     }
 
     function setBeltFormat(value) {
@@ -49,6 +57,9 @@
     <Field label="Belts" narrow><form id="belt_format"><RadioGroup name="beltformat" options={BELT_OPTIONS} value={beltFormat} onchange={setBeltFormat} /></form></Field>
     <Field label="Colour-blind" narrow>
         <input id="colorblind_toggle" type="checkbox" checked={colorblind} onchange={event => setColorblind(event.target.checked)}><label for="colorblind_toggle">Write the colour on belt, splitter and inserter icons (yellow, red, blue, green)</label>
+    </Field>
+    <Field label="Graph lines" narrow>
+        <input id="belt_holds_toggle" type="checkbox" checked={beltHolds} onchange={event => toggleBeltHolds(event.target.checked)}><label for="belt_holds_toggle">On hover, say how many machines fill one belt and how many it feeds</label>
     </Field>
     {#if plan.spec}<Field label="Machines" narrow id="machines-round-toggle">{#each ROUNDING as r (r.key)}<button type="button" class="radio" onclick={() => setRoundMachines(r.key === "up")}><span class="dot" class:on={(r.key === "up") === plan.spec.roundMachines}></span>{r.name}</button>{/each}</Field>{/if}
 </Section>

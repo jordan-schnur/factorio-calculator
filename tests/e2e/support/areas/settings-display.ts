@@ -19,6 +19,7 @@ export const SD = {
     fractionBelts: "#fraction_belts",
     decimalBelts: "#decimal_belts",
     colorblindToggle: "#colorblind_toggle",
+    beltHoldsToggle: "#belt_holds_toggle",
 
     // Machines / Recipes
     beltSelector: "#belt_selector",
