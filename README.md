@@ -25,13 +25,18 @@ The solver and data model are his; the page around them is new:
 
 ## Running it locally
 
-It is all static files. Serve this folder with any HTTP server:
+It is a Svelte 5 + Vite app that builds to static files:
 
 ```text
-python3 -m http.server 8000
+npm ci
+npm run dev        # http://localhost:5173/calc.html, with hot reload
+npm run build      # the site, prerendered, in dist/
+npm run preview    # serve dist/ on http://127.0.0.1:8000/calc.html
 ```
 
-then open http://localhost:8000/calc.html.
+`src/components/` holds the Svelte components and `src/lib/` the solver
+plus the UI modules still being moved to components. `public/` (data,
+images, the changelog) is served as-is. The code rules are in `CLAUDE.md`.
 
 This repo is also the calculator inside the Factorio Companion (a Claude
 Desktop MCP server), whose local server adds extras the static site hides:
@@ -48,7 +53,7 @@ rewrite (to a framework, say) still behaves the same.
 ```text
 npm ci
 npx playwright install chromium
-npm test                      # the whole suite (it serves this folder itself)
+npm test                      # build, then the whole suite against dist/
 npx playwright test golden    # one spec file, by name
 npm run test:update           # refresh snapshots after an intended change
 npm run test:ui               # watch and debug

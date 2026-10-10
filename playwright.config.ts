@@ -1,16 +1,8 @@
 import { defineConfig, devices } from "@playwright/test"
 
-// The end-to-end suite is the behaviour contract for the calculator: it
-// drives the page only as a player would (URL fragments, clicks, typing)
-// and reads back what the page shows, so it should pass unchanged against
-// a rewrite in any framework. Point it at another build with
-//   CALC_BASE_URL=http://127.0.0.1:5173 CALC_PAGE=/ npx playwright test
-// (CALC_BASE_URL skips the built-in static server).
+// The behaviour contract; CALC_BASE_URL (and CALC_PAGE) point it at a running build instead of dist/.
 const PORT = Number(process.env.CALC_PORT || 4173)
-// Not 127.0.0.1 on Linux: under WSL's mirrored networking a connection to
-// an unbound 127.0.0.1 port hangs instead of being refused, and Playwright's
-// "is the server up yet" probe then never returns. All of 127/8 is loopback
-// on Linux; macOS only answers on 127.0.0.1.
+// 127.0.0.2 on Linux: WSL's mirrored networking hangs on an unbound 127.0.0.1 port.
 const HOST = process.env.CALC_HOST || (process.platform === "linux" ? "127.0.0.2" : "127.0.0.1")
 const BASE_URL = process.env.CALC_BASE_URL || `http://${HOST}:${PORT}`
 
@@ -27,8 +19,7 @@ export default defineConfig({
     expect: {
         timeout: 10_000,
         toHaveScreenshot: {
-            // Anti-aliasing noise only; a moved element or changed colour
-            // is well past this.
+            // Anti-aliasing noise only.
             maxDiffPixelRatio: 0.002,
             animations: "disabled",
             caret: "hide",
@@ -57,7 +48,8 @@ export default defineConfig({
         },
     ],
     webServer: process.env.CALC_BASE_URL ? undefined : {
-        command: `node tests/e2e/support/serve.mjs ${PORT} ${HOST}`,
+        command: `npm run build && node tests/e2e/support/serve.mjs ${PORT} ${HOST} dist`,
+        timeout: 180_000,
         url: `${BASE_URL}/calc.html`,
         reuseExistingServer: true,
         stdout: "ignore",

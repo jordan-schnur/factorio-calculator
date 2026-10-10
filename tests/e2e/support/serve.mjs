@@ -1,15 +1,11 @@
-// A static file server for the e2e suite: the repo root, as GitHub Pages
-// would serve it. Not `python3 -m http.server`: its listen backlog is 5, and
-// with several workers each loading ~60 ES modules at once it resets
-// connections, so a module fails to load and the page never boots.
-//   node tests/e2e/support/serve.mjs <port> <host>
+// Serves the built site (dist/) as GitHub Pages would: node tests/e2e/support/serve.mjs <port> <host> <root>
 import { createServer } from "node:http"
 import { createReadStream, statSync } from "node:fs"
 import { extname, join, normalize, resolve } from "node:path"
 
-const ROOT = resolve(import.meta.dirname, "..", "..", "..")
 const PORT = Number(process.argv[2] || 4173)
 const HOST = process.argv[3] || "127.0.0.1"
+const ROOT = resolve(import.meta.dirname, "..", "..", "..", process.argv[4] || "dist")
 
 const TYPES = {
     ".html": "text/html; charset=utf-8",

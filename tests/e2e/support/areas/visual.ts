@@ -106,14 +106,9 @@ export async function fitGraph(page: Page) {
     await page.locator(S.graphFit).click()
 }
 
-// calc-redirect.html is only ever reached through its published name,
-// "calc.html", once the deploy workflow renames calc.html to index.html and
-// calc-redirect.html to calc.html (.github/workflows/deploy.yml). Locally
-// there is no index.html at "/", so faithfully exercising the redirect
-// means serving calc.html's own bytes at "/" — the same substitution the
-// workflow performs — rather than testing a 404 the real site never shows.
+// Serves the built calc.html at "/", as deploy.yml publishes it, so the redirect lands on the real page.
 export async function openViaRedirect(page: Page, fragment: string) {
-    let calcHtml = readFileSync(join(__dirname, "..", "..", "..", "..", "calc.html"))
+    let calcHtml = readFileSync(join(__dirname, "..", "..", "..", "..", "dist", "calc.html"))
     await page.route(url => url.pathname === "/", route =>
         route.fulfill({ contentType: "text/html", body: calcHtml }))
     await page.goto(`${PAGE.replace("/calc.html", "/calc-redirect.html")}#${fragment}`)

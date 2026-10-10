@@ -18,26 +18,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
 
-      # Static files, no build, served at https://factoriocalculator.app/.
-      # The calculator is the site root: calc.html is published as
-      # index.html, and calc-redirect.html takes its old name so links to
-      # /calc.html#... still open their plan.
+      # The calculator is the site root; calc-redirect.html takes calc.html's old name so /calc.html#... links still open.
       - name: Lay out the site
         run: |
-          mkdir _site
-          rsync -a --exclude .git --exclude .github --exclude .gitignore --exclude .claude --exclude _site \
-            --exclude node_modules --exclude tests --exclude test-results --exclude playwright-report \
-            --exclude package.json --exclude package-lock.json --exclude playwright.config.ts \
-            ./ _site/
-          mv _site/calc.html _site/index.html
-          mv _site/calc-redirect.html _site/calc.html
+          mv dist/calc.html dist/index.html
+          mv dist/calc-redirect.html dist/calc.html
 
-      # cname writes the CNAME file on every deploy; without it each push
-      # would drop the custom domain.
+      # cname rewrites CNAME on every deploy, or each push would drop the custom domain.
       - name: Deploy to gh-pages root
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./_site
+          publish_dir: ./dist
           cname: factoriocalculator.app
