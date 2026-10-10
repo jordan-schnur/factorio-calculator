@@ -25,11 +25,12 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      # The calculator is the site root; calc-redirect.html takes calc.html's old name so /calc.html#... links still open.
+      # The calculator is the site root; calc-redirect.html takes calc.html's old name so /calc.html#... links still open; the licence files ship alongside.
       - name: Lay out the site
         run: |
           mv dist/calc.html dist/index.html
           mv dist/calc-redirect.html dist/calc.html
+          cp LICENSE NOTICE-factorio-companion.md dist/
 
       # cname rewrites CNAME on every deploy, or each push would drop the custom domain.
       - name: Deploy to gh-pages root
