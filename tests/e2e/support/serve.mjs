@@ -24,7 +24,7 @@ const TYPES = {
     ".wasm": "application/wasm",
 }
 
-const server = createServer((req, res) => {
+createServer((req, res) => {
     let path = decodeURIComponent(new URL(req.url, "http://x").pathname)
     let file = normalize(join(ROOT, path))
     if (!file.startsWith(ROOT)) {
@@ -51,13 +51,10 @@ const server = createServer((req, res) => {
         res.end()
         return
     }
-    createReadStream(file).pipe(res)
-})
-
-// Node's default 5s keepAliveTimeout races browsers reusing a pooled socket under CPU load; outlast any idle gap between test navigations.
-server.keepAliveTimeout = 120_000
-server.headersTimeout = 125_000
-
-server.listen({ port: PORT, host: HOST, backlog: 1024 }, () => {
+    // A file can vanish between statSync and open (e.g. a rebuild clearing dist under a live server); don't let that crash the server.
+    createReadStream(file)
+        .on("error", () => res.destroy())
+        .pipe(res)
+}).listen({ port: PORT, host: HOST, backlog: 1024 }, () => {
     console.log(`serving ${ROOT} on http://${HOST}:${PORT}`)
 })
