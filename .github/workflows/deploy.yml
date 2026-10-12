@@ -24,6 +24,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_FEEDBACK_URL: ${{ vars.FEEDBACK_URL }}
 
       # The calculator is the site root; calc-redirect.html takes calc.html's old name so /calc.html#... links still open; the licence files ship alongside.
       - name: Lay out the site

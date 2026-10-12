@@ -55,5 +55,6 @@ export default defineConfig({
         reuseExistingServer: !!process.env.CALC_REUSE_SERVER,
         stdout: "ignore",
         stderr: "ignore",
+        env: { VITE_FEEDBACK_URL: "https://feedback.test/submit" },
     },
 })
