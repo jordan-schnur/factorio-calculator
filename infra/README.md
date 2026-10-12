@@ -32,6 +32,8 @@ Use a fine-grained personal access token scoped to the `factorio-calculator` rep
 
 The parameter uses the account's default `aws/ssm` KMS key, so no extra key policy or grant is needed for the Lambda's `kms:Decrypt` to work; the IAM policy only needs `ssm:GetParameter` on this one parameter.
 
+Since October 2025, public function URLs need both `lambda:InvokeFunctionUrl` and `lambda:InvokeFunction` permissions, or every call gets a 403; both are granted in `function-url.tf` (see https://docs.aws.amazon.com/lambda/latest/dg/urls-auth.html).
+
 ## Smoke test
 
 ```
