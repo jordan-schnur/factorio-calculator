@@ -1,0 +1,20 @@
+name: Feedback
+description: Tell us what's wrong or what you'd like
+title: "Feedback: "
+labels: ["feedback"]
+body:
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened, or what would you like?
+    validations:
+      required: true
+  - type: input
+    id: plan
+    attributes:
+      label: Plan link
+      description: The calculator link for the plan you were looking at (paste it if this is empty)
+  - type: input
+    id: version
+    attributes:
+      label: Version
