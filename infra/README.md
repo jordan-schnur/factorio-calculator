@@ -52,6 +52,10 @@ curl -i -X POST <function_url> \
 
 A healthy response is `201` with a `number` and `url` for the new GitHub issue.
 
+## Security scan
+
+CI runs `trivy config --severity HIGH,CRITICAL --exit-code 1 infra/` on every push; run the same command locally with [Trivy](https://github.com/aquasecurity/trivy) installed to check changes before pushing.
+
 ## Cost
 
 Within the AWS free tier this runs at essentially $0/month: the Lambda free tier (1M requests, 400,000 GB-seconds) comfortably covers feedback-form traffic, the Function URL has no extra charge, and the SSM `SecureString` standard parameter and CloudWatch log group are free at this volume.
