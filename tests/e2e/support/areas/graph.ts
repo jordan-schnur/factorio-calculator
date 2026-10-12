@@ -70,7 +70,7 @@ export async function visibleBoxes(page: Page, selector: string): Promise<Box[]>
     )
 }
 
-// flow.js writes #flow-nodes' transform directly as inline style
+// graph-view.svelte.js's followZoom writes #flow-nodes' transform directly as inline style
 // (`translate(Xpx, Ypx) scale(K)`), set by d3-zoom's handler; this reads it
 // back as numbers instead of comparing opaque CSS strings.
 export async function transformOf(page: Page): Promise<{ x: number; y: number; k: number }> {

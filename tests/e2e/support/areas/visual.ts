@@ -81,14 +81,14 @@ export async function openScratchpad(page: Page): Promise<Locator> {
     return frame
 }
 
-// Hovering a graph line only shows its chip after flow.js's HOVER_IN delay
+// Hovering a graph line only shows its chip after graph.svelte.js's HOVER_IN delay
 // (250ms); the generous `toBeVisible` timeout below is the bound the brief
 // asks for around that intentional delay, not a fixed sleep.
 export async function hoverGraphLine(page: Page, line: Locator) {
     // The busy graph's invisible "hit" paths (fatter hover targets layered
-    // over the drawn lines, flow.js) overlap each other along their curve,
+    // over the drawn lines) overlap each other along their curve,
     // so a real mouse move can land on a neighbour's hit path instead of
-    // this one's. flow.js binds the listener with d3's `.on("mouseenter")`,
+    // this one's. The graph binds the listener with svelte/events' `on("mouseenter")`,
     // so dispatching the DOM event directly is exactly what it listens
     // for — the same technique the page's own oracle test suite uses for
     // every hover test (inventory.md: "synthetic mouseenter/mouseleave").

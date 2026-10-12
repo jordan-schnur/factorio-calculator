@@ -25,7 +25,7 @@ img.qbadge {
 .mq-row { display: flex; align-items: center; gap: 8px; }
 .mq-name { min-width: 170px; }
 
-/* A row's Machine line (details.js). */
+/* A row's Machine line. */
 .machine-quality { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 
 /* The module editor's "Module quality" / "Beacon quality" lines. */

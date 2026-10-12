@@ -51,7 +51,7 @@ a { color: #f1be64; } a:hover { color: #ffe6c0; }
 /* settings.js's Available row: a machine switched off for planning. */
 .slot.off { opacity: 0.35; background: repeating-linear-gradient(135deg, #303030 0 6px, #262626 6px 12px); }
 .slot.dim img { opacity: 0.35; }
-/* details.js's Machine line under a row's Recipe list. */
+/* The Machine line under a row's Recipe list. */
 .machines { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 4px; }
 .machines button.slot { border: none; padding: 0; cursor: pointer; }
 .machine-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
@@ -121,8 +121,7 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 #flow-columns .stage-label { position: absolute; left: 0; right: 0; top: 6px; text-align: center; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #b9b9b9; white-space: nowrap; }
 #flow-columns .stage-sub { position: absolute; left: 0; right: 0; top: 22px; text-align: center; font-size: 12px; color: #7d7d7d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #flow-columns .stage { position: absolute; top: 0; width: 240px; background: rgba(255, 230, 192, 0.03); box-shadow: inset 1px 0 0 rgba(255, 230, 192, 0.06); }
-/* reduced graph card: prototype's .gcard, kept as .node for flow.js's
-   existing selectors (.node .mid/.name/.sub/.right/.rate) */
+/* Reduced graph card: prototype's .gcard, kept as .node for its existing selectors (.node .mid/.name/.sub/.right/.rate). */
 .node { position: absolute; width: 210px; height: 58px; box-sizing: border-box; background: #313131; box-shadow: inset 0 1px 0 #4d4d4d, inset 0 -1px 0 #1a1a1a, 0 2px 5px rgba(0,0,0,0.6); }
 .node .nbody { width: 100%; height: 100%; display: flex; align-items: center; gap: 8px; padding: 0 8px; box-sizing: border-box; background: none; border: none; color: #ffe6c0; font-family: inherit; font-size: 14px; cursor: pointer; text-align: left; }
 .node:hover { background: #3a3a3a; }
@@ -153,7 +152,7 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 /* a line keeps its item colour (flow-core lineStyle); selected and lit
    lines stand out by glow and by everything else fading */
 #flow path.edge.hot { filter: drop-shadow(0 0 2px rgba(255,230,192,0.9)); }
-/* flow.js's setHover: the hovered card's one-hop neighbourhood stays lit. */
+/* The hovered card's one-hop neighbourhood stays lit. */
 #flow-container.hovering .node:not(.lit) { opacity: 0.25; }
 #flow-container.hovering #flow path.edge:not(.lit) { opacity: 0.12; }
 #flow-container.hovering #flow path.edge.lit { opacity: 1; filter: drop-shadow(0 0 2px rgba(255,230,192,0.9)); }
@@ -218,9 +217,9 @@ select.muted { color: #ffe6c0; font-weight: 700; }
 .drow { display: flex; align-items: center; gap: 8px; min-height: 30px; }
 .drow .grow { flex: 1; min-width: 0; }
 .drow .share { color: #a8a8a8; width: 44px; text-align: right; font-weight: 400; }
-/* details.js's machine ratio under a Needs/Goes to row, indented past the icon. */
+/* The machine ratio under a Needs/Goes to row, indented past the icon. */
 .ratio { display: block; font-size: 12px; margin: -6px 0 4px 26px; }
-/* hover a Needs/Goes to rate for its belts and machines (details.js flowTooltip) */
+/* Hover a Needs/Goes to rate for its belts and machines (FlowTooltip). */
 .num.flow { cursor: help; text-decoration: underline dotted; text-underline-offset: 3px; }
 div.tooltip .flow-card { max-width: 380px; line-height: 1.4; }
 div.tooltip .flow-card h3 { font-size: 14px; }
@@ -228,8 +227,7 @@ div.tooltip .flow-card .lbl { display: block; margin-top: 6px; }
 div.tooltip .flow-card .dest { margin-top: 4px; }
 div.tooltip .flow-card .dest-detail { font-size: 12px; padding-left: 10px; }
 .lrow .need.flow { cursor: help; }
-/* flow.js's setLineHover: a hovered line's label becomes a chip (item icon,
-   rate, belt icon, belts) and its two cards answer in their machine line. */
+/* A hovered line's label becomes a chip (item icon, rate, belt icon, belts) and its two cards answer in their machine line. */
 #flow path.hit { fill: none; stroke: transparent; stroke-width: 14px; pointer-events: stroke; cursor: help; }
 .elbl.chip { flex-direction: column; align-items: flex-start; gap: 2px; padding: 3px 8px; font-size: 13px; font-weight: 700; color: #f1be64; border-width: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.7); z-index: 3; }
 .elbl.chip .chip-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; margin: 0; }
@@ -432,7 +430,7 @@ html.colorblind img.icon[data-tier] {
 .ignore {
     opacity: 0.3;
 }
-/* tooltip.js */
+/* tooltip */
 div.tooltip {
     opacity: 1;
     z-index: 20;
@@ -565,26 +563,9 @@ div.tooltip img.ingredient {
 .dropdownWrapper.open .dropdown .search {
     display: block;
 }
-.dropdownWrapper.open div.itemDropdown {
-    height: 400px;
-    width: 380px;
-    overflow-y: scroll;
-}
 label.selected {
     font-weight: bold;
     color: var(--bright);
-}
-/* module.js's moduleDropdown */
-.moduleRow {
-    white-space: nowrap;
-}
-/* Closed, only the checked module's row shows. A row of hidden labels still
-   takes a line of height, so a module from the fourth row sat below the box. */
-.dropdownWrapper:not(.open) .moduleRow:not(:has(input:checked)) {
-    display: none;
-}
-.module-wrapper, .input {
-    display: inline-block;
 }
 /* settings.js's renderers, until the settings-tab unit restyles them */
 input.prec, input.mprod {

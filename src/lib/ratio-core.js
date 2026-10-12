@@ -1,6 +1,4 @@
-// calc/ratio-core.js — the machine-ratio wording under each Needs/Goes to
-// line in details.js ("1 offshore pump feeds 9.6 foundries · block 5 : 48").
-// Pure: plain numbers in, strings out; details.js does the Rational maths.
+// The machine-ratio wording under each Needs/Goes to line ("1 offshore pump feeds 9.6 foundries · block 5 : 48"). Pure: plain numbers in, strings out; details-core.js does the Rational maths.
 
 // Largest side of a whole-number block worth printing; above it the block
 // is no longer something you would lay down, so only the per-machine

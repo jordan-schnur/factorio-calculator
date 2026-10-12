@@ -1,7 +1,7 @@
 // Runs every gate even when an earlier one fails, so CI shows all of them at once.
 import { spawnSync } from "node:child_process"
 
-const GATES = [["ESLint", "npx eslint ."], ["svelte-check", "npx svelte-check --threshold warning"], ["Hard rules", "node scripts/check-rules.mjs"]]
+const GATES = [["ESLint", "npx eslint ."], ["svelte-check", "npx svelte-check --threshold warning"], ["Hard rules", "node scripts/check-rules.mjs"], ["DOM boundary", "node scripts/check-dom.mjs"]]
 
 const failed = GATES.filter(([name, command]) => {
     console.log(`\n── ${name}: ${command}`)

@@ -1,5 +1,4 @@
-/* Per-recipe modules (calculator 1.2.0): itemtable.js's Modules column,
-   the gold edge of a row set by hand, and the modules bar over the table. */
+/* Per-recipe modules (calculator 1.2.0): the Modules column, the gold edge of a row set by hand, and the modules bar over the table. */
 .sect, .lrow { grid-template-columns: minmax(0, 1fr) 150px 260px 210px 40px; }
 .lrow .mods { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
 .lrow .mods-line { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
