@@ -1,9 +1,10 @@
 <script>
     import { on } from "svelte/events"
-    import { fitToView } from "../lib/flow.js"
+    import { fitToView } from "../lib/graph-view.svelte.js"
     import { refresh } from "../lib/plan.svelte.js"
     import Button from "./Button.svelte"
     import Byproducts from "./Byproducts.svelte"
+    import Graph from "./Graph.svelte"
     import GraphSide from "./detail/GraphSide.svelte"
     import ItemTable from "./table/ItemTable.svelte"
 
@@ -20,7 +21,7 @@
 </div>
 
 <div class="frame" id="graph-frame" hidden={!planned || view !== "graph"}>
-    <div id="flow-container" class="canvas"><div id="flow-columns"></div><svg id="flow"></svg><div id="flow-nodes"></div></div>
+    <Graph shown={planned && view === "graph"} />
     <Button size="sm" id="flow-fit" onclick={fitToView}>Fit</Button>
     <GraphSide />
 </div>

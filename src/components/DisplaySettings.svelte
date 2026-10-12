@@ -5,7 +5,7 @@
     import { DEFAULT_BELT_FORMAT, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, DEFAULT_RATE_PRECISION, longRateNames } from "../lib/align.js"
     import { beltHoldsOn, setBeltHolds } from "../lib/belt-holds.js"
     import { colorblindOn, setColorblind } from "../lib/colorblind.js"
-    import { refreshLineChips } from "../lib/flow.js"
+    import { showBeltHolds } from "../lib/graph.svelte.js"
     import { plan } from "../lib/plan.svelte.js"
     import { setRoundMachines } from "../lib/settings.js"
 
@@ -34,7 +34,7 @@
 
     function toggleBeltHolds(on) {
         setBeltHolds(on)
-        refreshLineChips()
+        showBeltHolds(on)
     }
 
     function setBeltFormat(value) {
