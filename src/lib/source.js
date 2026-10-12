@@ -1,10 +1,4 @@
-// calc/source.js — which recipe makes an item. `renderOptions` builds the
-// recipe option-row list (spec: 2026-09-11-calculator-source-chooser-design.md)
-// that details.js's Recipe section renders for any item with more than one
-// relevant recipe; picking a row applies it directly (`useOnly`, which
-// re-solves on its own). Bringing an item in from another build is not a
-// row here -- that is the Source segment's own button, built by
-// details.js and wired straight to the calc:toggle-supplied event.
+// Which recipe makes an item: the Recipe options a row's detail offers, and "use only this".
 import { spec } from "./factory.js"
 import { machineWord, pluralise } from "./flow-core.js"
 import { zero } from "./rational.js"
@@ -52,10 +46,7 @@ function amountText(amount) {
     return amount.toDecimal(2)
 }
 
-// One entry per relevant recipe, with the machine count each would need at
-// the item's current total rate. Bringing the item in is not one of these
-// rows -- that action lives only on the Source segment's own button, right
-// above the Recipe list in the detail markup (details.js).
+// One entry per relevant recipe, with the machines each would need at the item's current total rate.
 export function sourceOptions(item, totals) {
     let itemRate = (totals && totals.items.get(item)) || zero
     let producers = (totals && totals.producers.get(item)) || new Map()
@@ -77,7 +68,6 @@ export function sourceOptions(item, totals) {
             key: recipe.key,
             recipe,
             name: recipe.name,
-            icon: building ? building.icon : recipe.icon,
             thing: building || recipe,
             inUse: share > 0,
             shareText: shareText(share),
@@ -107,71 +97,6 @@ export function useOnly(item, recipe) {
     spec.updateSolution()
 }
 
-function optionButton(state, option) {
-    let button = document.createElement("button")
-    button.type = "button"
-    button.className = "opt" + (option.inUse ? " cur" : "")
-    button.dataset.option = option.key
-
-    let mark = document.createElement("span")
-    mark.className = "mark"
-    mark.textContent = option.inUse ? "●" : "○"
-    button.appendChild(mark)
-
-    let slot = document.createElement("span")
-    slot.className = "slot slot-sm"
-    slot.appendChild(option.icon.make(24, true))
-    button.appendChild(slot)
-
-    let grow = document.createElement("span")
-    grow.className = "grow"
-    let name = document.createElement("span")
-    name.className = "oname"
-    name.textContent = option.name
-    grow.appendChild(name)
-    if (option.locked) {
-        let badge = document.createElement("span")
-        badge.className = "badge locked"
-        badge.textContent = "not researched"
-        grow.appendChild(document.createTextNode(" "))
-        grow.appendChild(badge)
-    }
-    let line = document.createElement("span")
-    line.className = "oline muted num"
-    line.textContent = option.line
-    grow.appendChild(line)
-    button.appendChild(grow)
-
-    let count = document.createElement("span")
-    count.className = "ocount num"
-    count.appendChild(document.createTextNode(option.countText + (option.shareText ? ` · ${option.shareText}` : "")))
-    let exact = document.createElement("span")
-    exact.className = "muted"
-    exact.textContent = option.exactText
-    count.appendChild(exact)
-    button.appendChild(count)
-
-    button.addEventListener("click", event => {
-        event.stopPropagation()
-        useOnly(state.item, option.recipe)
-    })
-    return button
-}
-
-// The option rows for an item, as a fragment; shared by the table's open
-// row and the graph side card's Recipe section (both via details.js).
-export function renderOptions(item, totals) {
-    let state = sourceOptions(item, totals)
-    let fragment = document.createDocumentFragment()
-    for (let option of state.options) {
-        fragment.appendChild(optionButton(state, option))
-    }
-    return fragment
-}
-
-// Nothing left to wire up here: renderOptions' rows already carry their own
-// click handler (useOnly, which re-solves on its own), and there is no
-// popover state to track any more. Kept so initModules' call list doesn't
-// need to know that.
+// No-op until the cleanup unit removes the call from init.js.
 export function initSource() {
 }

@@ -5,6 +5,7 @@
     import Button from "./Button.svelte"
     import Byproducts from "./Byproducts.svelte"
     import GraphSide from "./detail/GraphSide.svelte"
+    import ItemTable from "./table/ItemTable.svelte"
 
     let { planned, view } = $props()
 
@@ -15,7 +16,7 @@
 <Byproducts />
 
 <div class="frame" id="table-frame" hidden={!planned || view !== "table"}>
-    <div id="item-table"></div>
+    <ItemTable />
 </div>
 
 <div class="frame" id="graph-frame" hidden={!planned || view !== "graph"}>
