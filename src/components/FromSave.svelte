@@ -4,6 +4,7 @@
     import { fromSave } from "../lib/fromsave-core.js"
     import { iconOf } from "../lib/icon-attach.js"
     import { plan } from "../lib/plan.svelte.js"
+    import { pickSave } from "../lib/savesettings.js"
 
     let view = $derived(plan.spec ? fromSave(plan.spec) : null)
 
@@ -20,7 +21,7 @@
     }
 
     function reread() {
-        document.getElementById("save-picker").dispatchEvent(new Event("change"))
+        pickSave(plan.spec.saveState.save)
     }
 </script>
 
