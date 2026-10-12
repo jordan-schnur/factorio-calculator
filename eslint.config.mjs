@@ -3,7 +3,7 @@ import svelte from "eslint-plugin-svelte"
 import globals from "globals"
 
 export default [
-    { ignores: ["dist/", "dist-ssr/", "public/", "tests/", "test-results/", "playwright-report/", "*.config.ts"] },
+    { ignores: [".claude/", "dist/", "dist-ssr/", "public/", "tests/", "test-results/", "playwright-report/", "*.config.ts"] },
     js.configs.recommended,
     ...svelte.configs.recommended,
     { languageOptions: { globals: { ...globals.browser } } },
