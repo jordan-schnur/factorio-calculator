@@ -4,6 +4,8 @@
     import Seg from "./Seg.svelte"
     import { findGroup } from "../lib/machines-core.js"
     import { plan, refresh } from "../lib/plan.svelte.js"
+    import { saveUi } from "../lib/save-ui.svelte.js"
+    import { pickSave } from "../lib/savesettings.js"
     import { openSettings } from "../lib/ui.svelte.js"
 
     let { planned, view } = $props()
@@ -32,9 +34,9 @@
 <div class="frame" id="topbar">
     <h1 class="title">Factorio Calculator</h1>
     <span class="muted needs-companion" id="save-line">{saveLine}</span>
-    <select id="save-picker" class="needs-companion"></select>
-    <span id="save-status" class="muted needs-companion"></span>
-    <span id="page-note" class="muted"></span>
+    <select id="save-picker" class="needs-companion" value={saveUi.selected} onchange={event => pickSave(event.currentTarget.value)}>{#if saveUi.saves}<option value="">newest save</option>{#each saveUi.saves as save (save)}<option value={save.name}>{save.name}</option>{/each}{/if}</select>
+    <span id="save-status" class="muted needs-companion">{saveUi.status}</span>
+    <span id="page-note" class="muted">{saveUi.note}</span>
     <div class="spacer"></div>
     <Seg id="view-seg" hidden={!planned} items={VIEWS} key={([key]) => key} selected={([key]) => planned && view === key} onpick={([key]) => pick(key)} attrs={([key]) => ({ "data-view": key })}>
         {#snippet children([, label])}{label}{/snippet}
