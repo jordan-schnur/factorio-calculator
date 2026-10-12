@@ -1,4 +1,5 @@
 <script>
+    import Board from "./Board.svelte"
     import Button from "./Button.svelte"
     import Seg from "./Seg.svelte"
     import { findGroup } from "../lib/machines-core.js"
@@ -39,6 +40,5 @@
         {#snippet children([, label])}{label}{/snippet}
     </Seg>
     <Button id="settings-open" title="Settings" onclick={openSettings}>Settings</Button>
-    <Button variant="green" class="needs-companion" id="board-button" hidden={!planned}>Add to board</Button>
-    <div class="frame needs-companion" id="board-panel" hidden></div>
+    <Board {planned} />
 </div>
