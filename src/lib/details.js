@@ -1,16 +1,10 @@
-// calc/details.js — the shared "row opened" detail markup: Needs, Goes to
-// and Source (make-here/bring-in switch, recipe picker, exact machine
-// count). `renderDetail` is pure DOM-building, called by both the table's
-// open row (itemtable.js, `.detail` under the clicked `.lrow`) and the
-// graph view's side card (`#graph-side`, built here since selecting a node
-// does not itself trigger a re-solve).
+// The legacy row detail and rate tooltips for itemtable.js; the item-table unit replaces both with components.
 import { isMultiOutput, outputsOf, usedOutputs } from "./byproduct-core.js"
-import { flowCardLines, headSubtitle, isTargetItem, itemCard, leftoverText, machineRatio, needBadgeOf, outputLinks, percentText, realConsumers } from "./details-core.js"
+import { flowCardLines, isTargetItem, itemCard, leftoverText, machineRatio, needBadgeOf, outputLinks, percentText, realConsumers } from "./details-core.js"
 import { spec } from "./factory.js"
 import { recipesFor } from "./machines-core.js"
 import { goesToRatio, needsRatio } from "./ratio-core.js"
 import { zero } from "./rational.js"
-import { registerRenderer } from "./render.js"
 import { mountModuleEditor } from "./modules-editor.js"
 import { tierPicker } from "./quality-ui.js"
 import { relevantRecipes, renderOptions } from "./source.js"
@@ -146,44 +140,6 @@ function col(className, children) {
         div.appendChild(child)
     }
     return div
-}
-
-function buildHead(item, rate, size) {
-    let head = document.createElement("div")
-    head.className = "head"
-    head.style.cssText = "display: flex; align-items: center; gap: 10px;"
-    let icon = document.createElement("span")
-    icon.className = "slot"
-    icon.appendChild(item.icon.make(size, true))
-    head.appendChild(icon)
-
-    let grow = document.createElement("span")
-    grow.style.flex = "1"
-    grow.style.lineHeight = "1.15"
-    let title = document.createElement("span")
-    title.className = "title"
-    title.textContent = item.name
-    grow.appendChild(title)
-    grow.appendChild(document.createElement("br"))
-    let subtitle = document.createElement("span")
-    subtitle.className = "muted num"
-    subtitle.textContent = headSubtitle(spec, item, rate)
-    grow.appendChild(subtitle)
-    head.appendChild(grow)
-
-    let close = document.createElement("button")
-    close.type = "button"
-    close.className = "x"
-    close.id = "details-close"
-    close.textContent = "✕"
-    close.addEventListener("click", () => {
-        spec.whereItem = null
-        spec.setHash()
-        document.dispatchEvent(new CustomEvent("calc:select", { detail: { item: null } }))
-    })
-    head.appendChild(close)
-
-    return head
 }
 
 // The ingredient's own row, for the "brought in"/"mined"/"piped in" badge
@@ -440,40 +396,5 @@ export function renderDetail(container, item, totals) {
     }
 }
 
-function renderGraphSide(_spec, totals) {
-    let side = document.getElementById("graph-side")
-    if (!side) {
-        return
-    }
-    let item = spec.view === "graph" && spec.whereItem ? spec.items.get(spec.whereItem) : null
-    if (!item || !totals || !totals.items.has(item)) {
-        side.hidden = true
-        side.textContent = ""
-        return
-    }
-
-    side.textContent = ""
-    let rate = totals.items.get(item) || zero
-    let row = buildRows(totals).find(r => r.item === item)
-    let head = buildHead(item, rate, 28)
-    if (row && row.isReal && isMultiOutput(row.recipe)) {
-        head.querySelector(".slot").replaceChildren(row.recipe.icon.make(28, true))
-        head.querySelector(".title").textContent = row.recipe.name
-        head.querySelector(".muted").textContent = `${row.recipe.products.length} outputs, all of them have to be used`
-    }
-    side.appendChild(head)
-    let detail = document.createElement("div")
-    detail.className = "detail"
-    renderDetail(detail, item, totals)
-    side.appendChild(detail)
-    side.hidden = false
-}
-
-export function initDetails() {
-    document.addEventListener("calc:select", () => renderGraphSide(spec, spec.lastTotals))
-    // A view switch doesn't re-solve and doesn't change spec.whereItem, but
-    // #graph-side must appear/disappear with it -- header.js dispatches
-    // calc:view on every Table<->Graph click.
-    document.addEventListener("calc:view", () => renderGraphSide(spec, spec.lastTotals))
-    registerRenderer(renderGraphSide)
-}
+// No-op until the cleanup unit removes the call from init.js.
+export function initDetails() {}
