@@ -7,7 +7,8 @@ const DOM = /document\.|d3\.select|createElement|innerHTML|addEventListener/
 const D3 = /from "d3"/
 const D3_HOME = "src/lib/graph-view.svelte.js"
 const ALLOW = [
-    ["src/lib/analytics.svelte.js", "", "Google Analytics: consent banner and gtag loader sit outside the app root, public host only"],
+    ["src/lib/analytics.svelte.js", 'document.createElement("script")', "the gtag.js loader, outside the app root, public host only"],
+    ["src/lib/analytics.svelte.js", "document.head.appendChild(script)", "the gtag.js loader, outside the app root, public host only"],
     ["src/lib/colorblind.js", "document.documentElement.classList", "the colour-blind class lives on <html>"],
     ["src/lib/hosting.js", "document.documentElement.dataset", "data-companion lives on <html>"],
     ["src/lib/icon.js", 'document.createElement("img")', "Icon.make, the one sprite engine iconOf draws through (C2)"],

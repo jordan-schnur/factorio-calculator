@@ -99,9 +99,7 @@ function applyPageState(settings) {
     spec.view = settings.get("view") === "graph" || kirkGraph ? "graph" : "table"
 }
 
-// display() is now nothing but renderAll(), so the bookkeeping it used to do
-// runs as the first renderer: before any module renders, the fragment and the
-// build-target inputs match the solution that is about to be drawn.
+// display() is now nothing but renderAll(), so this runs as the first renderer: the fragment and build-target inputs match the solution about to be drawn, before any other renderer runs.
 function renderHousekeeping(spec) {
     for (let target of spec.buildTargets) {
         target.getRate()
@@ -168,8 +166,7 @@ function loadData(modName, settings) {
     return latestLoad
 }
 
-// setHash() writes a new history entry on every state change, so the
-// browser's back/forward moves the fragment; nothing re-read it.
+// setHash() writes a new history entry on every state change, so the browser's back/forward moves the fragment.
 export function init() {
     applyColorblind()
     on(window, "hashchange", () => {
@@ -180,7 +177,6 @@ export function init() {
     let settings = loadSettings(window.location.hash)
     selectDataSet(settings)
     applyPageState(settings)
-    // applySaveSettings starts the follow timer, so it runs once per page
-    // life -- not on the reloads it may itself trigger.
+    // applySaveSettings starts the follow timer, so it runs once per page life, not on the reloads it may itself trigger.
     loadData(currentMod(), settings).then(() => applySaveSettings(settings))
 }

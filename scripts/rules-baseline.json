@@ -13,7 +13,7 @@
     "src/lib/groups.js": 1,
     "src/lib/hosting.js": 2,
     "src/lib/icon.js": 2,
-    "src/lib/init.js": 7,
+    "src/lib/init.js": 4,
     "src/lib/intro-bg-core.js": 3,
     "src/lib/machines-core.js": 5,
     "src/lib/matrix.js": 2,
