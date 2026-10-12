@@ -11,15 +11,14 @@ import * as d3 from "d3"
 // node-testable; this file only touches spec/d3/the DOM.
 import { registerRenderer } from "./render.js"
 import { spec } from "./factory.js"
-import { Rational, zero } from "./rational.js"
-import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, lineStyle, rankNodes, stackLabels } from "./flow-core.js"
+import { dashArray, hoverSet, itemStyles, lineStyle, stackLabels } from "./flow-core.js"
+import { PLAIN_LABEL_H, SEND_OUT, beltRow, bothEnds, buildModel, chipRoom, colGapFor, edgeRate, layoutModel, lineBelts, lineMachines, machineWords, renderKey, stageLabel, stalledRecipes } from "./graph-core.js"
 import { beaconBadge, moduleStrip } from "./modules-strip.js"
 import { withQualityBadge } from "./quality-ui.js"
 import { rateText } from "./table-core.js"
-import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
+import { isMultiOutput, outputsOf } from "./byproduct-core.js"
 import { backsUpMarker, showByproducts } from "./byproducts.svelte.js"
-import { linkMachines } from "./details-core.js"
-import { beltHoldsRow, beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
+import { beltHoldsRow, beltWords } from "./ratio-core.js"
 import { beltHoldsOn } from "./belt-holds.js"
 import { tierWord } from "./colorblind.js"
 
@@ -47,107 +46,6 @@ let needsFit = true
 // while this holds, so a user who has manually framed the graph isn't
 // yanked back to the fitted view.
 let isFitted = true
-
-function renderKey() {
-    // beltFormat too: chipGap measures chips with their belt wording.
-    // modulesVersion: commitModules() redisplays with the same totals object
-    // when only speed/power moved (no re-solve), so without this a module
-    // edit that doesn't change machine counts enough to move the totals
-    // would leave stale cards -- see modules-editor.js's commit path.
-    return `${spec.format.rateName}:${spec.format.ratePrecision}:${spec.belt.key}:${spec.format.beltFormat}:${spec.modulesVersion}`
-}
-
-function itemKeyFor(node) {
-    if (node.kind === "input") return node.id.slice("in:".length)
-    let recipe = spec.recipes.get(node.id)
-    return recipe ? recipe.products[0].item.key : null
-}
-
-// A node's rate is the total flow of its item: for a production node, the
-// share of that item this specific recipe contributes (totals.producers);
-// for a brought-in node, the total downstream demand for that item
-// (totals.items, which sums consumption -- exactly what's being supplied).
-function nodeRate(totals, node, itemKey) {
-    if (itemKey === null) return zero
-    if (node.kind === "input") {
-        let item = spec.items.get(itemKey)
-        return (item && totals.items.get(item)) || zero
-    }
-    let recipe = spec.recipes.get(node.id)
-    if (!recipe) return zero
-    let item = recipe.products[0].item
-    let producerMap = totals.producers.get(item)
-    return (producerMap && producerMap.get(recipe)) || zero
-}
-
-const LEFT_OVER = "__leftover"
-const SEND_OUT = "__sendout"
-
-function buildModel(totals) {
-    let isTargetRecipe = new Set()
-    for (let [recipe] of totals.rates) {
-        if (spec.buildTargets.some(t => recipe.products.some(p => p.item === t.item))) {
-            isTargetRecipe.add(recipe.key)
-        }
-    }
-
-    // totals.rates also carries solve.js's OutputRecipe/SurplusRecipe
-    // sentinels (isReal() false, no `.key`/`.isResource()`/`.isDisable()`)
-    // marking where a target's demand terminates; they aren't a production
-    // step, so skip isResource()/isDisable()/getCount()/getBuilding() for
-    // anything that isn't real. A `D-` DisabledRecipe stand-in for a
-    // supplied/ignored item *is* real (isReal() true) but isDisable() true;
-    // flow-core folds it into an "input" node rather than a recipe node.
-    let recipes = [...totals.rates].map(([recipe, rate]) => {
-        let isReal = recipe.isReal()
-        return {
-            key: recipe.key,
-            name: recipe.name,
-            isReal,
-            isDisable: isReal ? recipe.isDisable() : false,
-            isResource: isReal ? recipe.isResource() : false,
-            isTarget: isTargetRecipe.has(recipe.key),
-            count: isReal ? Math.ceil(spec.getCount(recipe, rate).toFloat()) : 0,
-            machine: isReal ? spec.getBuilding(recipe) : null,
-        }
-    })
-
-    // What the solver leaves over runs into a sink card in the last column:
-    // "Left over" (the Byproducts bar's problem) or "Send out" (sent out on
-    // purpose, the mirror of a Bring in card).
-    let sinkOf = item => spec.sendOut.has(item.key) ? SEND_OUT : LEFT_OVER
-    for (let item of totals.surplus.keys()) {
-        let key = sinkOf(item)
-        if (!recipes.some(r => r.key === key)) {
-            recipes.push({key, name: key === SEND_OUT ? "Send out" : "Left over", isReal: true, isDisable: false,
-                isResource: false, isTarget: false, sink: true, count: 0, machine: null})
-        }
-    }
-
-    // Drop links into/out of the other sentinels (the target's OutputRecipe):
-    // they have no `.key`, so they can't be a flow-core node or link endpoint.
-    // `from` may legitimately be `null` (flow-core's own "no producer" case),
-    // so check that before touching `.key`.
-    let isSurplus = to => to.key === undefined && to.name === "surplus"
-    let links = totals.proportionate
-        .filter(({from, to}) => (from === null || from.key !== undefined) && (to.key !== undefined || isSurplus(to)))
-        .map(({item, from, to, rate}) => ({
-            item: item.key,
-            itemName: item.name,
-            from: from === null ? null : from.key,
-            to: isSurplus(to) ? sinkOf(item) : to.key,
-            rate: rate.toFloat(),
-            rateExact: rate,
-            belts: item.phase === "solid" ? spec.getBeltCount(rate).toFloat() : 0,
-        }))
-
-    let model = buildFlowModel({recipes, links})
-    for (let node of model.nodes) {
-        node.itemKey = itemKeyFor(node)
-        node.rate = nodeRate(totals, node, node.itemKey)
-    }
-    return model
-}
 
 function selectNode(itemKey) {
     if (itemKey === null) return
@@ -428,10 +326,10 @@ function setLineHover(edge) {
     applyLit({nodes: new Set([edge.source, edge.target]), edges: new Set([`${edge.source}>${edge.target}`])})
     let item = spec.items.get(edge.item)
     if (!item || !lastDrawnTotals) return
-    let line = lineMachines(edge)
+    let line = lineMachines(spec, lastDrawnTotals, edge)
     let label = findLabel(edge)
     if (label && !label.classList.contains("pinned")) {
-        swapChildren(label, lineChip(item, edge.rateExact ?? Rational.from_float(edge.rate), null, holdsRows(line)), "chip")
+        swapChildren(label, lineChip(item, edgeRate(edge), null, holdsRows(line)), "chip")
         restack()
     }
     if (line?.supplier) answerOnCard(edge.source, line.from, line.supplier, "send")
@@ -484,7 +382,7 @@ function perBeltRow(belt) {
 
 // With the setting on: "One transport belt holds:", then the most machines at each end one belt serves.
 function holdsRows(line) {
-    let belts = beltHoldsOn() && line ? lineBelts(line) : null
+    let belts = beltHoldsOn() && line ? lineBelts(spec, line) : null
     if (belts === null) return []
     let end = (recipe, machines, lead, note) => {
         let building = spec.getBuilding(recipe)
@@ -496,13 +394,6 @@ function holdsRows(line) {
     if (line.supplier) rows.push(end(line.from, line.supplier, "up to", "fills it"))
     if (line.consumer) rows.push(end(line.to, line.consumer, "enough for", "uses it all"))
     return rows
-}
-
-// The belts a line fills, or null for a fluid or a line with no machine at either end.
-function lineBelts(line) {
-    if (line.item.phase === "fluid" || (!line.supplier && !line.consumer)) return null
-    let belts = spec.getBeltCount(line.rate).toFloat()
-    return belts > 0 ? belts : null
 }
 
 function beltIcon() {
@@ -522,28 +413,6 @@ function chipRow(className, ...children) {
 function withWord(obj, icon) {
     let word = tierWord(obj)
     return word ? [icon, word] : [icon]
-}
-
-// "32 of 56 send this" out of the whole machines the card itself shows
-// ("56 × ..."), not the exact 55.8, so the two numbers on one card agree.
-function machineWords(machines, verb) {
-    return lineEnd(machines.count, Math.ceil(machines.total - 1e-9), verb)
-}
-
-// A line with machines at both ends: how many of the sender's feed how many
-// of the receiver's, and the ratio with the focused end (`root`, "from" or
-// "to") as 1 -- copper cable focused, 13.33 of 134 foundries -> 480
-// assembling machines, 1 : 36. Totals are whole, as machineWords' are.
-function bothEnds(line, root) {
-    let whole = m => ({count: m.count, total: Math.ceil(m.total - 1e-9)})
-    return {fromRecipe: line.from, toRecipe: line.to, ...lineRatio(whole(line.supplier), whole(line.consumer), root), belt: beltRow(line)}
-}
-
-// The machines at each end one full belt of the line covers (5 foundries -> 180 assemblers), or null.
-function beltRow(line) {
-    let belts = lineBelts(line)
-    let belt = belts === null ? null : perBelt(line.supplier ? line.supplier.count : null, line.consumer ? line.consumer.count : null, belts)
-    return belt && {fromRecipe: line.from, toRecipe: line.to, ...belt}
 }
 
 function answerOnCard(nodeId, recipe, machines, verb, undo = restoreLine) {
@@ -571,15 +440,6 @@ function findLabel(edge) {
 // `focusUndo`, so focusing never lays the graph out again.
 let focusUndo = []
 
-function lineMachines(edge) {
-    let item = spec.items.get(edge.item)
-    let to = spec.recipes.get(edge.target) || null
-    if (!item || !to || !lastDrawnTotals) return null
-    let rate = edge.rateExact ?? Rational.from_float(edge.rate)
-    let from = edge.source.startsWith("in:") ? null : spec.recipes.get(edge.source) || null
-    return {item, rate, from, to, ...linkMachines(spec, lastDrawnTotals, item, from, to, rate)}
-}
-
 // Rebuilds the pinned chips, for a Display setting that changes what they say.
 export function refreshLineChips() {
     applyFocus()
@@ -600,14 +460,14 @@ function applyFocus() {
         let outgoing = focused.has(edge.source)
         if (!outgoing && !focused.has(edge.target)) continue
         let label = findLabel(edge)
-        let line = lineMachines(edge)
+        let line = lineMachines(spec, lastDrawnTotals, edge)
         if (!label || !line) continue
         let mine = outgoing ? line.supplier : line.consumer
         let machines = null
         if (line.supplier && line.consumer) {
-            machines = bothEnds(line, outgoing ? "from" : "to")
+            machines = bothEnds(spec, line, outgoing ? "from" : "to")
         } else if (mine) {
-            machines = {recipe: outgoing ? line.from : line.to, words: machineWords(mine, outgoing ? "send" : "use"), belt: beltRow(line)}
+            machines = {recipe: outgoing ? line.from : line.to, words: machineWords(mine, outgoing ? "send" : "use"), belt: beltRow(spec, line)}
         }
         swapChildren(label, lineChip(line.item, line.rate, machines, holdsRows(line)), "chip", focusUndo)
         label.classList.add("pinned")
@@ -653,14 +513,14 @@ function chipGap(edges) {
     document.body.appendChild(probe)
     let widest = 0
     for (let edge of edges) {
-        let line = lineMachines(edge)
+        let line = lineMachines(spec, lastDrawnTotals, edge)
         if (!line) continue
         // every machine row applyFocus could give it, whichever end is focused
         let rows = line.supplier && line.consumer
-            ? [bothEnds(line, "from"), bothEnds(line, "to")]
+            ? [bothEnds(spec, line, "from"), bothEnds(spec, line, "to")]
             : [
-                line.supplier && {recipe: line.from, words: machineWords(line.supplier, "send"), belt: beltRow(line)},
-                line.consumer && {recipe: line.to, words: machineWords(line.consumer, "use"), belt: beltRow(line)},
+                line.supplier && {recipe: line.from, words: machineWords(line.supplier, "send"), belt: beltRow(spec, line)},
+                line.consumer && {recipe: line.to, words: machineWords(line.consumer, "use"), belt: beltRow(spec, line)},
             ].filter(Boolean)
         for (let machines of rows.length ? rows : [null]) {
             let chip = document.createElement("div")
@@ -672,7 +532,7 @@ function chipGap(edges) {
         }
     }
     probe.remove()
-    return Math.max(BASE_COL_GAP, Math.ceil(widest + CHIP_MARGIN))
+    return colGapFor(widest)
 }
 
 // The selected item's node(s) get their edges/labels marked "hot" -- there
@@ -761,12 +621,6 @@ function ensureZoom() {
     d3.select("#flow-container").call(zoomBehavior).on("dblclick.zoom", null)
 }
 
-function stageLabel(rank, lastRank) {
-    if (rank === 0) return "BRING IN"
-    if (rank === lastRank) return "TARGET"
-    return `STAGE ${lastRank - rank}`
-}
-
 function renderColumns(laidOut) {
     let container = document.querySelector("#flow-columns")
     if (!container) return
@@ -835,12 +689,7 @@ function renderEdges(laidOut) {
             .on("mouseenter", (_event, d) => hoverIntent(() => showLineHover(d)))
             .on("mouseleave", () => hoverIntent(null))
 
-    // Edge rate labels are plain HTML (like the node cards) rather than SVG
-    // <text>, positioned at the edge's own midpoint (lx/ly, from layered()).
-    // `edge.rateExact` is the exact Rational carried from buildModel's links
-    // (null only for a merged edge whose inputs lacked one); falling back to
-    // Rational.from_float(edge.rate) there avoids a float round-trip that
-    // would otherwise print "10.0/min" next to a card reading "10/min".
+    // Edge rate labels are plain HTML (like the node cards), positioned at the edge's own midpoint (lx/ly).
     let nodesLayer = document.querySelector("#flow-nodes")
     if (!nodesLayer) return
     for (let edge of laidOut.edges) {
@@ -852,7 +701,7 @@ function renderEdges(laidOut) {
         label.dataset.ly = edge.ly
         label.dataset.from = edge.source
         label.dataset.to = edge.target
-        let exact = edge.rateExact ?? Rational.from_float(edge.rate)
+        let exact = edgeRate(edge)
         let {color, dash} = look(edge)
         label.style.borderColor = color
         label.append(lineSwatch(color, dash))
@@ -887,14 +736,6 @@ function lineSwatch(color, dash) {
     return svg
 }
 
-// flow-core's default gap between columns, and the room a chip needs
-// either side of it (see chipGap()).
-const BASE_COL_GAP = 96
-const CHIP_MARGIN = 32
-// A chip's horizontal padding plus border, which chipGap's offsetWidth includes but a row's max-width doesn't.
-const CHIP_FRAME = 20
-const PLAIN_LABEL_H = 18
-
 // The full draw pass, called whenever the Graph view needs a picture: on a
 // fresh solve while it's showing, and once when calc:view switches to it
 // (see initFlow()).
@@ -915,21 +756,16 @@ function draw(totals) {
     // wrongly dedupe away a redraw the page never actually did (e.g. rate
     // unit changes while off Graph, then back).
     lastDrawnTotals = totals
-    lastDrawnKey = renderKey()
+    lastDrawnKey = renderKey(spec)
 
-    let model = buildModel(totals)
-    stalledNow = new Set(stalls(totals, spec.sendOut).map(b => b.recipe).filter(Boolean))
+    let model = buildModel(spec, totals)
+    stalledNow = stalledRecipes(spec, totals)
 
-    // 210x58: the prototype's .gcard size, which calc.css's .node now
-    // matches exactly -- these are the inline width/height nodeMarkup()
-    // writes onto each card, so a mismatch here would leave .node's CSS
-    // size dead.
-    let ranks = rankNodes(model).rank
     ensureZoom()
     // Gaps fit the widest chip (chipGap) and cards the module strip (cardHeight), so hovering never relays out.
     let colGap = chipGap(model.edges)
-    document.querySelector("#flow-nodes")?.style.setProperty("--chip-room", `${colGap - CHIP_MARGIN - CHIP_FRAME}px`)
-    let laidOut = layered(model, {nodeWidth: 210, nodeHeight: cardHeight(model.nodes), ranks, colGap})
+    document.querySelector("#flow-nodes")?.style.setProperty("--chip-room", chipRoom(colGap))
+    let laidOut = layoutModel(model, colGap)
     lastLayout = laidOut
     focusUndo = []
     restoreLine = []
@@ -980,7 +816,7 @@ function fitWithRetry() {
 function renderFlow(_spec, totals) {
     lastTotals = totals
     if (spec.view !== "graph") return
-    if (spec.buildTargets.length !== 0 && totals === lastDrawnTotals && renderKey() === lastDrawnKey) return
+    if (spec.buildTargets.length !== 0 && totals === lastDrawnTotals && renderKey(spec) === lastDrawnKey) return
     if (totals !== lastDrawnTotals) hoverCard = null
     draw(totals)
 }
