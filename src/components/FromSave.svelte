@@ -21,7 +21,7 @@
     }
 
     function reread() {
-        pickSave(plan.spec.saveState.save)
+        pickSave(plan.spec.saveState.save ?? "")
     }
 </script>
 
