@@ -1,28 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2019 Kirk McDonald
-import * as d3 from "d3"
+import { on } from "svelte/events"
 import { getBelts } from "./belt.js"
-import { initBoard } from "./board.js"
 import { getBuildings } from "./building.js"
-import { initDetails } from "./details.js"
 import { spec, resetSpec } from "./factory.js"
 import { loadSettings, writeHash, isOwnHash, rememberHash } from "./fragment.js"
 import { getFuel } from "./fuel.js"
 import { getItemGroups } from "./group.js"
 import { getSprites } from "./icon.js"
 import { getItems } from "./item.js"
-import { initItemTable } from "./itemtable.js"
 import { getModules } from "./module.js"
 import { initModulesEditor } from "./modules-editor.svelte.js"
-import { initModulesSettings } from "./modules-settings.js"
 import { renderPlan } from "./plan.svelte.js"
 import { getPlanets } from "./planet.js"
 import { getRecipes } from "./recipe.js"
 import { registerRenderer } from "./render.js"
-import { initSaveSettings, applySaveSettings } from "./savesettings.js"
-import { currentMod, MODIFICATIONS, initSettingsTab, selectDataSet, renderSettings } from "./settings.js"
-import { initSource } from "./source.js"
-import { initSupplied } from "./supplied.js"
-import { reapTooltips } from "./tooltip.js"
+import { applySaveSettings } from "./savesettings.js"
+import { currentMod, MODIFICATIONS, selectDataSet, renderSettings } from "./settings.js"
 import { applyColorblind } from "./colorblind.js"
 import { writeStore } from "./storage.js"
 
@@ -106,14 +99,11 @@ function applyPageState(settings) {
     spec.view = settings.get("view") === "graph" || kirkGraph ? "graph" : "table"
 }
 
-// display() is now nothing but renderAll(), so the bookkeeping it used to do
-// runs as the first renderer: before any module renders, the fragment and the
-// build-target inputs match the solution that is about to be drawn.
+// display() is now nothing but renderAll(), so this runs as the first renderer: the fragment and build-target inputs match the solution about to be drawn, before any other renderer runs.
 function renderHousekeeping(spec) {
     for (let target of spec.buildTargets) {
         target.getRate()
     }
-    reapTooltips()
     spec.setHash()
     if (spec.buildTargets.length > 0) {
         writeStore("calc.lastHash", location.hash)
@@ -129,15 +119,7 @@ function initModules() {
     modulesInitialized = true
     registerRenderer(renderHousekeeping)
     registerRenderer(renderPlan)
-    initSupplied()
-    initSource()
-    initSettingsTab()
     initModulesEditor()
-    initModulesSettings()
-    initBoard()
-    initSaveSettings()
-    initItemTable()
-    initDetails()
 }
 
 export let useLegacyCalculation
@@ -146,13 +128,21 @@ export let useLegacyCalculation
 let loadGeneration = 0
 let latestLoad = null
 
+// d3.json's contract: a non-2xx answer rejects, 204/205 resolve to undefined.
+function fetchJson(url) {
+    return fetch(url, { cache: "reload" }).then(response => {
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`)
+        return response.status === 204 || response.status === 205 ? undefined : response.json()
+    })
+}
+
 function loadData(modName, settings) {
     let generation = ++loadGeneration
     let hash = window.location.hash
     let mod = MODIFICATIONS.get(modName)
     useLegacyCalculation = mod.legacy
     let filename = "data/" + mod.filename
-    latestLoad = d3.json(filename, {cache: "reload"}).then(function(data) {
+    latestLoad = fetchJson(filename).then(function(data) {
         if (generation !== loadGeneration) return latestLoad
         if (window.location.hash !== hash && !isOwnHash(window.location.hash)) return reloadFromHash()
         let items = getItems(data)
@@ -176,11 +166,10 @@ function loadData(modName, settings) {
     return latestLoad
 }
 
-// setHash() writes a new history entry on every state change, so the
-// browser's back/forward moves the fragment; nothing re-read it.
+// setHash() writes a new history entry on every state change, so the browser's back/forward moves the fragment.
 export function init() {
     applyColorblind()
-    window.addEventListener("hashchange", () => {
+    on(window, "hashchange", () => {
         if (!isOwnHash(window.location.hash)) {
             reloadFromHash()
         }
@@ -188,7 +177,6 @@ export function init() {
     let settings = loadSettings(window.location.hash)
     selectDataSet(settings)
     applyPageState(settings)
-    // applySaveSettings starts the follow timer, so it runs once per page
-    // life -- not on the reloads it may itself trigger.
+    // applySaveSettings starts the follow timer, so it runs once per page life, not on the reloads it may itself trigger.
     loadData(currentMod(), settings).then(() => applySaveSettings(settings))
 }

@@ -15,9 +15,6 @@ let fetching = false
 let appliedSignature = null
 let appliedOverrides = ""
 
-// No-op until the cleanup unit removes the call from init.js.
-export function initSaveSettings() {}
-
 export function pickSave(name) {
     spec.saveState.save = name
     spec.saveState.follow = true

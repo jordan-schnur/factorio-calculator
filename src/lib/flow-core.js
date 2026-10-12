@@ -113,12 +113,7 @@ export function edgePath(e) {
     return `M ${e.x1} ${e.y1} C ${e.x1 + dx} ${e.y1}, ${e.x2 - dx} ${e.y2}, ${e.x2} ${e.y2}`
 }
 
-// Ranks a model: cycle-breaking DFS, then longest path from the sources,
-// then sinks pinned to the last rank. Returned separately from layered()
-// so flow.js can rank the FULL model and lay out only the visible part
-// of it -- a folded card then keeps its stage column instead of being
-// re-ranked as a source. `rankEdges` are the model's edges minus the
-// back edges the DFS dropped.
+// Ranks a model (cycle-breaking DFS, then longest path from the sources, then sinks pinned to the last rank); separate from layered() so graph-core.js can rank the full model and lay out only the visible part of it, keeping a folded card's stage column instead of re-ranking it as a source. `rankEdges` are the model's edges minus the back edges the DFS dropped.
 export function rankNodes(model) {
     const ids = model.nodes.map(n => n.id)
     const out = new Map(ids.map(id => [id, []]))
@@ -314,9 +309,7 @@ export function layered(model, {nodeWidth = 216, nodeHeight = 64, dummyHeight = 
 }
 
 // "assembler" | "furnace" | "drill" | "chem plant" | the building's own name lower-cased
-// What a hover on card `id` lights up: the card itself, every card one edge
-// upstream (what it is made from) or downstream (where it goes), and those
-// edges, keyed "source>target" as flow.js tags each path.
+// What a hover on card `id` lights up: the card itself, every card one edge upstream (what it is made from) or downstream (where it goes), and those edges, keyed "source>target".
 export function hoverSet(edges, id) {
     const nodes = new Set([id])
     const lit = new Set()

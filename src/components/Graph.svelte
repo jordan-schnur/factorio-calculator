@@ -1,5 +1,5 @@
 <script>
-    import { cssVars } from "../lib/css-vars.js"
+    import { inlineStyle } from "../lib/style-attach.js"
     import { BASE_COL_GAP, chipRoom, colGapFor, edgeKey, edgeLooks, graphFocus, layoutModel } from "../lib/graph-core.js"
     import { followZoom, graphView, placeGraph, refitIfNeeded, restack, zoomable } from "../lib/graph-view.svelte.js"
     import { drawnGraph, graphHover } from "../lib/graph.svelte.js"
@@ -31,4 +31,4 @@
 
 <svelte:window onresize={refitIfNeeded} />
 
-<div id="flow-container" class={["canvas", { hovering: Boolean(focus?.lit) }]} {@attach zoomable}><div id="flow-columns" {@attach followZoom}>{#if layout}{#each layout.columns as column (column.rank)}<GraphStage {column} last={layout.columns.length - 1} height={layout.height} />{/each}{/if}</div><svg id="flow"><g class="viewport" transform={`translate(${t.x},${t.y}) scale(${t.k})`}>{#if layout}<GraphEdges edges={layout.edges} nodes={layout.nodes} {looks} {focus} />{/if}</g></svg><div id="flow-nodes" class={{ small: graphView.small }} {@attach followZoom} {@attach cssVars(room)} {@attach restack(focus, graphView.fits)}>{#if layout}{#each layout.nodes as node (node.id)}<GraphCard {node} face={drawn.faces.get(node.id)} {focus} />{/each}{#each layout.edges as edge (edgeKey(edge))}<GraphLabel {edge} look={looks.get(edgeKey(edge))} {focus} />{/each}{/if}</div>{#if measuring}<ChipProbe chips={drawn.probe} onmeasure={measuredWidth} />{/if}</div>
+<div id="flow-container" class={["canvas", { hovering: Boolean(focus?.lit) }]} {@attach zoomable}><div id="flow-columns" {@attach followZoom}>{#if layout}{#each layout.columns as column (column.rank)}<GraphStage {column} last={layout.columns.length - 1} height={layout.height} />{/each}{/if}</div><svg id="flow"><g class="viewport" transform={`translate(${t.x},${t.y}) scale(${t.k})`}>{#if layout}<GraphEdges edges={layout.edges} nodes={layout.nodes} {looks} {focus} />{/if}</g></svg><div id="flow-nodes" class={{ small: graphView.small }} {@attach followZoom} {@attach inlineStyle(room)} {@attach restack(focus, graphView.fits)}>{#if layout}{#each layout.nodes as node (node.id)}<GraphCard {node} face={drawn.faces.get(node.id)} {focus} />{/each}{#each layout.edges as edge (edgeKey(edge))}<GraphLabel {edge} look={looks.get(edgeKey(edge))} {focus} />{/each}{/if}</div>{#if measuring}<ChipProbe chips={drawn.probe} onmeasure={measuredWidth} />{/if}</div>

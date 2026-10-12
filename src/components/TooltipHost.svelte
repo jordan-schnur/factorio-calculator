@@ -4,7 +4,7 @@
 
     let Tip = $derived(tip.current?.component)
 
-    // Popper beside the target, as tooltip.js did; the tip clears the moment its anchor leaves the page.
+    // Popper beside the target; the tip clears the moment its anchor leaves the page.
     function place(shown) {
         return node => {
             const popper = createPopper(shown.target, node, { placement: "right", modifiers: [{ name: "offset", options: { offset: [0, 20] } }] })

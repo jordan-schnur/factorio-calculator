@@ -96,7 +96,3 @@ export function useOnly(item, recipe) {
     markOverride("recipes")
     spec.updateSolution()
 }
-
-// No-op until the cleanup unit removes the call from init.js.
-export function initSource() {
-}

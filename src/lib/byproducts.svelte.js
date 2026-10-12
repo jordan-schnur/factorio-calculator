@@ -1,6 +1,5 @@
 // Byproducts bar state: dismissed blocks (localStorage), and the applied fix with its Undo.
 import { SvelteSet } from "svelte/reactivity"
-import { on as onEvent } from "svelte/events"
 import { restoreDisable } from "./byproduct-trial.js"
 import { spec } from "./factory.js"
 import { markOverride } from "./savesettings.js"
@@ -79,19 +78,4 @@ export function applySendOut(block, text) {
 
 export function showByproducts() {
     document.getElementById("byproducts")?.scrollIntoView({ block: "nearest", behavior: "smooth" })
-}
-
-// "backs up" on a card/row whose recipe would stop (flow.js, itemtable.js): scrolls to the Byproducts bar instead of selecting/opening what it's on.
-export function backsUpMarker(size) {
-    const marker = document.createElement("span")
-    marker.className = "bp-marker"
-    marker.title = "Something it makes has nowhere to go: see the fixes above"
-    marker.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3z"></path><path d="M12 10v5"></path></svg>`
-    marker.appendChild(document.createTextNode("backs up"))
-    onEvent(marker, "click", event => {
-        event.stopPropagation()
-        event.preventDefault()
-        showByproducts()
-    })
-    return marker
 }

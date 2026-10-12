@@ -26,7 +26,6 @@
     function pick(key) {
         plan.spec.view = key
         plan.spec.setHash()
-        document.dispatchEvent(new CustomEvent("calc:view", { detail: { view: key } }))
         refresh()
     }
 </script>

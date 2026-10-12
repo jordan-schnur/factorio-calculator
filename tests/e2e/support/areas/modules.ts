@@ -5,7 +5,7 @@ import { expect, type Locator, type Page } from "@playwright/test"
 import type { Calculator } from "../calculator"
 
 export const MS = {
-    // Table & graph strips (itemtable.js, flow.js, modules-strip.js)
+    // Table & graph strips (modules-strip.js)
     modulesBar: "#modules-bar",
     // Relative to a locator already scoped to #modules-bar (modulesBar()).
     mbChange: ".mb-change",
@@ -21,7 +21,7 @@ export const MS = {
 
     graphCardMods: (node: string) => `#flow-nodes .node[data-node="${node}"] .mods`,
 
-    // Settings -> Modules (modules-settings.js)
+    // Settings -> Modules (ModulesSettings.svelte)
     settingsModules: "#settings-modules",
     msKind: (value: string) => `#ms-kind button[data-value="${value}"]`,
     msFallback: (value: string) => `#ms-fallback button[data-value="${value}"]`,
