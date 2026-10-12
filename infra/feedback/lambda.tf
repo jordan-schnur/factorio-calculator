@@ -1,3 +1,7 @@
+locals {
+  function_name = "factorio-calculator-feedback"
+}
+
 data "archive_file" "lambda" {
   type        = "zip"
   source_dir  = "${path.module}/lambda"
@@ -5,8 +9,15 @@ data "archive_file" "lambda" {
   excludes    = ["feedback.test.mjs"]
 }
 
+resource "aws_cloudwatch_log_group" "feedback" {
+  name              = "/aws/lambda/${local.function_name}"
+  retention_in_days = 14
+
+  tags = local.tags
+}
+
 resource "aws_lambda_function" "feedback" {
-  function_name    = "factorio-calculator-feedback"
+  function_name    = local.function_name
   filename         = data.archive_file.lambda.output_path
   source_code_hash = data.archive_file.lambda.output_base64sha256
   handler          = "index.handler"
@@ -15,14 +26,9 @@ resource "aws_lambda_function" "feedback" {
   timeout          = 10
   role             = aws_iam_role.feedback_lambda.arn
 
-  reserved_concurrent_executions = 2
+  reserved_concurrent_executions = var.reserved_concurrency
 
-  tags = local.tags
-}
-
-resource "aws_cloudwatch_log_group" "feedback" {
-  name              = "/aws/lambda/${aws_lambda_function.feedback.function_name}"
-  retention_in_days = 14
+  depends_on = [aws_cloudwatch_log_group.feedback, aws_iam_role_policy.feedback_lambda_logging]
 
   tags = local.tags
 }

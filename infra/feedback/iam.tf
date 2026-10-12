@@ -1,3 +1,7 @@
+data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
+
 resource "aws_iam_role" "feedback_lambda" {
   name = "factorio-calculator-feedback-lambda"
 
@@ -13,9 +17,19 @@ resource "aws_iam_role" "feedback_lambda" {
   tags = local.tags
 }
 
-resource "aws_iam_role_policy_attachment" "feedback_lambda_logging" {
-  role       = aws_iam_role.feedback_lambda.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+# Scoped to the one log group instead of AWSLambdaBasicExecutionRole's account-wide grant.
+resource "aws_iam_role_policy" "feedback_lambda_logging" {
+  name = "feedback-lambda-logging"
+  role = aws_iam_role.feedback_lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+      Resource = "${aws_cloudwatch_log_group.feedback.arn}:*"
+    }]
+  })
 }
 
 resource "aws_iam_role_policy" "feedback_lambda_ssm" {
@@ -27,7 +41,7 @@ resource "aws_iam_role_policy" "feedback_lambda_ssm" {
     Statement = [{
       Effect   = "Allow"
       Action   = "ssm:GetParameter"
-      Resource = aws_ssm_parameter.github_token.arn
+      Resource = "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter/factorio-calculator/feedback/github-token"
     }]
   })
 }

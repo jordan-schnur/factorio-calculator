@@ -7,9 +7,12 @@ function isString(value) {
     return typeof value === "string"
 }
 
-// Breaks @mentions so GitHub never pings a real account from user-supplied text.
-function neutralizeMentions(text) {
-    return text.replaceAll("@", `@${ZERO_WIDTH_JOINER}`)
+// Breaks @mentions, #references and github.com links so user text can't ping accounts or cross-link other repos.
+function neutralizeReferences(text) {
+    return text
+        .replaceAll("@", `@${ZERO_WIDTH_JOINER}`)
+        .replaceAll("#", `#${ZERO_WIDTH_JOINER}`)
+        .replaceAll("github.com", `github${ZERO_WIDTH_JOINER}.com`)
 }
 
 export function validate(body) {
@@ -45,14 +48,17 @@ export function validate(body) {
 }
 
 export function issueFor(value) {
-    const firstLine = value.message.split("\n")[0]
-    const truncated = firstLine.length > TITLE_MAX ? `${firstLine.slice(0, TITLE_MAX - 1)}…` : firstLine
-    const title = `Feedback: ${neutralizeMentions(truncated)}`
+    const firstLine = value.message.split(/\r?\n/)[0]
+    const chars = Array.from(firstLine)
+    const truncated = chars.length > TITLE_MAX ? `${chars.slice(0, TITLE_MAX - 1).join("")}…` : firstLine
+    const title = `Feedback: ${neutralizeReferences(truncated)}`
 
-    const parts = [neutralizeMentions(value.message)]
-    if (value.plan) parts.push(`**Plan:** ${neutralizeMentions(value.plan)}`)
-    if (value.version) parts.push(`**Version:** ${neutralizeMentions(value.version)}`)
-    if (value.contact) parts.push(`**Contact:** ${neutralizeMentions(value.contact)}`)
+    const planRest = value.plan ? value.plan.slice(PLAN_PREFIX.length) : undefined
+
+    const parts = [neutralizeReferences(value.message)]
+    if (planRest !== undefined) parts.push(`**Plan:** ${PLAN_PREFIX}${neutralizeReferences(planRest)}`)
+    if (value.version) parts.push(`**Version:** ${neutralizeReferences(value.version)}`)
+    if (value.contact) parts.push(`**Contact:** ${neutralizeReferences(value.contact)}`)
     parts.push("_Sent from the site's feedback form._")
 
     return { title, body: parts.join("\n\n"), labels: ["feedback"] }
