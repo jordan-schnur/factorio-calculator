@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2019-2021 Kirk McDonald
-import * as d3 from "d3"
 import { Formatter } from "./align.js"
 import { formatSettings, writeHash } from "./fragment.js"
 import { beaconData, ModuleSpec } from "./module.js"
@@ -883,7 +882,6 @@ class FactorySpecification {
         let item = this.items.get(itemKey)
         let target = new BuildTarget(this.buildTargets.length, itemKey, item, this.itemGroups)
         this.buildTargets.push(target)
-        d3.select("#targets").insert(() => target.element, "#plusButton")
         return target
     }
     removeTarget(target) {
@@ -891,7 +889,6 @@ class FactorySpecification {
         for (let i=target.index; i < this.buildTargets.length; i++) {
             this.buildTargets[i].index--
         }
-        d3.select(target.element).remove()
     }
     toggleIgnore(item) {
         let updateTargets = false

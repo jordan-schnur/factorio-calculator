@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2019-2021 Kirk McDonald
-import * as d3 from "d3"
 import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_FORMAT, DEFAULT_BELT_FORMAT } from "./align.js"
 import { spec, DEFAULT_PLANET, DEFAULT_BELT, DEFAULT_FUEL } from "./factory.js"
 import { beaconData, shortModules } from "./module.js"
@@ -68,7 +67,6 @@ export function currentMod() {
 
 function renderTargets(settings) {
     spec.buildTargets = []
-    d3.selectAll("#targets li.target").remove()
 
     let targetSetting = settings.get("items")
     if (targetSetting !== undefined && targetSetting !== "") {
@@ -296,8 +294,7 @@ export function setTitle(s) {
 // Example: "Electronic circuit 60/min, Plastic bar 30/min · Factorio Calculator".
 export function targetsTitle(targets) {
     let parts = targets.map(t => {
-        let unit = t.unitSelect.value
-        let amount = unit.startsWith("/") ? t.numInput.value + unit : t.numInput.value + " " + unit
+        let amount = t.unit.startsWith("/") ? t.amount + t.unit : t.amount + " " + t.unit
         return t.item.name + " " + amount
     })
     return parts.length ? parts.join(", ") + " · " + DEFAULT_TITLE : INTRO_TITLE

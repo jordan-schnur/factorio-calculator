@@ -2,14 +2,17 @@
     import Button from "./Button.svelte"
     import IntroBg from "./IntroBg.svelte"
     import TargetNotes from "./TargetNotes.svelte"
+    import TargetRow from "./TargetRow.svelte"
     import TargetSearch from "./TargetSearch.svelte"
     import { plan } from "../lib/plan.svelte.js"
     import { Rational } from "../lib/rational.js"
-    import { addTarget } from "../lib/target.js"
+    import { addTarget, targetRows } from "../lib/target.js"
     import { readStore } from "../lib/storage.js"
     import { navigateToHash } from "../lib/init.js"
 
     let { intro } = $props()
+
+    let rows = $derived(plan.spec ? targetRows(plan.spec) : [])
 
     const EXAMPLES = [
         { item: "automation-science-pack", rate: 60, label: "Red science 60/min" },
@@ -53,7 +56,7 @@
         <TargetSearch />
     </div>
     <span class="muted" id="make-hint">Nicknames work. A trailing number is the rate per minute, or a machine count with "machines": blue chip 7 machines. Enter adds it.</span>
-    <ul id="targets"><li id="plusButton" hidden></li></ul>
+    <ul id="targets">{#each rows as row (row.target)}<TargetRow {row} />{/each}<li id="plusButton" hidden></li></ul>
     <TargetNotes />
     <div id="intro-extras">
         <div class="examples">
