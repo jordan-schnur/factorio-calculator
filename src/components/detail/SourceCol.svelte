@@ -1,4 +1,5 @@
 <script>
+    import { toggleSupplied } from "../../lib/supplied.js"
     import Seg from "../Seg.svelte"
     import MachinePicker from "./MachinePicker.svelte"
     import RecipeOptions from "./RecipeOptions.svelte"
@@ -9,7 +10,7 @@
 
     function pick([key]) {
         if ((key === "in") === source.seg.supplied) return
-        document.dispatchEvent(new CustomEvent("calc:toggle-supplied", { detail: { items: source.seg.keys } }))
+        toggleSupplied(source.seg.keys)
     }
 </script>
 

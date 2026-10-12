@@ -1,8 +1,4 @@
-// The one seam between the solver and the UI: factory.js calls renderAll()
-// after every solve, and each UI module registers one renderer at boot.
-//
-// A renderer that throws must not stop the ones registered after it, so a
-// failure is logged and swallowed rather than propagated.
+// The seam between the solver and the UI: factory.js calls renderAll() after every solve; a renderer that throws never stops the rest.
 
 const renderers = []
 

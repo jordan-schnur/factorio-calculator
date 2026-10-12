@@ -2,22 +2,15 @@
 import { on } from "svelte/events"
 
 let current = $state.raw(null)
-let hideLegacy = () => {}
 
 export const tip = { get current() { return current } }
 
 export function showTip(anchor, component, props, target = anchor) {
-    hideLegacy()
     current = { anchor, target, component, props }
 }
 
 export function hideTip(anchor) {
     if (current?.anchor === anchor) current = null
-}
-
-// tooltip.js registers its own hide so a legacy tooltip and this one never show together; removed with tooltip.js.
-export function onTipShow(hide) {
-    hideLegacy = hide
 }
 
 // {@attach tooltip(Component, props)} shows Component beside the node (or `target`) while the pointer is over it.

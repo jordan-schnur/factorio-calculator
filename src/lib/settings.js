@@ -587,9 +587,6 @@ export function setRoundMachines(on) {
     spec.display()
 }
 
-// No-op until the cleanup unit removes the call from init.js.
-export function initSettingsTab() {}
-
 // Each render* below applies one fragment setting (or its default) to the spec; add new ones to fragment.js too.
 export function renderSettings(settings) {
     spec.roundMachines = roundMachinesChoice
