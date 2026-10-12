@@ -51,7 +51,8 @@ export default defineConfig({
         command: `npm run build && node tests/e2e/support/serve.mjs ${PORT} ${HOST} dist`,
         timeout: 180_000,
         url: `${BASE_URL}/calc.html`,
-        reuseExistingServer: true,
+        // Opt-in only: reusing a stray server would silently test someone else's build.
+        reuseExistingServer: !!process.env.CALC_REUSE_SERVER,
         stdout: "ignore",
         stderr: "ignore",
     },
