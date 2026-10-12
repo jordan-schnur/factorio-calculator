@@ -1,7 +1,11 @@
 // The maths behind a row's detail and its hover cards: spec, totals and rows in, plain values and strings out, no DOM.
-import { beltWords, destinationLines, flowLines } from "./ratio-core.js"
+import { isMultiOutput, outputsOf, usedOutputs } from "./byproduct-core.js"
+import { recipesFor } from "./machines-core.js"
+import { beltWords, destinationLines, flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
 import { one, Rational, zero } from "./rational.js"
+import { relevantRecipes, sourceOptions } from "./source.js"
 import { rateText } from "./table-core.js"
+import { buildRows, powerRepr } from "./table.js"
 
 const HUNDRED = Rational.from_float(100)
 
@@ -148,7 +152,11 @@ export function itemCard(spec, totals, rows, item) {
 
 // The {kind, text} badge on a Needs line for an ingredient brought in, mined or piped in; null otherwise.
 export function needBadgeOf(rows, item) {
-	let row = rows.find(r => r.item === item)
+	return rowBadge(rows.find(r => r.item === item))
+}
+
+// The {kind, text} badge for a row brought in, mined or piped in; null for a row made here (or no row).
+export function rowBadge(row) {
 	if (!row) {
 		return null
 	}
@@ -156,7 +164,7 @@ export function needBadgeOf(rows, item) {
 		return { kind: "in", text: "brought in" }
 	}
 	if (row.isResource) {
-		return item.phase === "fluid" ? { kind: "pipe", text: "piped in" } : { kind: "mine", text: "mined" }
+		return row.item.phase === "fluid" ? { kind: "pipe", text: "piped in" } : { kind: "mine", text: "mined" }
 	}
 	return null
 }
@@ -171,4 +179,168 @@ export function leftoverText(spec, item, leftover) {
 export function headSubtitle(spec, item, rate) {
 	let beltPart = item.phase === "fluid" ? "pipe" : beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)
 	return `${rateText(spec.format, rate)} · ${beltPart}`
+}
+
+// FlowTooltip's props for the hover card on a rate whose on-screen text is `text`.
+export function flowCard(spec, totals, rows, item, consumer, rate, text) {
+	let lines = flowCardLines(spec, totals, rows, item, consumer, rate)
+	return { heading: `${text} ${item.name}`, lines: lines.map(line => ({ text: line })) }
+}
+
+function needsModel(spec, totals, rows, row) {
+	if (!row) {
+		return { empty: "Nothing needed.", lines: [] }
+	}
+	if (!row.isReal) {
+		return { empty: "Made in another build; nothing needed here.", lines: [] }
+	}
+	if (row.isResource) {
+		return { empty: row.item.phase === "fluid" ? "Piped in." : "Mined here.", lines: [] }
+	}
+	let ingredients = row.recipe.ingredients || []
+	let lines = ingredients.map(ing => {
+		let amount = ing.amount.mul(row.recipeRate)
+		let rate = (totals.consumers.get(ing.item) || new Map()).get(row.recipe) || amount
+		let text = rateText(spec.format, amount)
+		let ratio = machineRatio(spec, totals, rows, ing.item, row.recipe, rate)
+		return {
+			icon: ing.item,
+			name: ing.item.name,
+			badge: needBadgeOf(rows, ing.item),
+			text,
+			card: flowCard(spec, totals, rows, ing.item, row.recipe, rate, text),
+			ratio: ratio ? needsRatio(ratio.supplier, ratio.consumer, ratio.p, ratio.q) : null,
+		}
+	})
+	return { empty: ingredients.length === 0 ? "Nothing needed." : null, lines }
+}
+
+function goesToModel(spec, totals, rows, item, isTarget) {
+	let totalRate = totals.items.get(item) || zero
+	let lines = realConsumers(totals, item).map(([recipe, rate]) => {
+		let text = rateText(spec.format, rate)
+		let ratio = machineRatio(spec, totals, rows, item, recipe, rate)
+		return {
+			icon: recipe.products[0].item,
+			name: recipe.name,
+			share: percentText(totalRate.isZero() ? zero : rate.div(totalRate)),
+			text,
+			card: flowCard(spec, totals, rows, item, recipe, rate, text),
+			ratio: ratio ? goesToRatio(ratio.supplier, ratio.consumer, ratio.p, ratio.q) : null,
+		}
+	})
+	let empty = isTarget ? "This is what you asked for." : "Nothing consumes it."
+	return { empty: lines.length === 0 ? empty : null, lines }
+}
+
+function makesNote(spec, item, links, leftover) {
+	if (!leftover.isZero()) {
+		return { class: "left-note", text: leftoverText(spec, item, leftover) }
+	}
+	if (links.length === 0 && isTargetItem(spec, item)) {
+		return { class: "out-to", text: "This is what you asked for." }
+	}
+	return null
+}
+
+function makesModel(spec, totals, rows, row) {
+	return outputsOf(totals, row.recipe).map(({ item, rate, leftover }) => {
+		let links = outputLinks(totals, row.recipe, item)
+		return {
+			item,
+			text: rateText(spec.format, rate),
+			links: links.map(link => {
+				let text = rateText(spec.format, link.rate)
+				return {
+					icon: link.to.products[0].item,
+					name: link.to.name,
+					share: percentText(rate.isZero() ? zero : link.rate.div(rate)),
+					text,
+					card: flowCard(spec, totals, rows, item, link.to, link.rate, text),
+				}
+			}),
+			note: makesNote(spec, item, links, leftover),
+		}
+	})
+}
+
+// A multi-output row is keyed by its first product, which the plan may not use: bringing it in brings in what is used.
+function segModel(totals, item, row) {
+	let supplied = !row.isReal
+	let items = [item]
+	if (!supplied && isMultiOutput(row.recipe)) {
+		let used = usedOutputs(totals, row.recipe)
+		if (used.length > 0) {
+			items = used
+		}
+	}
+	return { supplied, keys: items.map(i => i.key) }
+}
+
+function machineModel(spec, totals, recipe) {
+	let capable = spec.capableBuildings(recipe)
+	let current = spec.getBuilding(recipe)
+	let quality = current && current.takesQuality ? { building: current, tier: spec.machineTier(current) } : null
+	if (capable.length < 2) {
+		return { recipe, current, quality, slots: [], others: [], pinned: false }
+	}
+	return {
+		recipe,
+		current,
+		quality,
+		slots: capable.map(building => ({ building, sel: building === current, off: spec.excludedBuildings.has(building.key) })),
+		others: recipesFor(current, [...totals.rates.keys()]).filter(r => r !== recipe && spec.getBuilding(r) !== current),
+		pinned: spec.recipeBuildings.has(recipe.key),
+	}
+}
+
+function exactLine(spec, row) {
+	let exact = spec.getCount(row.recipe, row.recipeRate).toDecimal(2)
+	let power = powerRepr(spec.getPowerUsage(row.recipe, row.recipeRate).power)
+	return `${exact} machines exactly · ${power}`
+}
+
+function sourceModel(spec, totals, item, row, isTarget, isResource) {
+	let building = row ? spec.getBuilding(row.recipe) : null
+	let fallback = building !== null && spec.isFallbackBuilding(row.recipe)
+	return {
+		seg: row && !isTarget && !isResource ? segModel(totals, item, row) : null,
+		options: relevantRecipes(item).length > 1 ? sourceOptions(item, totals).options : null,
+		machine: building !== null ? machineModel(spec, totals, row.recipe) : null,
+		exact: building !== null ? exactLine(spec, row) : null,
+		fallback: fallback ? `No available machine makes this, so it uses ${building.name.toLowerCase()} (switched off in Settings → Machines).` : null,
+	}
+}
+
+// Everything a row's detail shows for `item`, looked up fresh from `totals`.
+export function detailModel(spec, totals, item) {
+	let rows = buildRows(totals)
+	let row = rows.find(r => r.item === item) || null
+	let isTarget = row ? row.isTarget : isTargetItem(spec, item)
+	let isResource = row ? row.isResource : false
+	let multi = row !== null && row.isReal && isMultiOutput(row.recipe)
+	let building = row && row.isReal ? spec.getBuilding(row.recipe) : null
+	return {
+		needs: needsModel(spec, totals, rows, row),
+		goesTo: multi ? null : goesToModel(spec, totals, rows, item, isTarget),
+		makes: multi ? makesModel(spec, totals, rows, row) : null,
+		source: sourceModel(spec, totals, item, row, isTarget, isResource),
+		band: building !== null && building.moduleSlots > 0 ? { scope: "row", recipe: row.recipe, machine: building, row } : null,
+	}
+}
+
+// The graph side card's head for the selected item, or null when the card is closed.
+export function sideModel(spec, totals) {
+	if (!spec || !totals) {
+		return null
+	}
+	let item = spec.view === "graph" && spec.whereItem ? spec.items.get(spec.whereItem) : null
+	if (!item || !totals.items.has(item)) {
+		return null
+	}
+	let row = buildRows(totals).find(r => r.item === item)
+	if (row && row.isReal && isMultiOutput(row.recipe)) {
+		return { item, icon: row.recipe, title: row.recipe.name, sub: `${row.recipe.products.length} outputs, all of them have to be used` }
+	}
+	return { item, icon: item, title: item.name, sub: headSubtitle(spec, item, totals.items.get(item) || zero) }
 }
