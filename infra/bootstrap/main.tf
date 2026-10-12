@@ -34,6 +34,7 @@ resource "aws_s3_bucket_versioning" "tfstate" {
   }
 }
 
+#trivy:ignore:AWS-0132 a KMS CMK isn't worth the cost for this state bucket; AES256 is sufficient
 resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
 
