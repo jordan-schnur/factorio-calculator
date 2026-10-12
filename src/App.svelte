@@ -5,6 +5,7 @@
     import SettingsDrawer from "./components/SettingsDrawer.svelte"
     import SiteFooter from "./components/SiteFooter.svelte"
     import Topbar from "./components/Topbar.svelte"
+    import TooltipHost from "./components/TooltipHost.svelte"
     import Views from "./components/Views.svelte"
     import { plan } from "./lib/plan.svelte.js"
 
@@ -19,6 +20,6 @@
     <FooterBar hidden={!planned} />
     <Scratchpad hidden={!planned} />
     <SettingsDrawer />
-    <div id="tooltip_container"></div>
+    <TooltipHost />
     <SiteFooter />
 </div>

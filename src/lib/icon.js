@@ -2,7 +2,8 @@
 import * as d3 from "d3"
 
 import { spec } from "./factory.js"
-import { Tooltip } from "./tooltip.js"
+import { tooltip } from "./tooltip.svelte.js"
+import { tooltipFor } from "./tooltips.js"
 import { badgeUrl, tierOf } from "./colorblind-core.js"
 import { spriteCrop } from "./sprite-core.js"
 
@@ -12,15 +13,7 @@ export { PX_WIDTH, PX_HEIGHT } from "./sprite-core.js"
     sheetHash = h
 }*/
 
-// An object representing an icon of an item, recipe, belt, building, or
-// whatever else.
-//
-// Args:
-//   obj: The object which this icon will represent. If it provides a
-//        renderTooltip() method, this will be used to make a tooltip on the
-//        icon available.
-//   name: The filename of the image to use. If not provided, defaults to
-//         obj.name.
+// The icon of an item, recipe, belt, building or sprite; `name` (default obj.name) is its alt text.
 export class Icon {
     constructor(obj, name) {
         if (name === undefined) {
@@ -33,15 +26,7 @@ export class Icon {
     /*path() {
         return "images/" + this.name + ".png"
     }*/
-    // Creates a new <img> node.
-    //
-    // Args:
-    //   size: The width and height of the (square) image, in pixels. If null
-    //         or not given, the size will not be set in the markup (and should
-    //         probably be set in the style sheet).
-    //   suppressTooltip: If true, a tooltip will not be added to this image.
-    //   target: The reference node next to which any tooltip will be rendered.
-    //           If not provided, defaults to the image itself.
+    // A new <img>, `size` px square (unset: CSS sizes it), with obj's tooltip beside `target` (default: the img) unless suppressed.
     make(size, suppressTooltip, target) {
         let img = d3.select(makeEmptyIcon(size))
             .classed("icon", true)
@@ -64,9 +49,9 @@ export class Icon {
             img.style("background-size", crop.size)
             img.style("background-position", crop.position)
         }
-        if (!suppressTooltip && this.obj.renderTooltip) {
-            let self = this
-            new Tooltip(img.node(), () => self.obj.renderTooltip(), target)
+        let component = suppressTooltip ? null : tooltipFor(this.obj)
+        if (component) {
+            tooltip(component, { thing: this.obj }, target)(img.node())
         } else {
             img.attr("title", this.obj.name)
         }

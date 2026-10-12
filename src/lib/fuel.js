@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2015-2024 Kirk McDonald
-import * as d3 from "d3"
 import { Icon } from "./icon.js"
 import { Rational } from "./rational.js"
 
@@ -16,6 +15,7 @@ class Fuel {
         this.icon_col = col
         this.icon_row = row
         this.icon = new Icon(this)
+        this.tooltipKind = "fuel"
     }
     valueString() {
         let x = this.value
@@ -26,18 +26,6 @@ class Fuel {
             i++
         }
         return x.toUpDecimal(0) + " " + energySuffixes[i]
-    }
-    renderTooltip() {
-        let self = this
-        let t = d3.create("div")
-            .classed("frame", true)
-        let header = t.append("h3")
-        header.append(() => self.icon.make(32, true))
-        header.append(() => new Text(self.name))
-        t.append("b")
-            .text("Energy: ")
-        t.append(() => new Text(self.valueString()))
-        return t.node()
     }
 }
 
