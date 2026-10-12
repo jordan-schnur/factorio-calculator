@@ -16,3 +16,6 @@
 #settings-modules .ms-actions { margin-left: auto; display: flex; gap: 6px; }
 #settings-modules .ms-editor { padding: 8px 6px 12px 38px; }
 #settings-modules #modules-reset-all { align-self: flex-start; margin: 4px 6px; }
+
+/* Field's 110px label, kept from shrinking as the legacy inline flex:none did. */
+#settings-modules .kv > .label { flex: none; }

@@ -5,6 +5,7 @@
     import DisplaySettings from "./DisplaySettings.svelte"
     import FromSave from "./FromSave.svelte"
     import MachinesSettings from "./MachinesSettings.svelte"
+    import ModulesSettings from "./ModulesSettings.svelte"
     import RecipesSettings from "./RecipesSettings.svelte"
     import Section from "./Section.svelte"
     import { plan } from "../lib/plan.svelte.js"
@@ -26,7 +27,7 @@
             <RecipesSettings />
         </div>
 
-        <Section title="Modules" id="modules-sec" deepId="settings-modules"></Section>
+        <Section title="Modules" id="modules-sec" deepId="settings-modules"><ModulesSettings /></Section>
 
         <DisplaySettings />
 
