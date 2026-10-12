@@ -1,5 +1,5 @@
 // Pure helpers for the feedback lambda: request validation and GitHub issue shaping.
-const PLAN_PREFIX = "https://factoriocalculator.app/"
+const PLAN_PATTERN = /^https:\/\/factoriocalculator\.app\/\S*$/
 const TITLE_MAX = 60
 const ZERO_WIDTH_JOINER = "‍"
 
@@ -27,8 +27,7 @@ export function validate(body) {
     if (contact !== undefined && (!isString(contact) || contact.length > 200)) return { ok: false, error: "contact must be at most 200 characters" }
 
     if (plan !== undefined && plan !== "") {
-        if (!isString(plan) || plan.length > 6000) return { ok: false, error: "plan must be at most 6000 characters" }
-        if (!plan.startsWith(PLAN_PREFIX)) return { ok: false, error: "plan must be a factoriocalculator.app link" }
+        if (!isString(plan) || plan.length > 6000 || !PLAN_PATTERN.test(plan)) return { ok: false, error: "plan must be a single factoriocalculator.app link" }
     }
 
     if (version !== undefined && (!isString(version) || version.length > 40)) return { ok: false, error: "version must be at most 40 characters" }
@@ -53,10 +52,8 @@ export function issueFor(value) {
     const truncated = chars.length > TITLE_MAX ? `${chars.slice(0, TITLE_MAX - 1).join("")}…` : firstLine
     const title = `Feedback: ${neutralizeReferences(truncated)}`
 
-    const planRest = value.plan ? value.plan.slice(PLAN_PREFIX.length) : undefined
-
     const parts = [neutralizeReferences(value.message)]
-    if (planRest !== undefined) parts.push(`**Plan:** ${PLAN_PREFIX}${neutralizeReferences(planRest)}`)
+    if (value.plan) parts.push(`**Plan:** <${value.plan}>`)
     if (value.version) parts.push(`**Version:** ${neutralizeReferences(value.version)}`)
     if (value.contact) parts.push(`**Contact:** ${neutralizeReferences(value.contact)}`)
     parts.push("_Sent from the site's feedback form._")

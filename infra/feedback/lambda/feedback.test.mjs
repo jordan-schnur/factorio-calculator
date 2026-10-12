@@ -54,6 +54,16 @@ test("validate rejects a plan over 6000 characters", () => {
     assert.equal(result.ok, false)
 })
 
+test("validate rejects a plan containing a space", () => {
+    const result = validate({ message: "hi", plan: "https://factoriocalculator.app/ owner/repo#1" })
+    assert.equal(result.ok, false)
+})
+
+test("validate rejects a plan containing a newline", () => {
+    const result = validate({ message: "hi", plan: "https://factoriocalculator.app/x\ny" })
+    assert.equal(result.ok, false)
+})
+
 test("validate rejects a version over 40 characters", () => {
     const result = validate({ message: "hi", version: "a".repeat(41) })
     assert.equal(result.ok, false)
@@ -85,48 +95,43 @@ test("issueFor splits the title on a CRLF line ending", () => {
     assert.equal(title, "Feedback: short message")
 })
 
-test("issueFor neutralises @mentions in the message, plan, version and contact", () => {
+test("issueFor neutralises @mentions in the message, version and contact", () => {
     const { body, title } = issueFor({
         message: "hey @octocat",
-        plan: "https://factoriocalculator.app/@spec",
         version: "@1.2.3",
         contact: "@me",
     })
     assert.ok(!body.includes("@o") && body.includes("@‍octocat"))
-    assert.ok(body.includes("@‍spec"))
     assert.ok(body.includes("@‍1.2.3"))
     assert.ok(body.includes("@‍me"))
     assert.ok(title.includes("@‍octocat"))
 })
 
-test("issueFor neutralises #references in the message, plan, version and contact", () => {
+test("issueFor neutralises #references in the message, version and contact", () => {
     const { body, title } = issueFor({
         message: "fixes #123 and owner/repo#456",
-        plan: "https://factoriocalculator.app/#789",
         version: "#1",
         contact: "#me",
     })
     assert.ok(body.includes("#‍123") && body.includes("#‍456"))
-    assert.ok(body.includes("#‍789"))
     assert.ok(body.includes("#‍1"))
     assert.ok(body.includes("#‍me"))
     assert.ok(title.includes("#‍123"))
 })
 
-test("issueFor keeps the plan's own factoriocalculator.app prefix intact", () => {
-    const { body } = issueFor({ message: "hi", plan: "https://factoriocalculator.app/#abc" })
-    assert.ok(body.includes("**Plan:** https://factoriocalculator.app/#‍abc"))
+test("issueFor puts the plan in the body byte-for-byte, with a # fragment intact", () => {
+    const plan = "https://factoriocalculator.app/calc.html#items=automation-science-pack:r:60"
+    const { body } = issueFor({ message: "hi", plan })
+    assert.ok(body.includes(`**Plan:** <${plan}>`))
 })
 
-test("issueFor neutralises github.com links in the message, plan, version and contact", () => {
+test("issueFor neutralises github.com links in the message, version and contact", () => {
     const { body, title } = issueFor({
         message: "see github.com/jordan-schnur/factorio-calculator/issues/1",
-        plan: "https://factoriocalculator.app/github.com/evil",
         version: "github.com",
         contact: "github.com/me",
     })
     assert.ok(!body.includes("see github.com/") && body.includes("github‍.com"))
-    assert.ok(body.includes("**Plan:** https://factoriocalculator.app/github‍.com/evil"))
     assert.ok(body.includes("**Version:** github‍.com"))
     assert.ok(body.includes("**Contact:** github‍.com/me"))
     assert.ok(title.includes("github‍.com"))
