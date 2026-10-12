@@ -76,4 +76,7 @@ export const S = {
     about: "#about",
     version: ".calc-version",
     tooltip: "#tooltip_container",
+
+    // Site footer
+    feedbackLink: "#feedback-link",
 } as const
