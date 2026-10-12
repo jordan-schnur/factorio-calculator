@@ -28,17 +28,20 @@ export interface CompanionOptions {
     specStatus?: number
     boardStatus?: number
     boardBody?: object
+    // One payload per spec request, by request index; falls back to savePayload() past the end.
+    specPayloads?: object[]
 }
 
 // Puts a fake companion server behind the page: the catalog probe, C5 save settings and the board's card POST.
-export async function stubCompanion(page: Page, { specStatus = 200, boardStatus = 200, boardBody = { ok: true } }: CompanionOptions = {}): Promise<CompanionStub> {
+export async function stubCompanion(page: Page, { specStatus = 200, boardStatus = 200, boardBody = { ok: true }, specPayloads = [] }: CompanionOptions = {}): Promise<CompanionStub> {
     let stub: CompanionStub = { specRequests: [], cardBodies: [] }
     await page.route(url => url.pathname === "/api/catalog", route => route.fulfill({ contentType: "application/json", body: CATALOG }))
     await page.route(url => url.pathname === "/api/calc/spec", route => {
         let save = new URL(route.request().url()).searchParams.get("save") ?? ""
+        let index = stub.specRequests.length
         stub.specRequests.push(save)
         if (specStatus !== 200) return route.fulfill({ status: specStatus, body: "" })
-        return route.fulfill({ json: savePayload(save || "my-base") })
+        return route.fulfill({ json: specPayloads[index] ?? savePayload(save || "my-base") })
     })
     await page.route(url => url.pathname === "/api/board/cards", route => {
         stub.cardBodies.push(route.request().postDataJSON())

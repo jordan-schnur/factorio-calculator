@@ -1,4 +1,5 @@
 <script>
+    import { analytics, showBanner } from "../lib/analytics.svelte.js"
     import { VERSION } from "../lib/version.js"
     import { FEEDBACK_BASE, feedbackUrl } from "../lib/feedback-core.js"
 
@@ -13,5 +14,5 @@
     <a id="feedback-link" href={FEEDBACK_BASE} target="_blank" rel="noopener" onclick={setLiveHref} onauxclick={setLiveHref}>Feedback</a>
     <span>Made by <a href="https://jordanschnur.com/">Jordan Schnur</a></span>
     <span>Built on <a href="https://kirkmcdonald.github.io/calc.html">Kirk McDonald's calculator</a> (Apache-2.0)</span>
-    <button type="button" id="analytics-settings" hidden>Analytics settings</button>
+    <button type="button" id="analytics-settings" hidden={!analytics.settingsShown} onclick={showBanner}>Analytics settings</button>
 </footer>

@@ -1,4 +1,5 @@
 <script>
+    import ConsentBanner from "./components/ConsentBanner.svelte"
     import FooterBar from "./components/FooterBar.svelte"
     import MakePanel from "./components/MakePanel.svelte"
     import PageTitle from "./components/PageTitle.svelte"
@@ -25,3 +26,4 @@
     <SiteFooter />
     <PageTitle />
 </div>
+<ConsentBanner />

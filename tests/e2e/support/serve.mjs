@@ -24,7 +24,7 @@ const TYPES = {
     ".wasm": "application/wasm",
 }
 
-createServer((req, res) => {
+const server = createServer((req, res) => {
     let path = decodeURIComponent(new URL(req.url, "http://x").pathname)
     let file = normalize(join(ROOT, path))
     if (!file.startsWith(ROOT)) {
@@ -52,6 +52,12 @@ createServer((req, res) => {
         return
     }
     createReadStream(file).pipe(res)
-}).listen({ port: PORT, host: HOST, backlog: 1024 }, () => {
+})
+
+// Node's default 5s keepAliveTimeout races browsers reusing a pooled socket under CPU load; outlast any idle gap between test navigations.
+server.keepAliveTimeout = 120_000
+server.headersTimeout = 125_000
+
+server.listen({ port: PORT, host: HOST, backlog: 1024 }, () => {
     console.log(`serving ${ROOT} on http://${HOST}:${PORT}`)
 })

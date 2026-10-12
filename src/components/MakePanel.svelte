@@ -1,5 +1,6 @@
 <script>
     import Button from "./Button.svelte"
+    import IntroBg from "./IntroBg.svelte"
     import TargetNotes from "./TargetNotes.svelte"
     import TargetSearch from "./TargetSearch.svelte"
     import { plan } from "../lib/plan.svelte.js"
@@ -46,6 +47,7 @@
 </script>
 
 <div class={["frame", { intro }]} id="make-panel">
+    <IntroBg {intro} />
     <h2 class="title" id="intro-title">What do you want to make?</h2>
     <div class="make-row"><span class="title">Make</span>
         <TargetSearch />
