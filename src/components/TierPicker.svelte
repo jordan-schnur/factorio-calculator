@@ -1,7 +1,6 @@
 <script>
     import Seg from "./Seg.svelte"
-    import { TIERS } from "../lib/quality-core.js"
-    import { qualityIconUrl } from "../lib/quality-ui.js"
+    import { TIERS, qualityIconUrl } from "../lib/quality-core.js"
 
     let { tier, onpick, label, id } = $props()
 </script>

@@ -1,6 +1,7 @@
 <script>
     import AsmSeg from "./AsmSeg.svelte"
     import Field from "./Field.svelte"
+    import QualityBadge from "./QualityBadge.svelte"
     import Section from "./Section.svelte"
     import SlotPicker from "./SlotPicker.svelte"
     import TierPicker from "./TierPicker.svelte"
@@ -8,7 +9,6 @@
     import { buildingGroups, categoryLabel, isChosenBuilding, machinesWithQuality } from "../lib/machines-core.js"
     import { plan } from "../lib/plan.svelte.js"
     import { isNormal, tierOf } from "../lib/quality-core.js"
-    import { qualityIconUrl } from "../lib/quality-ui.js"
     import { Rational } from "../lib/rational.js"
     import { markOverride } from "../lib/savesettings.js"
     import { pickBuilding } from "../lib/settings.js"
@@ -60,7 +60,7 @@
         {#each qualityMachines as building (building.key)}
             {@const tier = tierOf(plan.spec.machineTier(building))}
             <div class="mq-row" data-machine={building.key}>
-                <span class="slot slot-sm" class:qwrap={!isNormal(tier.key)} {@attach iconOf(building, 20, true)}>{#if !isNormal(tier.key)}<img class="qbadge" src={qualityIconUrl(tier.key)} width="10" height="10" alt={tier.name} title={tier.name} data-tier={tier.key}>{/if}</span>
+                <span class="slot slot-sm" class:qwrap={!isNormal(tier.key)} {@attach iconOf(building, 20, true)}><QualityBadge tier={tier.key} size={10} /></span>
                 <span class="mq-name">{building.name}</span>
                 <TierPicker {tier} label="{building.name} quality" onpick={t => setMachineTier(building, t)} />
             </div>

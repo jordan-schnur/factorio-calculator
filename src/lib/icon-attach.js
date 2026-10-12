@@ -12,3 +12,10 @@ export function iconOf(obj, size, suppressTooltip = false) {
         }
     }
 }
+
+// {@attach iconOnto(thing, size)} on an <img> makes it thing's icon (no tooltip), for an icon with no wrapper of its own.
+export function iconOnto(obj, size) {
+    return node => {
+        for (let { name, value } of obj.icon.make(size, true).attributes) node.setAttribute(name, value)
+    }
+}
