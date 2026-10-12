@@ -4,7 +4,7 @@ import { extname, join, relative } from "node:path"
 import { parse } from "svelte/compiler"
 
 const ROOT = join(import.meta.dirname, "..")
-const SCAN = ["src", "scripts", "tests/e2e", "calc.html", "vite.config.mjs", "playwright.config.ts"]
+const SCAN = ["src", "scripts", "tests/e2e", "infra", "calc.html", "vite.config.mjs", "playwright.config.ts"]
 const SKIP = ["tests/e2e/__snapshots__", "tests/e2e/fixtures"]
 const EXTS = new Set([".js", ".mjs", ".ts", ".svelte", ".html"])
 const BASELINE = join(ROOT, "scripts/rules-baseline.json")
