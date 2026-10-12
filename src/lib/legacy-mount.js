@@ -41,11 +41,15 @@ export function mountNode(Component, props) {
     return node
 }
 
-// Empties a legacy-owned container and draws Component inside it; returns the component's root element.
+// Empties a legacy-owned container and draws Component inside it; returns the component's root element, or null when it draws nothing.
 export function mountInto(container, Component, props) {
     container.textContent = ""
     let instance = mount(Component, { target: container, props })
     let node = container.firstElementChild
+    if (node === null) {
+        unmount(instance)
+        return null
+    }
     track(node, null, instance)
     return node
 }
