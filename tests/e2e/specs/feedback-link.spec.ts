@@ -1,6 +1,6 @@
 import { test, expect } from "../support/fixtures"
 import { S } from "../support/selectors"
-import { openFeedback, stubFeedback, stubFeedbackNetworkError } from "../support/areas/feedback"
+import { openFeedback, stubFeedback, stubFeedbackNetworkError, xorshiftNoise } from "../support/areas/feedback"
 import { openOnPublicHost } from "../support/areas/analytics"
 
 test("clicking Feedback opens the dialog", async ({ calc, page }) => {
@@ -51,6 +51,26 @@ test("a null issue number still shows thanks", async ({ calc, page }) => {
     await expect(page.locator(S.feedbackThanks)).toHaveText("Thanks!")
 })
 
+test("a successful send announces itself and moves focus to Close", async ({ calc, page }) => {
+    await calc.open("items=")
+    stubFeedback(page, 201, { number: 7, url: "https://github.com/x/x/issues/7" })
+    await openFeedback(page)
+    await page.locator(S.feedbackMessage).fill("Hello")
+    await page.locator(S.feedbackSend).click()
+    await expect(page.locator(S.feedbackThanks)).toHaveAttribute("role", "status")
+    await expect(page.locator(S.feedbackClose)).toBeFocused()
+})
+
+test("an error is announced as an alert", async ({ calc, page, pageErrors }) => {
+    await calc.open("items=")
+    pageErrors.allow(/feedback\.test/)
+    stubFeedback(page, 502, { error: "boom" })
+    await openFeedback(page)
+    await page.locator(S.feedbackMessage).fill("It broke")
+    await page.locator(S.feedbackSend).click()
+    await expect(page.locator(S.feedbackError)).toHaveAttribute("role", "alert")
+})
+
 test("a failed send shows the error, keeps the message and offers Copy message", async ({ calc, page, context, pageErrors }) => {
     await calc.open("items=")
     // Chromium logs failed resource loads to the console regardless of fetch() handling the rejection.
@@ -90,6 +110,57 @@ test("Escape closes the dialog", async ({ calc, page }) => {
     await expect(page.locator(S.feedbackDialog)).toBeVisible()
     await page.keyboard.press("Escape")
     await expect(page.locator(S.feedbackDialog)).toBeHidden()
+})
+
+test("Cancel closes the dialog and returns focus to the Feedback button", async ({ calc, page }) => {
+    await calc.open("items=")
+    await openFeedback(page)
+    await page.locator(S.feedbackCancel).click()
+    await expect(page.locator(S.feedbackDialog)).toBeHidden()
+    await expect(page.locator(S.feedbackLink)).toBeFocused()
+})
+
+test("reopening after a success starts empty", async ({ calc, page }) => {
+    await calc.open("items=")
+    stubFeedback(page, 201, { number: 7, url: "https://github.com/x/x/issues/7" })
+    await openFeedback(page)
+    await page.locator(S.feedbackMessage).fill("Hello")
+    await page.locator(S.feedbackSend).click()
+    await expect(page.locator(S.feedbackThanks)).toBeVisible()
+    await page.locator(S.feedbackClose).click()
+    await openFeedback(page)
+    await expect(page.locator(S.feedbackMessage)).toHaveValue("")
+    await expect(page.locator(S.feedbackSend)).toBeDisabled()
+})
+
+test("the live remaining count updates as the message grows", async ({ calc, page }) => {
+    await calc.open("items=")
+    await openFeedback(page)
+    await expect(page.locator(S.feedbackDialog)).toContainText("4000 left")
+    await page.locator(S.feedbackMessage).fill("Hi there")
+    await expect(page.locator(S.feedbackDialog)).toContainText("3992 left")
+})
+
+test("the honeypot is hidden from sighted users and screen readers alike", async ({ calc, page }) => {
+    await calc.open("items=")
+    await openFeedback(page)
+    let honeypot = page.locator(S.feedbackHoneypot)
+    await expect(honeypot).toHaveAttribute("tabindex", "-1")
+    await expect(honeypot).toHaveAttribute("autocomplete", "off")
+    await expect(honeypot).toHaveAttribute("aria-hidden", "true")
+})
+
+test("a plan over the limit is dropped, not sent oversized", async ({ page, baseURL, pageErrors }) => {
+    let requests = stubFeedback(page, 201, { number: 1, url: "https://github.com/x/x/issues/1" })
+    let noise = xorshiftNoise(7300)
+    await openOnPublicHost(page, baseURL!, pageErrors, `title=${noise}&items=`)
+    expect(page.url().length).toBeGreaterThan(6000)
+    await openFeedback(page)
+    await page.locator(S.feedbackMessage).fill("Hello")
+    await page.locator(S.feedbackSend).click()
+    await expect(page.locator(S.feedbackThanks)).toBeVisible()
+    expect(requests).toHaveLength(1)
+    expect(requests[0].postDataJSON().plan).toBeUndefined()
 })
 
 test("fits at 360px without sideways scroll @mobile", async ({ calc, page }) => {

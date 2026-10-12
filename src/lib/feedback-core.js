@@ -20,12 +20,18 @@ const VERSION_LIMIT = 40
 // Only a plan under this host is the live page, not a test or dev build; the endpoint rejects anything else.
 export const PLAN_PREFIX = "https://factoriocalculator.app/"
 
+// The Lambda rejects request bodies over 16 KB; stay under it with room for the rest of the payload.
+const BODY_LIMIT = 15000
+
 export function buildFeedbackPayload({ message, contact, planUrl, version, website }) {
     let payload = { message: message.trim().slice(0, MESSAGE_LIMIT), website: website || "" }
     let trimmedContact = (contact || "").trim()
     if (trimmedContact) payload.contact = trimmedContact.slice(0, CONTACT_LIMIT)
-    if (planUrl && planUrl.startsWith(PLAN_PREFIX) && planUrl.length <= PLAN_LIMIT) payload.plan = planUrl
     if (version) payload.version = version.slice(0, VERSION_LIMIT)
+    if (planUrl && planUrl.startsWith(PLAN_PREFIX) && planUrl.length <= PLAN_LIMIT) {
+        let withPlan = { ...payload, plan: planUrl }
+        if (new TextEncoder().encode(JSON.stringify(withPlan)).length <= BODY_LIMIT) payload = withPlan
+    }
     return payload
 }
 
@@ -40,7 +46,12 @@ export async function submitFeedback(payload, endpoint = FEEDBACK_ENDPOINT) {
     } catch {
         return { ok: false }
     }
-    if (response.status !== 201) return { ok: false }
-    let data = await response.json()
+    if (response.status < 200 || response.status >= 300) return { ok: false }
+    let data
+    try {
+        data = await response.json()
+    } catch {
+        data = {}
+    }
     return { ok: true, number: data.number ?? null, url: data.url }
 }

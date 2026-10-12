@@ -90,4 +90,5 @@ export const S = {
     feedbackCopy: "#feedback-dialog button:has-text('Copy message')",
     feedbackThanks: "#feedback-thanks",
     feedbackError: ".feedback-error",
+    feedbackHoneypot: ".feedback-honeypot",
 } as const

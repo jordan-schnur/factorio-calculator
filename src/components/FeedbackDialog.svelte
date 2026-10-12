@@ -13,6 +13,7 @@
 
     let remaining = $derived(MESSAGE_LIMIT - message.length)
     let canSend = $derived(status !== "sending" && message.trim().length > 0)
+    let copyStatus = $state("")
 
     function reset() {
         message = ""
@@ -20,6 +21,11 @@
         website = ""
         status = "idle"
         issue = null
+        copyStatus = ""
+    }
+
+    function focusClose(node) {
+        node.focus()
     }
 
     // untrack status/node.open: this must only rerun on open/closed flips, not on every status change (else reset() fires the instant send() succeeds).
@@ -28,7 +34,7 @@
             if (open) {
                 if (untrack(() => status) === "success") reset()
                 if (!node.open) node.showModal()
-            } else if (untrack(() => node.open)) {
+            } else if (node.open) {
                 node.close()
             }
         }
@@ -47,7 +53,12 @@
     }
 
     async function copyMessage() {
-        await navigator.clipboard.writeText(message)
+        try {
+            await navigator.clipboard.writeText(message)
+            copyStatus = "Copied"
+        } catch {
+            copyStatus = "Couldn't copy"
+        }
     }
 </script>
 
@@ -55,11 +66,11 @@
     <div class="titlebar"><span class="title" id="feedback-heading">Send feedback</span></div>
     {#if status === "success"}
         {#if issue.number}
-            <p id="feedback-thanks">Thanks, filed as <a href={issue.url} target="_blank" rel="noopener">#{issue.number}</a></p>
+            <p id="feedback-thanks" role="status">Thanks, filed as <a href={issue.url} target="_blank" rel="noopener">#{issue.number}</a></p>
         {:else}
-            <p id="feedback-thanks">Thanks!</p>
+            <p id="feedback-thanks" role="status">Thanks!</p>
         {/if}
-        <div class="feedback-actions"><Button type="button" onclick={closeFeedback}>Close</Button></div>
+        <div class="feedback-actions"><Button type="button" onclick={closeFeedback} {@attach focusClose}>Close</Button></div>
     {:else}
         <label for="feedback-message">What happened, or what would you like?</label>
         <textarea id="feedback-message" maxlength={MESSAGE_LIMIT} required bind:value={message}></textarea>
@@ -68,8 +79,9 @@
         <input id="feedback-contact" type="text" maxlength={CONTACT_LIMIT} bind:value={contact} />
         <input class="feedback-honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" bind:value={website} />
         {#if status === "error"}
-            <p class="feedback-error">Couldn't send it. Please try again.</p>
+            <p class="feedback-error" role="alert">Couldn't send it. Please try again.</p>
             <Button type="button" size="sm" onclick={copyMessage}>Copy message</Button>
+            {#if copyStatus}<span class="muted feedback-copy-status" role="status">{copyStatus}</span>{/if}
         {/if}
         <div class="feedback-actions">
             <Button type="button" disabled={!canSend} onclick={send}>Send</Button>

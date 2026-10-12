@@ -23,8 +23,3 @@
     <span>Built on <a href="https://kirkmcdonald.github.io/calc.html">Kirk McDonald's calculator</a> (Apache-2.0)</span>
     <button type="button" id="analytics-settings" hidden={!analytics.settingsShown} onclick={showBanner}>Analytics settings</button>
 </footer>
-
-<style>
-    #feedback-link { background: none; border: 0; margin: 0; padding: 0; font: inherit; text-decoration: underline; cursor: pointer; color: var(--muted); }
-    #feedback-link:hover { color: var(--text); }
-</style>
