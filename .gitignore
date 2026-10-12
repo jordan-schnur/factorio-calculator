@@ -9,3 +9,7 @@ blob-report/
 !.claude/agents/
 !.claude/commands/
 dist-ssr/
+.terraform/
+*.tfstate*
+*.tfplan
+infra/feedback/lambda.zip

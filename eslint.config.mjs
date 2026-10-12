@@ -7,7 +7,7 @@ export default [
     js.configs.recommended,
     ...svelte.configs.recommended,
     { languageOptions: { globals: { ...globals.browser } } },
-    { files: ["scripts/**", "*.config.mjs"], languageOptions: { globals: { ...globals.node } } },
+    { files: ["scripts/**", "*.config.mjs", "infra/**"], languageOptions: { globals: { ...globals.node } } },
     // Legacy modules still waiting to be migrated: real-bug rules only, tidiness rules once they move.
     { files: ["src/lib/**/*.js"], ignores: ["src/lib/**/*.svelte.js"], rules: { "no-unused-vars": "off", "no-useless-assignment": "off" } },
     {
