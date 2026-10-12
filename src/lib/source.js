@@ -78,6 +78,7 @@ export function sourceOptions(item, totals) {
             recipe,
             name: recipe.name,
             icon: building ? building.icon : recipe.icon,
+            thing: building || recipe,
             inUse: share > 0,
             shareText: shareText(share),
             locked: locked.has(recipe.key),

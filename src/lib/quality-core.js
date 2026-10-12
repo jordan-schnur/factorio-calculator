@@ -168,3 +168,7 @@ export function qualityFromSave(machineQuality, planets) {
     }
     return out
 }
+
+export function qualityIconUrl(tierKey) {
+    return `images/quality/${tierOf(tierKey).key}.png`
+}

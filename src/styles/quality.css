@@ -30,3 +30,6 @@ img.qbadge {
 
 /* The module editor's "Module quality" / "Beacon quality" lines. */
 .me-tierpick { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+
+/* The badge's size (QualityBadge.svelte's --qb-size), over calc.css's .slot img rules. */
+.qwrap > img.qbadge { width: var(--qb-size); height: var(--qb-size); }
