@@ -1,5 +1,5 @@
 // Pure helpers for the feedback lambda: request validation and GitHub issue shaping.
-const PLAN_PATTERN = /^https:\/\/factoriocalculator\.app\/\S*$/
+const PLAN_PATTERN = /^https:\/\/factoriocalculator\.app\/[^\s<>]*$/
 const TITLE_MAX = 60
 const ZERO_WIDTH_JOINER = "‍"
 

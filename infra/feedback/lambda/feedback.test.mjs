@@ -64,6 +64,11 @@ test("validate rejects a plan containing a newline", () => {
     assert.equal(result.ok, false)
 })
 
+test("validate rejects a plan containing a > that would close the autolink early", () => {
+    const result = validate({ message: "hi", plan: "https://factoriocalculator.app/>owner/repo#1" })
+    assert.equal(result.ok, false)
+})
+
 test("validate rejects a version over 40 characters", () => {
     const result = validate({ message: "hi", version: "a".repeat(41) })
     assert.equal(result.ok, false)
