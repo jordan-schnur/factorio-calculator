@@ -91,11 +91,12 @@
 </dialog>
 
 <style>
-    #feedback-dialog { width: min(480px, 92vw); max-width: 92vw; box-sizing: border-box; padding: 14px; border: none; }
+    #feedback-dialog { width: min(480px, 92vw); max-width: 92vw; box-sizing: border-box; padding: 14px; border: none; color: var(--text); }
     #feedback-dialog[open] { display: flex; flex-direction: column; gap: 8px; }
     #feedback-dialog label { font-weight: 700; }
-    #feedback-dialog textarea { resize: vertical; min-height: 120px; font: inherit; box-sizing: border-box; }
+    #feedback-dialog textarea { resize: vertical; min-height: 120px; font: inherit; box-sizing: border-box; background: var(--input-bg); color: var(--text); border: none; box-shadow: inset 0 2px 3px rgba(0,0,0,0.8), inset 0 -1px 0 #454545; padding: 6px 8px; }
     #feedback-dialog input[type="text"] { font: inherit; box-sizing: border-box; }
+    #feedback-dialog textarea:focus-visible, #feedback-dialog input[type="text"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     .feedback-remaining { align-self: flex-end; font-size: 12px; }
     .feedback-honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
     .feedback-error { color: #e05a5a; }
