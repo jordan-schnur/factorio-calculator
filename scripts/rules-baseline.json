@@ -1,7 +1,6 @@
 {
   "comments": {
     "src/lib/analytics-core.js": 6,
-    "src/lib/analytics.js": 1,
     "src/lib/belt.js": 1,
     "src/lib/board.js": 5,
     "src/lib/boardcore.js": 8,
@@ -21,7 +20,6 @@
     "src/lib/icon.js": 7,
     "src/lib/init.js": 7,
     "src/lib/intro-bg-core.js": 3,
-    "src/lib/intro-bg.js": 2,
     "src/lib/itemtable.js": 7,
     "src/lib/machines-core.js": 5,
     "src/lib/matrix.js": 2,
