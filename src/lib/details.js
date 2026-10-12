@@ -5,10 +5,11 @@
 // graph view's side card (`#graph-side`, built here since selecting a node
 // does not itself trigger a re-solve).
 import { isMultiOutput, outputsOf, usedOutputs } from "./byproduct-core.js"
+import { flowCardLines, headSubtitle, isTargetItem, itemCard, leftoverText, machineRatio, needBadgeOf, outputLinks, percentText, realConsumers } from "./details-core.js"
 import { spec } from "./factory.js"
 import { recipesFor } from "./machines-core.js"
-import { beltWords, destinationLines, flowLines, goesToRatio, needsRatio } from "./ratio-core.js"
-import { one, Rational, zero } from "./rational.js"
+import { goesToRatio, needsRatio } from "./ratio-core.js"
+import { zero } from "./rational.js"
 import { registerRenderer } from "./render.js"
 import { mountModuleEditor } from "./modules-editor.js"
 import { tierPicker } from "./quality-ui.js"
@@ -16,18 +17,6 @@ import { relevantRecipes, renderOptions } from "./source.js"
 import { rateText } from "./table-core.js"
 import { buildRows, powerRepr } from "./table.js"
 import { Tooltip } from "./tooltip.js"
-
-const HUNDRED = Rational.from_float(100)
-
-// The "Goes to" share as a rounded percentage, with a floor of "<1%" so a
-// real-but-tiny consumer never reads as a flat 0%.
-function percentText(share) {
-    let percent = share.mul(HUNDRED)
-    if (percent.less(one)) {
-        return "<1%"
-    }
-    return percent.toDecimal(0) + "%"
-}
 
 // data-value must be the exact decimal text on screen, not the raw
 // per-second Rational -- the scratch pad inserts it verbatim.
@@ -90,72 +79,6 @@ function drow(icon, name, badge, numEl) {
     return div
 }
 
-// Item rate one machine running `recipe` moves, given the recipe's total
-// `itemRate` of that item in this solution; null when the recipe has no
-// machine (so there is no ratio to state).
-function perMachine(totals, recipe, itemRate) {
-    if (spec.getBuilding(recipe) === null) {
-        return null
-    }
-    let count = spec.getCount(recipe, totals.rates.get(recipe) || zero)
-    return count.isZero() ? null : itemRate.div(count)
-}
-
-// {supplier, consumer, p, q} for `item` flowing from its own row's recipe
-// into `consumer`, with p/q consumer machines per supplier machine; null
-// when either side has no machine or the item is brought in.
-function machineRatio(totals, rows, item, consumer, consumedRate) {
-    let row = rows.find(r => r.item === item)
-    if (!row || !row.isReal) {
-        return null
-    }
-    let produced = (totals.producers.get(item) || new Map()).get(row.recipe) || row.itemRate
-    let perSupplier = perMachine(totals, row.recipe, produced)
-    let perConsumer = perMachine(totals, consumer, consumedRate)
-    if (perSupplier === null || perConsumer === null || perConsumer.isZero()) {
-        return null
-    }
-    let r = perSupplier.div(perConsumer)
-    return {
-        supplier: spec.getBuilding(row.recipe).name,
-        consumer: spec.getBuilding(consumer).name,
-        p: r.p.toJSNumber(),
-        q: r.q.toJSNumber(),
-    }
-}
-
-// {building, recipe, count, total} for `recipe`'s machines, `count` of the
-// `total` being the part that moves `share` of the recipe's output; null
-// when the recipe has no machine.
-function machinesOn(totals, recipe, share) {
-    let building = spec.getBuilding(recipe)
-    if (building === null) {
-        return null
-    }
-    let total = spec.getCount(recipe, totals.rates.get(recipe) || zero)
-    if (total.isZero()) {
-        return null
-    }
-    return { building: building.name, recipe: recipe.name, count: total.mul(share).toFloat(), total: total.toFloat() }
-}
-
-// The machines making `rate` of `item`: every recipe that makes it, each
-// its share of the item's total output. Empty when the item's row is
-// brought in.
-function suppliersOf(totals, rows, item, rate) {
-    let row = rows.find(r => r.item === item)
-    if (!row || !row.isReal) {
-        return []
-    }
-    let producers = [...(totals.producers.get(item) || new Map())]
-    let produced = producers.reduce((sum, [, r]) => sum.add(r), zero)
-    if (produced.isZero()) {
-        return []
-    }
-    let share = rate.div(produced)
-    return producers.map(([recipe]) => machinesOn(totals, recipe, share)).filter(m => m !== null)
-}
-
 function cardFrame(heading) {
     let frame = document.createElement("div")
     frame.className = "frame flow-card"
@@ -177,14 +100,7 @@ function cardLine(frame, text, className) {
 // Hovering the rate on a Needs/Goes to line: the belts `rate` of `item`
 // fills, the machines making it and the `consumer` machines that use it.
 function flowTooltip(numEl, totals, rows, item, consumer, rate) {
-    let lines = flowLines({
-        belts: spec.getBeltCount(rate).toFloat(),
-        beltName: spec.belt.name,
-        beltFormat: spec.format.beltFormat,
-        fluid: item.phase === "fluid",
-        suppliers: suppliersOf(totals, rows, item, rate),
-        consumer: machinesOn(totals, consumer, one),
-    })
+    let lines = flowCardLines(spec, totals, rows, item, consumer, rate)
     numEl.classList.add("flow")
     new Tooltip(numEl, () => {
         let frame = cardFrame(`${numEl.textContent} ${item.name}`)
@@ -200,47 +116,20 @@ function flowTooltip(numEl, totals, rows, item, consumer, rate) {
 // then every place it goes with how many of those machines feed how many
 // of the next ones -- the whole Goes to column, worked out.
 export function itemTooltip(el, totals, rows, item) {
-    let total = totals.items.get(item) || zero
-    if (total.isZero()) {
+    let card = itemCard(spec, totals, rows, item)
+    if (card === null) {
         return
     }
-    let fluid = item.phase === "fluid"
-    let summary = flowLines({
-        belts: spec.getBeltCount(total).toFloat(),
-        beltName: spec.belt.name,
-        beltFormat: spec.format.beltFormat,
-        fluid,
-        suppliers: suppliersOf(totals, rows, item, total),
-        consumer: null,
-    })
-    let flows = [...(totals.consumers.get(item) || new Map())]
-        .filter(([recipe]) => recipe.isReal())
-        .sort((a, b) => b[1].toFloat() - a[1].toFloat())
-        .map(([recipe, rate]) => ({ name: recipe.name, rate, consumer: machinesOn(totals, recipe, one) }))
-    let left = flows.reduce((sum, f) => sum.sub(f.rate), total)
-    if (spec.buildTargets.some(t => t.item === item) && zero.less(left)) {
-        flows.push({ name: "What you asked for", rate: left, consumer: null })
-    }
-    let destinations = flows.map(f => destinationLines({
-        name: f.name,
-        rate: rateText(spec.format, f.rate),
-        percent: percentText(f.rate.div(total)),
-        belts: fluid ? null : spec.getBeltCount(f.rate).toFloat(),
-        beltName: spec.belt.name,
-        beltFormat: spec.format.beltFormat,
-        suppliers: suppliersOf(totals, rows, item, f.rate).map(m => ({ building: m.building, count: m.count })),
-        consumer: f.consumer ? { building: f.consumer.building, count: f.consumer.count } : null,
-    }))
     el.classList.add("flow")
     new Tooltip(el, () => {
-        let frame = cardFrame(`${rateText(spec.format, total)} ${item.name}`)
-        for (let line of summary) {
+        let frame = cardFrame(`${rateText(spec.format, card.total)} ${item.name}`)
+        for (let line of card.summary) {
             cardLine(frame, line)
         }
-        if (destinations.length > 0) {
+        if (card.destinations.length > 0) {
             cardLine(frame, "Goes to", "lbl")
         }
-        for (let d of destinations) {
+        for (let d of card.destinations) {
             cardLine(frame, d.title, "dest")
             if (d.detail) {
                 cardLine(frame, d.detail, "muted dest-detail")
@@ -248,18 +137,6 @@ export function itemTooltip(el, totals, rows, item) {
         }
         return frame
     })
-}
-
-// The machines on each side of `rate` of `item` flowing from recipe `from`
-// (null: brought in) into recipe `to`: `from`'s share of its own output of
-// the item, and `to`'s share of its own intake of it.
-export function linkMachines(totals, item, from, to, rate) {
-    let made = from === null ? null : (totals.producers.get(item) || new Map()).get(from)
-    let used = (totals.consumers.get(item) || new Map()).get(to)
-    return {
-        supplier: made && !made.isZero() ? machinesOn(totals, from, rate.div(made)) : null,
-        consumer: used && !used.isZero() ? machinesOn(totals, to, rate.div(used)) : null,
-    }
 }
 
 function col(className, children) {
@@ -290,8 +167,7 @@ function buildHead(item, rate, size) {
     grow.appendChild(document.createElement("br"))
     let subtitle = document.createElement("span")
     subtitle.className = "muted num"
-    let beltPart = item.phase === "fluid" ? "pipe" : beltWords(spec.getBeltCount(rate).toFloat(), spec.format.beltFormat)
-    subtitle.textContent = `${rateText(spec.format, rate)} · ${beltPart}`
+    subtitle.textContent = headSubtitle(spec, item, rate)
     grow.appendChild(subtitle)
     head.appendChild(grow)
 
@@ -314,17 +190,8 @@ function buildHead(item, rate, size) {
 // on a Needs line -- an ingredient can be supplied or a raw resource
 // independently of the row being expanded.
 function needBadge(rows, item) {
-    let ingredientRow = rows.find(r => r.item === item)
-    if (!ingredientRow) {
-        return null
-    }
-    if (!ingredientRow.isReal) {
-        return badgeSpan("in", "brought in")
-    }
-    if (ingredientRow.isResource) {
-        return item.phase === "fluid" ? badgeSpan("pipe", "piped in") : badgeSpan("mine", "mined")
-    }
-    return null
+    let badge = needBadgeOf(rows, item)
+    return badge ? badgeSpan(badge.kind, badge.text) : null
 }
 
 function buildNeedsCol(rows, row, totals) {
@@ -346,7 +213,7 @@ function buildNeedsCol(rows, row, totals) {
             let rate = (consumed.get(ing.item) || new Map()).get(row.recipe) || amount
             let num = flowTooltip(numSpan(rateText(spec.format, amount)), totals, rows, ing.item, row.recipe, rate)
             children.push(drow(ing.item.icon, ing.item.name, needBadge(rows, ing.item), num))
-            let ratio = machineRatio(totals, rows, ing.item, row.recipe, rate)
+            let ratio = machineRatio(spec, totals, rows, ing.item, row.recipe, rate)
             if (ratio) {
                 children.push(mutedSpan(needsRatio(ratio.supplier, ratio.consumer, ratio.p, ratio.q), "ratio"))
             }
@@ -358,9 +225,7 @@ function buildNeedsCol(rows, row, totals) {
 function buildGoesToCol(rows, item, totals, isTarget) {
     let children = [lbl("Goes to")]
     let totalRate = totals.items.get(item) || zero
-    let consumers = [...(totals.consumers.get(item) || new Map())]
-        .filter(([recipe]) => recipe.isReal())
-        .sort((a, b) => b[1].toFloat() - a[1].toFloat())
+    let consumers = realConsumers(totals, item)
     if (consumers.length === 0) {
         children.push(mutedSpan(isTarget ? "This is what you asked for." : "Nothing consumes it."))
     } else {
@@ -369,7 +234,7 @@ function buildGoesToCol(rows, item, totals, isTarget) {
             let share = totalRate.isZero() ? zero : rate.div(totalRate)
             let num = flowTooltip(numSpan(rateText(spec.format, rate)), totals, rows, item, recipe, rate)
             children.push(drow(product.icon, recipe.name, shareSpan(percentText(share)), num))
-            let ratio = machineRatio(totals, rows, item, recipe, rate)
+            let ratio = machineRatio(spec, totals, rows, item, recipe, rate)
             if (ratio) {
                 children.push(mutedSpan(goesToRatio(ratio.supplier, ratio.consumer, ratio.p, ratio.q), "ratio"))
             }
@@ -387,9 +252,7 @@ function buildMakesCol(rows, row, totals) {
         let head = drow(item.icon, item.name, null, numSpan(rateText(spec.format, rate)))
         head.classList.add("out-head")
         children.push(head)
-        let links = totals.proportionate
-            .filter(l => l.from === row.recipe && l.item === item && l.to.isReal())
-            .sort((a, b) => b.rate.toFloat() - a.rate.toFloat())
+        let links = outputLinks(totals, row.recipe, item)
         for (let link of links) {
             let share = rate.isZero() ? zero : link.rate.div(rate)
             let num = flowTooltip(numSpan(rateText(spec.format, link.rate)), totals, rows, item, link.to, link.rate)
@@ -398,10 +261,8 @@ function buildMakesCol(rows, row, totals) {
             children.push(to)
         }
         if (!leftover.isZero()) {
-            let text = spec.sendOut.has(item.key) ? `${rateText(spec.format, leftover)} sent out.` :
-                `${rateText(spec.format, leftover)} nothing here uses: see the fixes above.`
-            children.push(mutedSpan(text, "left-note"))
-        } else if (links.length === 0 && spec.buildTargets.some(t => t.item === item)) {
+            children.push(mutedSpan(leftoverText(spec, item, leftover), "left-note"))
+        } else if (links.length === 0 && isTargetItem(spec, item)) {
             children.push(mutedSpan("This is what you asked for.", "out-to"))
         }
     }
@@ -558,7 +419,7 @@ export function renderDetail(container, item, totals) {
     container.textContent = ""
     let rows = buildRows(totals)
     let row = rows.find(r => r.item === item) || null
-    let isTarget = row ? row.isTarget : spec.buildTargets.some(t => t.item === item)
+    let isTarget = row ? row.isTarget : isTargetItem(spec, item)
     let isResource = row ? row.isResource : false
 
     container.appendChild(buildNeedsCol(rows, row, totals))

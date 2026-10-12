@@ -18,7 +18,7 @@ import { withQualityBadge } from "./quality-ui.js"
 import { rateText } from "./table-core.js"
 import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
 import { backsUpMarker, showByproducts } from "./byproducts.svelte.js"
-import { linkMachines } from "./details.js"
+import { linkMachines } from "./details-core.js"
 import { beltHoldsRow, beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
 import { beltHoldsOn } from "./belt-holds.js"
 import { tierWord } from "./colorblind.js"
@@ -577,7 +577,7 @@ function lineMachines(edge) {
     if (!item || !to || !lastDrawnTotals) return null
     let rate = edge.rateExact ?? Rational.from_float(edge.rate)
     let from = edge.source.startsWith("in:") ? null : spec.recipes.get(edge.source) || null
-    return {item, rate, from, to, ...linkMachines(lastDrawnTotals, item, from, to, rate)}
+    return {item, rate, from, to, ...linkMachines(spec, lastDrawnTotals, item, from, to, rate)}
 }
 
 // Rebuilds the pinned chips, for a Display setting that changes what they say.
