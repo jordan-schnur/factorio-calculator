@@ -79,4 +79,15 @@ export const S = {
 
     // Site footer
     feedbackLink: "#feedback-link",
+
+    // Feedback dialog
+    feedbackDialog: "#feedback-dialog",
+    feedbackMessage: "#feedback-message",
+    feedbackContact: "#feedback-contact",
+    feedbackSend: "#feedback-dialog button:has-text('Send')",
+    feedbackCancel: "#feedback-dialog button:has-text('Cancel')",
+    feedbackClose: "#feedback-dialog button:has-text('Close')",
+    feedbackCopy: "#feedback-dialog button:has-text('Copy message')",
+    feedbackThanks: "#feedback-thanks",
+    feedbackError: ".feedback-error",
 } as const
