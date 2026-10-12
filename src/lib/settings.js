@@ -4,7 +4,7 @@ import { DEFAULT_RATE, DEFAULT_RATE_PRECISION, DEFAULT_COUNT_PRECISION, DEFAULT_
 import { spec, DEFAULT_PLANET, DEFAULT_BELT, DEFAULT_FUEL } from "./factory.js"
 import { beaconData, shortModules } from "./module.js"
 import { Rational, zero } from "./rational.js"
-import { registerRenderer } from "./render.js"
+import { refresh } from "./plan.svelte.js"
 import { markOverride } from "./savesettings.js"
 import { excludedMachines, parseRecipeMachines } from "./machines-core.js"
 import { canBeacon, canUse, parseModuleList } from "./modules-core.js"
@@ -290,7 +290,7 @@ export let customTitle = ""
 
 export function setTitle(s) {
     customTitle = s
-    renderPageTitle(spec)
+    refresh()
 }
 
 // Example: "Electronic circuit 60/min, Plastic bar 30/min · Factorio Calculator".
@@ -303,8 +303,10 @@ export function targetsTitle(targets) {
     return parts.length ? parts.join(", ") + " · " + DEFAULT_TITLE : INTRO_TITLE
 }
 
-function renderPageTitle(spec) {
-    document.title = customTitle !== "" ? customTitle : targetsTitle(spec.buildTargets)
+// The tab title (PageTitle.svelte): the Title setting, else what the plan makes, else the intro title before boot.
+export function pageTitle(spec) {
+    if (spec === null) return INTRO_TITLE
+    return customTitle !== "" ? customTitle : targetsTitle(spec.buildTargets)
 }
 
 function renderTitle(settings) {
@@ -579,97 +581,6 @@ function renderResourcePriorities(settings) {
     }
 }
 
-// The drawer's legacy parts, redrawn on every solve: the from-save panel and the override tags.
-
-// From your save
-
-function appendKV(container, label, build) {
-    let row = container.append("div").classed("kv", true)
-    row.append("span").classed("muted", true).style("width", "90px").text(label)
-    build(row)
-    return row
-}
-
-// `thing` is a game-data object with `.icon`/`.name` (Belt, Building, ...), or null.
-function appendSetRow(container, label, thing, extra) {
-    appendKV(container, label, row => {
-        if (thing) {
-            row.append("span").attr("class", "slot slot-sm").append(() => thing.icon.make(20, true))
-            row.append("span").text(thing.name)
-        } else {
-            row.append("span").classed("muted", true).text("unknown")
-        }
-        if (extra) {
-            row.append("span").classed("muted", true).style("margin-left", "auto").style("font-size", "13px").text(extra)
-        }
-    })
-}
-
-function renderFromSave() {
-    let container = d3.select("#settings-fromsave")
-    if (container.empty()) {
-        return
-    }
-    container.selectAll("*").remove()
-
-    let fetched = spec.saveState.fetched
-    let saveLabel = spec.saveState.save === null
-        ? "not following a save"
-        : (fetched && fetched.save ? fetched.save.name : "newest")
-    appendKV(container, "Save", row => {
-        row.append("span")
-            .style("background", "#1c1c1c")
-            .style("padding", "4px 10px")
-            .style("font-weight", "600")
-            .style("flex", "1")
-            .text(saveLabel)
-    })
-    appendKV(container, "Follow", row => {
-        row.append("span")
-            .attr("class", "check")
-            .style("cursor", "pointer")
-            .text(spec.saveState.follow ? "✓" : "")
-            .on("click", () => {
-                spec.saveState.follow = !spec.saveState.follow
-                spec.setHash()
-                spec.display()
-            })
-        row.append("span").text("Re-read the newest save every few minutes")
-    })
-
-    if (!fetched) {
-        container.append("div").classed("muted", true).style("padding", "6px 2px").text("No save read yet.")
-    } else {
-        container.append("div").classed("sec", true).text("What it set")
-        appendSetRow(container, "Belt", spec.belts && spec.belts.get(fetched.belt))
-        appendSetRow(container, "Assembling", fetched.buildings.crafting && spec.buildingKeys.get(fetched.buildings.crafting))
-        appendSetRow(container, "Smelting", fetched.buildings.smelting && spec.buildingKeys.get(fetched.buildings.smelting))
-        appendSetRow(container, "Mining", fetched.buildings["basic-solid"] && spec.buildingKeys.get(fetched.buildings["basic-solid"]), `+${fetched.mining_productivity}% mining productivity`)
-        let planet = spec.planets && spec.planets.get(fetched.planet)
-        appendKV(container, "Planet", row => row.append("span").text(planet ? planet.name : fetched.planet))
-        appendKV(container, "Recipes", row => row.append("span").text(`${fetched.disabled_recipes.length} recipes locked`))
-        let saved = fetched.machine_quality
-            ? qualityFromSave(fetched.machine_quality, [...spec.selectedPlanets].map(p => p.key))
-            : new Map()
-        let words = [...saved].map(([key, tier]) => `${(spec.buildingKeys.get(key) || {name: key}).name}: ${qualityTier(tier).name}`)
-        appendKV(container, "Quality", row => row.append("span").text(words.length === 0 ? "every machine normal" : words.join(", ")))
-    }
-
-    appendKV(container, "", row => {
-        row.style("padding-top", "8px").style("gap", "8px")
-        row.select("span.muted").remove()
-        row.append("button").attr("type", "button").attr("class", "btn btn-sm").text("Re-read now")
-            .on("click", () => document.getElementById("save-picker").dispatchEvent(new Event("change")))
-        row.append("button").attr("type", "button").attr("class", "btn btn-sm").text("Stop following")
-            .on("click", () => {
-                spec.saveState.follow = false
-                spec.setHash()
-                spec.display()
-            })
-        row.append("span").classed("muted", true).style("font-size", "13px").text("Overrides on the right win over these.")
-    })
-}
-
 // Kept off spec, as reloadFromHash() replaces the spec and would revert it.
 let roundMachinesChoice = true
 
@@ -679,15 +590,8 @@ export function setRoundMachines(on) {
     spec.display()
 }
 
-function renderSettingsTab() {
-    renderFromSave()
-}
-
-// init.js calls this once at boot, after the dataset loads.
-export function initSettingsTab() {
-    registerRenderer(renderSettingsTab)
-    registerRenderer(renderPageTitle)
-}
+// No-op until the cleanup unit removes the call from init.js.
+export function initSettingsTab() {}
 
 // Each render* below applies one fragment setting (or its default) to the spec; add new ones to fragment.js too.
 export function renderSettings(settings) {

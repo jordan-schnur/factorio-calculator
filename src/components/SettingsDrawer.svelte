@@ -3,6 +3,7 @@
     import AdvancedSettings from "./AdvancedSettings.svelte"
     import Button from "./Button.svelte"
     import DisplaySettings from "./DisplaySettings.svelte"
+    import FromSave from "./FromSave.svelte"
     import MachinesSettings from "./MachinesSettings.svelte"
     import RecipesSettings from "./RecipesSettings.svelte"
     import Section from "./Section.svelte"
@@ -17,7 +18,7 @@
     <div class="frame" id="settings-panel">
         <div class="titlebar"><span class="title">Settings</span><div class="spacer"></div><button type="button" class="x" id="settings-close" onclick={closeSettings}>&#10005;</button></div>
 
-        <Section title="From your save" class="needs-companion" deepId="settings-fromsave"></Section>
+        <Section title="From your save" class="needs-companion" deepId="settings-fromsave"><FromSave /></Section>
 
         <div id="settings-overrides">
             {#if plan.spec}<div class="kv needs-companion"><Button type="button" size="sm" id="overrides-reset-all" onclick={clearOverrides}>Reset all</Button></div>{/if}

@@ -1,6 +1,7 @@
 <script>
     import FooterBar from "./components/FooterBar.svelte"
     import MakePanel from "./components/MakePanel.svelte"
+    import PageTitle from "./components/PageTitle.svelte"
     import Scratchpad from "./components/Scratchpad.svelte"
     import SettingsDrawer from "./components/SettingsDrawer.svelte"
     import SiteFooter from "./components/SiteFooter.svelte"
@@ -22,4 +23,5 @@
     <SettingsDrawer />
     <TooltipHost />
     <SiteFooter />
+    <PageTitle />
 </div>
