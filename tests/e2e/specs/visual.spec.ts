@@ -4,6 +4,7 @@ import {
     settledScreenshot, settle, waitIntroBgReady, openAdvanced, settingsSection,
     applyByproductFix, openScratchpad, hoverGraphLine, clickGraphNode, fitGraph, openViaRedirect,
 } from "../support/areas/visual"
+import { openFeedback } from "../support/areas/feedback"
 
 // A curated screenshot gate over the page's key states. Pixel screenshots
 // are expensive to keep honest, so this is the ONE spec in the suite that
@@ -164,6 +165,22 @@ test.describe("settings drawer", () => {
         let advanced = await openAdvanced(page)
         await settledScreenshot(page)
         await expect(advanced).toHaveScreenshot("settings-advanced-open.png")
+    })
+})
+
+test.describe("feedback dialog", () => {
+    test("open on desktop", async ({ calc, page }) => {
+        await calc.open("items=")
+        await openFeedback(page)
+        await settledScreenshot(page)
+        await expect(page.locator(S.feedbackDialog)).toHaveScreenshot("feedback-dialog-desktop.png")
+    })
+
+    test("open on mobile @mobile", async ({ calc, page }) => {
+        await calc.open("items=")
+        await openFeedback(page)
+        await settledScreenshot(page)
+        await expect(page.locator(S.feedbackDialog)).toHaveScreenshot("feedback-dialog-mobile.png")
     })
 })
 

@@ -163,6 +163,20 @@ test("a plan over the limit is dropped, not sent oversized", async ({ page, base
     expect(requests[0].postDataJSON().plan).toBeUndefined()
 })
 
+test("the message label and textarea are themed, not browser defaults", async ({ calc, page }) => {
+    await calc.open("items=")
+    await openFeedback(page)
+    let label = page.locator(`label[for="${S.feedbackMessage.slice(1)}"]`)
+    let textarea = page.locator(S.feedbackMessage)
+    let contact = page.locator(S.feedbackContact)
+    await expect(label).not.toHaveCSS("color", "rgb(0, 0, 0)")
+    let [textareaBg, contactBg] = await Promise.all([
+        textarea.evaluate(el => getComputedStyle(el).backgroundColor),
+        contact.evaluate(el => getComputedStyle(el).backgroundColor),
+    ])
+    expect(textareaBg).toBe(contactBg)
+})
+
 test("fits at 360px without sideways scroll @mobile", async ({ calc, page }) => {
     await page.setViewportSize({ width: 360, height: 800 })
     await calc.open("items=")
