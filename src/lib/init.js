@@ -5,7 +5,6 @@ import { initBoard } from "./board.js"
 import { getBuildings } from "./building.js"
 import { initDetails } from "./details.js"
 import { spec, resetSpec } from "./factory.js"
-import { initFlow } from "./flow.js"
 import { loadSettings, writeHash, isOwnHash, rememberHash } from "./fragment.js"
 import { getFuel } from "./fuel.js"
 import { getItemGroups } from "./group.js"
@@ -131,7 +130,6 @@ function initModules() {
     registerRenderer(renderHousekeeping)
     registerRenderer(renderPlan)
     initSupplied()
-    initFlow()
     initSource()
     initSettingsTab()
     initModulesEditor()

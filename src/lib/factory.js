@@ -159,10 +159,7 @@ class FactorySpecification {
         // machine change touches.
         this.machineModules = new Map()
         this.handSet = new Set()
-        // Bumped by every commitModules(); renderers that don't otherwise
-        // see a change (display() re-renders with the same totals object)
-        // fold this into their own "did anything change" key -- see
-        // flow.js's renderKey().
+        // Bumped by every commitModules(), so graph-core.js's renderKey() redraws a module edit that keeps the totals.
         this.modulesVersion = 0
 
         this.belt = null
