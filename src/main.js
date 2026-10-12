@@ -1,6 +1,6 @@
 import { hydrate, mount } from "svelte"
 import App from "./App.svelte"
-import { initAnalytics } from "./lib/analytics.js"
+import { initAnalytics } from "./lib/analytics.svelte.js"
 import { init } from "./lib/init.js"
 import { initIntroBg } from "./lib/intro-bg.js"
 import "./styles/calc.css"
