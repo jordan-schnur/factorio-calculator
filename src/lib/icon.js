@@ -1,17 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2021 Kirk McDonald
-import * as d3 from "d3"
-
-import { spec } from "./factory.js"
 import { tooltip } from "./tooltip.svelte.js"
 import { tooltipFor } from "./tooltips.js"
 import { badgeUrl, tierOf } from "./colorblind-core.js"
 import { spriteCrop } from "./sprite-core.js"
 
 export { PX_WIDTH, PX_HEIGHT } from "./sprite-core.js"
-
-/*export function setSheetHash(h) {
-    sheetHash = h
-}*/
 
 // The icon of an item, recipe, belt, building or sprite; `name` (default obj.name) is its alt text.
 export class Icon {
@@ -23,13 +16,9 @@ export class Icon {
         }
         this.obj = obj
     }
-    /*path() {
-        return "images/" + this.name + ".png"
-    }*/
     // A new <img>, `size` px square (unset: CSS sizes it), with obj's tooltip beside `target` (default: the img) unless suppressed.
     make(size, suppressTooltip, target) {
-        let img = d3.select(makeEmptyIcon(size))
-            .classed("icon", true)
+        let img = makeEmptyIcon(size)
         let sheet = `url(${new URL(`images/sprite-sheet-${sheetHash}.png`, document.baseURI)})`
         // In percent of the box, so the crop holds when CSS shows the icon
         // at a size other than `size` (sprite-core.js).
@@ -39,65 +28,36 @@ export class Icon {
         // layer its colour word over it (colorblind-core.js).
         let tier = tierOf(this.obj.key)
         if (tier) {
-            img.attr("data-tier", tier)
-                .style("--sprite", sheet)
-                .style("--sprite-size", crop.size)
-                .style("--sprite-pos", crop.position)
-                .style("--tier-badge", badgeUrl(tier, size !== null && size !== undefined && size < 24))
+            img.setAttribute("data-tier", tier)
+            img.style.setProperty("--sprite", sheet)
+            img.style.setProperty("--sprite-size", crop.size)
+            img.style.setProperty("--sprite-pos", crop.position)
+            img.style.setProperty("--tier-badge", badgeUrl(tier, size !== null && size !== undefined && size < 24))
         } else {
-            img.style("background", sheet)
-            img.style("background-size", crop.size)
-            img.style("background-position", crop.position)
+            img.style.setProperty("background", sheet)
+            img.style.setProperty("background-size", crop.size)
+            img.style.setProperty("background-position", crop.position)
         }
         let component = suppressTooltip ? null : tooltipFor(this.obj)
         if (component) {
-            tooltip(component, { thing: this.obj }, target)(img.node())
+            tooltip(component, { thing: this.obj }, target)(img)
         } else {
-            img.attr("title", this.obj.name)
+            img.setAttribute("title", this.obj.name)
         }
-        img.attr("alt", this.name)
-        return img.node()
-    }
-}
-
-// XXX: Not actually used, but here for reference if I decide to go with it.
-export class ResourceIcon {
-    constructor(recipe) {
-        this.recipe = recipe
-    }
-    make(size) {
-        let product = this.recipe.products[0].item
-        let building = spec.getBuilding(this.recipe)
-        if (building === null) {
-            return d3.select(product.icon.make(size))
-                .attr("title", this.recipe.name + " (extraction)")
-                .node()
-        }
-        let container = d3.create("div")
-            .classed("icon-container", true)
-        container.append(() => product.icon.make(size))
-            .attr("title", this.recipe.name + " (extraction)")
-        container.append("img")
-            .classed("icon-overlay", true)
-            .attr("width", size/2)
-            .attr("height", size/2)
-            .attr("src", spec.getBuilding(this.recipe).icon.path())
-            .attr("title", this.recipe.name + " (extraction)")
-        return container.node()
+        img.setAttribute("alt", this.name)
+        return img
     }
 }
 
 export function makeEmptyIcon(size) {
-    let img = d3.create("img")
-        .classed("icon", true)
-        // Chrome wants the <img> element to have a src attribute, or it will
-        // draw a border around it. Cram in this transparent 1x1 pixel image.
-        .attr("src", "images/pixel.gif")
+    let img = document.createElement("img")
+    img.classList.add("icon")
+    img.setAttribute("src", "images/pixel.gif")
     if (size) {
-        img.attr("width", size)
-            .attr("height", size)
+        img.setAttribute("width", size)
+        img.setAttribute("height", size)
     }
-    return img.node()
+    return img
 }
 
 class Sprite {

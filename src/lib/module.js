@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2015-2024 Kirk McDonald
-import * as d3 from "d3"
-import { makeDropdown, addInputs } from "./dropdown.js"
-import { Icon, sprites } from "./icon.js"
+import { Icon } from "./icon.js"
 import { useLegacyCalculation } from "./init.js"
 import { allowedEffectsOf, canBeacon as beaconTakes, canUse } from "./modules-core.js"
 import { beaconEffectivity, isNormal, scaledEffect, tierOf as qualityTier } from "./quality-core.js"
@@ -42,50 +40,6 @@ class Module {
     hasProdEffect() {
         return !this.productivity.isZero()
     }
-}
-
-export function moduleDropdown(selector, data) {
-    let moduleDropdownSpan = selector.selectAll("span.module-wrapper")
-        .data(data)
-        .join(
-            enter => {
-                let s = enter.append("span")
-                    .classed("module-wrapper", true)
-                makeDropdown(s)
-                return s
-            }
-        )
-    let moduleDropdown = moduleDropdownSpan.selectAll("div.dropdown")
-    moduleDropdown.selectAll("div.moduleRow")
-        .data(d => d.inputRows)
-        .join("div")
-            .classed("moduleRow", true)
-            .selectAll("span.input")
-            .data(d => d)
-            .join(
-                enter => {
-                    let s = enter.append("span")
-                        .classed("input", true)
-                    let label = addInputs(
-                        s,
-                        d => d.cell.name,
-                        d => d.checked(),
-                        d => d.choose(),
-                    )
-                    label.append(function(d) {
-                        if (d.module === null) {
-                            return sprites.get("slot_icon_module").icon.make(32)
-                        } else {
-                            return d.module.icon.make(32, false, this.parentNode.parentNode.parentNode)
-                        }
-                    })
-                    return s
-                },
-                update => {
-                    update.selectAll("input").property("checked", d => d.checked())
-                    return update
-                },
-            )
 }
 
 // One module's effect in one slot: the data's own Rational at normal
