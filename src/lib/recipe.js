@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2019-2021 Kirk McDonald
-import * as d3 from "d3"
 import { spec } from "./factory.js"
-import { Icon, sprites } from "./icon.js"
+import { Icon } from "./icon.js"
 import { Rational, zero, one } from "./rational.js"
 
 export class Ingredient {
@@ -44,6 +43,7 @@ class Recipe {
         this.icon_col = col
         this.icon_row = row
         this.icon = new Icon(this, products[0].item.name)
+        this.tooltipKind = "recipe"
     }
     fuelIngredient() {
         let building = spec.getBuilding(this)
@@ -104,56 +104,6 @@ class Recipe {
     }
     isDisable() {
         return false
-    }
-    renderTooltip(extra) {
-        let self = this
-        let t = d3.create("div")
-            .classed("frame recipe", true)
-            .datum(this)
-        let header = t.append("h3")
-        header.append(() => self.icon.make(32, true))
-        let name = this.name
-        if (this.products.length === 1 && this.products[0].item.name === this.name && one.less(this.products[0].amount)) {
-            name = this.products[0].amount.toDecimal() + " \u00d7 " + name
-        }
-        header.append(() => new Text("\u00A0" + name))
-        if (extra) {
-            t.append(() => extra)
-        }
-        if (this.ingredients.length === 0) {
-            return t.node()
-        }
-        if (this.products.length > 1 || this.products[0].item.name !== this.name) {
-            let productLine = t.append("div")
-            productLine.append("span")
-                .text("Products:")
-            let product = productLine.append("span").selectAll("span")
-                .data(this.products)
-                .join("span")
-            product.append("span")
-                .text("\u00A0")
-            let prodIcon = product.append("div")
-                .classed("product", true)
-            prodIcon.append(d => d.item.icon.make(32, true))
-            prodIcon.append("span")
-                .classed("count", true)
-                .text(d => d.amount.toDecimal())
-        }
-        let time = t.append("div")
-        time.append("div")
-            .classed("product", true)
-            .append(() => sprites.get("clock").icon.make(32, true))
-        time.append("span")
-            .text("\u00A0" + this.time.toDecimal())
-        let ingredient = t.append("div").selectAll("div")
-            .data(this.ingredients)
-            .join("div")
-        ingredient.append("div")
-            .classed("product", true)
-            .append(d => d.item.icon.make(32, true))
-        ingredient.append("span")
-            .text(d => `\u00A0${d.amount.toDecimal()} \u00d7 ${d.item.name}`)
-        return t.node()
     }
 }
 

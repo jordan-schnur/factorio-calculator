@@ -8,15 +8,6 @@ import { beaconEffectivity, isNormal, scaledEffect, tierOf as qualityTier } from
 import { Rational, zero, half, one } from "./rational.js"
 import { sorted } from "./sort.js"
 
-let hundred = Rational.from_float(100)
-function percent(x) {
-    let sign = ""
-    if (!x.less(zero)) {
-        sign = "+"
-    }
-    return `${sign}${x.mul(hundred).toDecimal()}%`
-}
-
 class Module {
     constructor(key, name, col, row, category, order, productivity, speed, power, effect) {
         // Other module effects not modeled by this calculator.
@@ -35,6 +26,7 @@ class Module {
         this.icon_col = col
         this.icon_row = row
         this.icon = new Icon(this)
+        this.tooltipKind = "module"
     }
     // This naming scheme is some older cruft, which works in the vanilla
     // dataset, but it's possible other datasets would render it unworkable.
@@ -49,37 +41,6 @@ class Module {
     }
     hasProdEffect() {
         return !this.productivity.isZero()
-    }
-    renderTooltip() {
-        let self = this
-        let t = d3.create("div")
-            .classed("frame", true)
-        let header = t.append("h3")
-        header.append(() => self.icon.make(32, true))
-        header.append(() => new Text(self.name))
-        let line
-        if (!this.power.isZero()) {
-            line = t.append("div")
-            line.append("b")
-                .text("Energy consumption: ")
-            line.append("span")
-                .text(percent(this.power))
-        }
-        if (!this.speed.isZero()) {
-            line = t.append("div")
-            line.append("b")
-                .text("Speed: ")
-            line.append("span")
-                .text(percent(this.speed))
-        }
-        if (!this.productivity.isZero()) {
-            line = t.append("div")
-            line.append("b")
-                .text("Productivity: ")
-            line.append("span")
-                .text(percent(this.productivity))
-        }
-        return t.node()
     }
 }
 

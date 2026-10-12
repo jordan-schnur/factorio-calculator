@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2019-2021 Kirk McDonald
-import * as d3 from "d3"
 import { Icon } from "./icon.js"
 import { DisabledRecipe } from "./recipe.js"
 import { Totals } from "./totals.js"
@@ -15,6 +14,7 @@ export class Item {
         this.icon_col = col
         this.icon_row = row
         this.icon = new Icon(this)
+        this.tooltipKind = "item"
 
         this.group = group
         this.subgroup = subgroup
@@ -30,21 +30,6 @@ export class Item {
     }
     addUse(recipe) {
         this.uses.push(recipe)
-    }
-    renderTooltip(extra) {
-        if (this.recipes.length === 1 && this.recipes[0].name === this.name) {
-            return this.recipes[0].renderTooltip(extra)
-        }
-        let self = this
-        let t = d3.create("div")
-            .classed("frame", true)
-        let header = t.append("h3")
-        header.append(() => self.icon.make(32, true))
-        header.append(() => new Text(self.name))
-        if (extra) {
-            t.append(() => extra)
-        }
-        return t.node()
     }
 }
 

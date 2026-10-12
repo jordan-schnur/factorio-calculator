@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2019-2021 Kirk McDonald
-import * as d3 from "d3"
-import { powerRepr } from "./power.js"
 import { Icon } from "./icon.js"
 import { allowedEffectsOf } from "./modules-core.js"
 import { speedMultiplier } from "./quality-core.js"
@@ -30,6 +28,7 @@ class Building {
         this.icon_col = col
         this.icon_row = row
         this.icon = new Icon(this)
+        this.tooltipKind = "building"
     }
     less(other) {
         if (!this.speed.equal(other.speed)) {
@@ -65,37 +64,13 @@ class Building {
     drain() {
         return this.power.div(thirty)
     }
-    renderTooltip() {
-        let self = this
-        let t = d3.create("div")
-            .classed("frame", true)
-        let header = t.append("h3")
-        header.append(() => self.icon.make(32, true))
-        header.append(() => new Text(self.name))
-        let line = t.append("div")
-        line.append("b")
-            .text("Energy consumption: ")
-        let {power, suffix} = powerRepr(this.power)
-        line.append("span")
-            .text(`${power.toDecimal(0)} ${suffix}`)
-        line = t.append("div")
-        line.append("b")
-            .text("Crafting speed: ")
-        line.append("span")
-            .text(this.speed.toDecimal())
-        line = t.append("div")
-        line.append("b")
-            .text("Module slots: ")
-        line.append("span")
-            .text(String(this.moduleSlots))
-        return t.node()
-    }
 }
 
 class Miner extends Building {
     constructor(key, name, col, row, categories, miningSpeed, moduleSlots, power, fuel) {
         super(key, name, col, row, categories, zero, zero, moduleSlots, power, fuel)
         this.miningSpeed = miningSpeed
+        this.tooltipKind = "miner"
     }
     less(other) {
         return this.miningSpeed.less(other.miningSpeed)
@@ -116,57 +91,19 @@ class Miner extends Building {
     prodEffect(spec) {
         return spec.miningProd
     }
-    renderTooltip() {
-        let self = this
-        let t = d3.create("div")
-            .classed("frame", true)
-        let header = t.append("h3")
-        header.append(() => self.icon.make(32, true))
-        header.append(() => new Text(self.name))
-        let line = t.append("div")
-        line.append("b")
-            .text("Energy consumption: ")
-        let {power, suffix} = powerRepr(this.power)
-        line.append("span")
-            .text(`${power.toDecimal(0)} ${suffix}`)
-        line = t.append("div")
-        line.append("b")
-            .text("Mining speed: ")
-        line.append("span")
-            .text(this.miningSpeed.toDecimal())
-        line = t.append("div")
-        line.append("b")
-            .text("Module slots: ")
-        line.append("span")
-            .text(String(this.moduleSlots))
-        return t.node()
-    }
 }
 
 class OffshorePump extends Building {
     constructor(key, name, col, row, pumpingSpeed) {
         super(key, name, col, row, ["offshore-pumping"], zero, zero, 0, zero, null)
         this.pumpingSpeed = pumpingSpeed
+        this.tooltipKind = "pump"
     }
     less(other) {
         return this.pumpingSpeed.less(other.pumpingSpeed)
     }
     getRecipeRate(spec, recipe) {
         return this.pumpingSpeed
-    }
-    renderTooltip() {
-        let self = this
-        let t = d3.create("div")
-            .classed("frame", true)
-        let header = t.append("h3")
-        header.append(() => self.icon.make(32, true))
-        header.append(() => new Text(self.name))
-        let line = t.append("div")
-        line.append("b")
-            .text("Pumping speed: ")
-        line.append("span")
-            .text(`${spec.format.rate(this.pumpingSpeed)}/${spec.format.rateName}`)
-        return t.node()
     }
 }
 
@@ -200,16 +137,6 @@ class RocketSilo extends Building {
     }
 }
 
-function renderTooltipBase() {
-    let self = this
-    let t = d3.create("div")
-        .classed("frame", true)
-    let header = t.append("h3")
-    header.append(() => self.icon.make(32, true))
-    header.append(() => new Text(self.name))
-    return t.node()
-}
-
 export function getBuildings(data, items) {
     let buildings = []
     let reactorDef = items.get("nuclear-reactor")
@@ -225,7 +152,7 @@ export function getBuildings(data, items) {
         zero,
         null
     )
-    reactor.renderTooltip = renderTooltipBase
+    reactor.tooltipKind = "plain"
     buildings.push(reactor)
     let boilerItem = items.get("boiler")
     let boilerDef
@@ -249,7 +176,7 @@ export function getBuildings(data, items) {
         "chemical",
         //boilerDef.target_temperature,
     )
-    boiler.renderTooltip = renderTooltipBase
+    boiler.tooltipKind = "plain"
     buildings.push(boiler)
     let siloDef = items.get("rocket-silo")
     let launch = new RocketLaunch(
@@ -264,7 +191,7 @@ export function getBuildings(data, items) {
         zero,
         null
     )
-    launch.renderTooltip = renderTooltipBase
+    launch.tooltipKind = "plain"
     buildings.push(launch)
     for (let d of data.crafting_machines) {
         let fuel = null

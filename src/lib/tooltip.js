@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2024 Kirk McDonald
 import * as d3 from "d3"
 import * as Popper from "@popperjs/core"
+import { hideTip, onTipShow, tip } from "./tooltip.svelte.js"
 
 let currentTooltip = null
+
+onTipShow(() => currentTooltip?.hide())
 
 let tooltipRegistry = new Set()
 
@@ -25,6 +28,9 @@ export class Tooltip {
         }
         if (currentTooltip) {
             currentTooltip.hide()
+        }
+        if (tip.current) {
+            hideTip(tip.current.anchor)
         }
         this.isOpen = true
         if (this.node) {

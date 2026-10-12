@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0 · Copyright 2019-2021 Kirk McDonald
-import * as d3 from "d3"
 import { Icon } from "./icon.js"
 import { spec } from "./factory.js"
 import { Rational } from "./rational.js"
@@ -12,18 +11,7 @@ class Belt {
         this.icon_col = col
         this.icon_row = row
         this.icon = new Icon(this)
-    }
-    renderTooltip() {
-        let self = this
-        let t = d3.create("div")
-            .classed("frame", true)
-        let header = t.append("h3")
-        header.append(() => self.icon.make(32, true))
-        header.append(() => new Text(self.name))
-        t.append("b")
-            .text(`Max throughput: `)
-        t.append(() => new Text(`${spec.format.rate(this.rate)}/${spec.format.longRate}`))
-        return t.node()
+        this.tooltipKind = "belt"
     }
 }
 
