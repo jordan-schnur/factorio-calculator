@@ -1,10 +1,9 @@
 import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
-import { machinesOn, percentText, rowBadge, suppliersOf } from "./details-core.js"
+import { itemCard, rowBadge } from "./details-core.js"
 import { spec } from "./factory.js"
 import { sprites } from "./icon.js"
 import { beaconPhrase, fallbackNote, planSentence } from "./modules-core.js"
-import { beltWords, destinationLines, flowLines } from "./ratio-core.js"
-import { one, zero } from "./rational.js"
+import { beltWords } from "./ratio-core.js"
 import { buildRows, buildingCount } from "./table.js"
 import { groupForTable, rateText } from "./table-core.js"
 
@@ -34,42 +33,15 @@ export function itemDepths(totals, targets) {
 
 // The hover card on a row's Need rate: belts and makers, then every place the item goes with its machines; null at zero.
 export function itemRateCard(totals, rows, item) {
-    const total = totals.items.get(item) || zero
-    if (total.isZero()) return null
-    const fluid = item.phase === "fluid"
-    const summary = flowLines({
-        belts: spec.getBeltCount(total).toFloat(),
-        beltName: spec.belt.name,
-        beltFormat: spec.format.beltFormat,
-        fluid,
-        suppliers: suppliersOf(spec, totals, rows, item, total),
-        consumer: null,
-    })
-    const flows = [...(totals.consumers.get(item) || new Map())]
-        .filter(([recipe]) => recipe.isReal())
-        .sort((a, b) => b[1].toFloat() - a[1].toFloat())
-        .map(([recipe, rate]) => ({ name: recipe.name, rate, consumer: machinesOn(spec, totals, recipe, one) }))
-    const left = flows.reduce((sum, f) => sum.sub(f.rate), total)
-    if (spec.buildTargets.some(t => t.item === item) && zero.less(left)) {
-        flows.push({ name: "What you asked for", rate: left, consumer: null })
-    }
-    const lines = summary.map(text => ({ text }))
-    if (flows.length > 0) lines.push({ text: "Goes to", class: "lbl" })
-    for (const f of flows) {
-        const d = destinationLines({
-            name: f.name,
-            rate: rateText(spec.format, f.rate),
-            percent: percentText(f.rate.div(total)),
-            belts: fluid ? null : spec.getBeltCount(f.rate).toFloat(),
-            beltName: spec.belt.name,
-            beltFormat: spec.format.beltFormat,
-            suppliers: suppliersOf(spec, totals, rows, item, f.rate).map(m => ({ building: m.building, count: m.count })),
-            consumer: f.consumer ? { building: f.consumer.building, count: f.consumer.count } : null,
-        })
+    const card = itemCard(spec, totals, rows, item)
+    if (card === null) return null
+    const lines = card.summary.map(text => ({ text }))
+    if (card.destinations.length > 0) lines.push({ text: "Goes to", class: "lbl" })
+    for (const d of card.destinations) {
         lines.push({ text: d.title, class: "dest" })
         if (d.detail) lines.push({ text: d.detail, class: "muted dest-detail" })
     }
-    return { heading: `${rateText(spec.format, total)} ${item.name}`, lines }
+    return { heading: `${rateText(spec.format, card.total)} ${item.name}`, lines }
 }
 
 function isHandSet(row) {
