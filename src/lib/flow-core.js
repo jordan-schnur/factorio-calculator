@@ -10,17 +10,7 @@ export function edgeWidth(belts) {
     return Math.min(8, 1.5 + 5 * belts)
 }
 
-// spec: {recipes: [{key, name, isReal, isDisable, isResource, isTarget, count, machine}],
-//        links: [{item, itemName, from, to, rate, rateExact, belts}]}
-// A link's `from`/`to` are recipe keys (or `from: null` for a link with no
-// producer at all). Two kinds of recipe never get a node of their own:
-// isReal: false is the solver's internal OutputRecipe/SurplusRecipe sink
-// (skipped entirely, not even drawn as an edge endpoint by the caller);
-// isDisable: true is the `D-` stand-in for a supplied/ignored item (real,
-// but not a production step) -- a link sourced from one is folded into a
-// synthetic "input" node keyed by item instead. `sink: true` is the caller's
-// stand-in for what the solver leaves over (a "Left over" or "Send out"
-// card); it becomes a node of kind "sink".
+// Cards and lines from {recipes, links} keyed by recipe: solver pseudo-recipes are skipped, a D- stand-in folds into an input card, `sink: true` becomes a sink card.
 export function buildFlowModel({recipes, links}) {
     const recipeByKey = new Map(recipes.map(r => [r.key, r]))
     const nodes = new Map()

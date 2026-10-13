@@ -1,6 +1,6 @@
 // The graph view's pure side: model, card faces, line chips and what focus and hover show; reads the spec, never the page.
 import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
-import { ASKED_FOR, linkMachines, realConsumers } from "./details-core.js"
+import { ASKED_FOR, isOutputSink, linkMachines, realConsumers } from "./details-core.js"
 import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, lineStyle, rankNodes } from "./flow-core.js"
 import { beltHoldsRow, beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
 import { Rational, zero } from "./rational.js"
@@ -75,7 +75,7 @@ export function buildModel(spec, totals) {
         }
     }
     let isSurplus = to => to.key === undefined && to.name === "surplus"
-    let isAsked = (to, item) => to.key === undefined && to.name === "output" && realConsumers(totals, item).length > 0
+    let isAsked = (to, item) => isOutputSink(to) && realConsumers(totals, item).length > 0
     let links = totals.proportionate
         .filter(({ item, from, to }) => (from === null || from.key !== undefined) && (to.key !== undefined || isSurplus(to) || isAsked(to, item)))
         .map(({ item, from, to, rate }) => ({
@@ -271,7 +271,8 @@ export function cardFace(spec, totals, node, stalled) {
 // A sink card's face (Left over, Send out, What you asked for): the items that run into it and the tank it shows.
 export function sinkFace(spec, node, edges) {
     let items = [...new Set(edges.filter(e => e.target === node.id).map(e => e.item))].map(key => spec.items.get(key)).filter(Boolean)
-    return { out: node.id !== LEFT_OVER, items, tank: spec.items.get("storage-tank") || items[0] || null, sub: SINK_CARDS.get(node.id).sub }
+    let tank = node.id === ASKED ? items[0] : spec.items.get("storage-tank") || items[0]
+    return { out: node.id !== LEFT_OVER, items, tank: tank || null, sub: SINK_CARDS.get(node.id).sub }
 }
 
 // Every chip a line could show when focused (either end), so the column gap can fit the widest before layout.

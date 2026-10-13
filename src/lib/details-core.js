@@ -24,10 +24,21 @@ export function isTargetItem(spec, item) {
 	return spec.buildTargets.some(t => t.item === item)
 }
 
+// The solver's pseudo-recipe that consumes every target at its rate.
+export function isOutputSink(recipe) {
+	return !recipe.isReal() && recipe.name === "output"
+}
+
 // The rate of `item` the plan delivers as a target, read off the solver's output sink; zero when it is no target.
 export function askedRate(totals, item) {
-	let sink = [...(totals.consumers.get(item) || new Map())].find(([recipe]) => !recipe.isReal() && recipe.name === "output")
+	let sink = [...(totals.consumers.get(item) || new Map())].find(([recipe]) => isOutputSink(recipe))
 	return sink ? sink[1] : zero
+}
+
+// The Goes to / Makes line for the `rate` of `item` that leaves as a target, its share taken of `base`.
+function askedLine(spec, totals, rows, item, rate, base) {
+	let text = rateText(spec.format, rate)
+	return { icon: item, name: ASKED_FOR, share: percentText(base.isZero() ? zero : rate.div(base)), text, card: flowCard(spec, totals, rows, item, null, rate, text), ratio: null }
 }
 
 // Item rate one machine running `recipe` moves, of its total `itemRate`; null when the recipe has no machine.
@@ -239,8 +250,7 @@ function goesToModel(spec, totals, rows, item, isTarget) {
 	})
 	let asked = askedRate(totals, item)
 	if (lines.length > 0 && zero.less(asked)) {
-		let text = rateText(spec.format, asked)
-		lines.push({ icon: item, name: ASKED_FOR, share: percentText(asked.div(totalRate)), text, card: flowCard(spec, totals, rows, item, null, asked, text), ratio: null })
+		lines.push(askedLine(spec, totals, rows, item, asked, totalRate))
 	}
 	let empty = isTarget ? "This is what you asked for." : "Nothing consumes it."
 	return { empty: lines.length === 0 ? empty : null, lines }
@@ -259,19 +269,24 @@ function makesNote(spec, item, links, leftover) {
 function makesModel(spec, totals, rows, row) {
 	return outputsOf(totals, row.recipe).map(({ item, rate, leftover }) => {
 		let links = outputLinks(totals, row.recipe, item)
+		let lines = links.map(link => {
+			let text = rateText(spec.format, link.rate)
+			return {
+				icon: link.to.products[0].item,
+				name: link.to.name,
+				share: percentText(rate.isZero() ? zero : link.rate.div(rate)),
+				text,
+				card: flowCard(spec, totals, rows, item, link.to, link.rate, text),
+			}
+		})
+		let asked = totals.proportionate.find(l => l.from === row.recipe && l.item === item && isOutputSink(l.to))
+		if (lines.length > 0 && asked && zero.less(asked.rate)) {
+			lines.push(askedLine(spec, totals, rows, item, asked.rate, rate))
+		}
 		return {
 			item,
 			text: rateText(spec.format, rate),
-			links: links.map(link => {
-				let text = rateText(spec.format, link.rate)
-				return {
-					icon: link.to.products[0].item,
-					name: link.to.name,
-					share: percentText(rate.isZero() ? zero : link.rate.div(rate)),
-					text,
-					card: flowCard(spec, totals, rows, item, link.to, link.rate, text),
-				}
-			}),
+			links: lines,
 			note: makesNote(spec, item, links, leftover),
 		}
 	})
