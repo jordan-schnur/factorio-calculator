@@ -9,6 +9,8 @@ import { buildRows, powerRepr } from "./table.js"
 
 const HUNDRED = Rational.from_float(100)
 
+export const ASKED_FOR = "What you asked for"
+
 // The "Goes to" share as a rounded percentage, "<1%" so a real-but-tiny consumer never reads 0%.
 export function percentText(share) {
 	let percent = share.mul(HUNDRED)
@@ -20,6 +22,12 @@ export function percentText(share) {
 
 export function isTargetItem(spec, item) {
 	return spec.buildTargets.some(t => t.item === item)
+}
+
+// The rate of `item` the plan delivers as a target, read off the solver's output sink; zero when it is no target.
+export function askedRate(totals, item) {
+	let sink = [...(totals.consumers.get(item) || new Map())].find(([recipe]) => !recipe.isReal() && recipe.name === "output")
+	return sink ? sink[1] : zero
 }
 
 // Item rate one machine running `recipe` moves, of its total `itemRate`; null when the recipe has no machine.
@@ -112,7 +120,7 @@ export function flowCardLines(spec, totals, rows, item, consumer, rate) {
 		beltFormat: spec.format.beltFormat,
 		fluid: item.phase === "fluid",
 		suppliers: suppliersOf(spec, totals, rows, item, rate),
-		consumer: machinesOn(spec, totals, consumer, one),
+		consumer: consumer && machinesOn(spec, totals, consumer, one),
 	})
 }
 
@@ -133,9 +141,9 @@ export function itemCard(spec, totals, rows, item) {
 	})
 	let flows = realConsumers(totals, item)
 		.map(([recipe, rate]) => ({ name: recipe.name, rate, consumer: machinesOn(spec, totals, recipe, one) }))
-	let left = flows.reduce((sum, f) => sum.sub(f.rate), total)
-	if (isTargetItem(spec, item) && zero.less(left)) {
-		flows.push({ name: "What you asked for", rate: left, consumer: null })
+	let asked = askedRate(totals, item)
+	if (zero.less(asked)) {
+		flows.push({ name: ASKED_FOR, rate: asked, consumer: null })
 	}
 	let destinations = flows.map(f => destinationLines({
 		name: f.name,
@@ -229,6 +237,11 @@ function goesToModel(spec, totals, rows, item, isTarget) {
 			ratio: ratio ? goesToRatio(ratio.supplier, ratio.consumer, ratio.p, ratio.q) : null,
 		}
 	})
+	let asked = askedRate(totals, item)
+	if (lines.length > 0 && zero.less(asked)) {
+		let text = rateText(spec.format, asked)
+		lines.push({ icon: item, name: ASKED_FOR, share: percentText(asked.div(totalRate)), text, card: flowCard(spec, totals, rows, item, null, asked, text), ratio: null })
+	}
 	let empty = isTarget ? "This is what you asked for." : "Nothing consumes it."
 	return { empty: lines.length === 0 ? empty : null, lines }
 }

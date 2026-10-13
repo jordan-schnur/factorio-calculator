@@ -1,6 +1,6 @@
 // The graph view's pure side: model, card faces, line chips and what focus and hover show; reads the spec, never the page.
 import { isMultiOutput, outputsOf, stalls } from "./byproduct-core.js"
-import { linkMachines } from "./details-core.js"
+import { ASKED_FOR, linkMachines, realConsumers } from "./details-core.js"
 import { buildFlowModel, cardHeight, dashArray, hoverSet, itemStyles, layered, lineStyle, rankNodes } from "./flow-core.js"
 import { beltHoldsRow, beltWords, lineEnd, lineRatio, perBelt } from "./ratio-core.js"
 import { Rational, zero } from "./rational.js"
@@ -8,6 +8,12 @@ import { rateText } from "./table-core.js"
 
 export const LEFT_OVER = "__leftover"
 export const SEND_OUT = "__sendout"
+export const ASKED = "__asked"
+const SINK_CARDS = new Map([
+    [LEFT_OVER, { name: "Left over", sub: "Nothing here uses it" }],
+    [SEND_OUT, { name: "Send out", sub: "To storage or another build" }],
+    [ASKED, { name: ASKED_FOR, sub: "Your target rate" }],
+])
 export const NODE_WIDTH = 210
 export const BASE_COL_GAP = 96
 export const CHIP_MARGIN = 32
@@ -38,7 +44,11 @@ function nodeRate(spec, totals, node, itemKey) {
     return (producerMap && producerMap.get(recipe)) || zero
 }
 
-// The flow-core model of a solve: solver sentinels skipped, a D- stand-in folded into an input card, leftovers run into a sink card.
+function sinkRecipe(key) {
+    return { key, name: SINK_CARDS.get(key).name, isReal: true, isDisable: false, isResource: false, isTarget: false, sink: true, count: 0, machine: null }
+}
+
+// The flow-core model of a solve: solver sentinels skipped, a D- stand-in folded into an input card, leftovers and the asked-for share of a target other cards use run into sink cards.
 export function buildModel(spec, totals) {
     let targetRecipes = new Set()
     for (let [recipe] of totals.rates) {
@@ -61,21 +71,23 @@ export function buildModel(spec, totals) {
     for (let item of totals.surplus.keys()) {
         let key = sinkKey(item)
         if (!recipes.some(r => r.key === key)) {
-            recipes.push({ key, name: key === SEND_OUT ? "Send out" : "Left over", isReal: true, isDisable: false, isResource: false, isTarget: false, sink: true, count: 0, machine: null })
+            recipes.push(sinkRecipe(key))
         }
     }
     let isSurplus = to => to.key === undefined && to.name === "surplus"
+    let isAsked = (to, item) => to.key === undefined && to.name === "output" && realConsumers(totals, item).length > 0
     let links = totals.proportionate
-        .filter(({ from, to }) => (from === null || from.key !== undefined) && (to.key !== undefined || isSurplus(to)))
+        .filter(({ item, from, to }) => (from === null || from.key !== undefined) && (to.key !== undefined || isSurplus(to) || isAsked(to, item)))
         .map(({ item, from, to, rate }) => ({
             item: item.key,
             itemName: item.name,
             from: from === null ? null : from.key,
-            to: isSurplus(to) ? sinkKey(item) : to.key,
+            to: isSurplus(to) ? sinkKey(item) : to.key ?? ASKED,
             rate: rate.toFloat(),
             rateExact: rate,
             belts: item.phase === "solid" ? spec.getBeltCount(rate).toFloat() : 0,
         }))
+    if (links.some(l => l.to === ASKED)) recipes.push(sinkRecipe(ASKED))
     let model = buildFlowModel({ recipes, links })
     for (let node of model.nodes) {
         node.itemKey = itemKeyFor(spec, node)
@@ -256,11 +268,10 @@ export function cardFace(spec, totals, node, stalled) {
     }
 }
 
-// The Left over / Send out card's face: the items that run into it and the tank it shows.
+// A sink card's face (Left over, Send out, What you asked for): the items that run into it and the tank it shows.
 export function sinkFace(spec, node, edges) {
-    let out = node.id === SEND_OUT
     let items = [...new Set(edges.filter(e => e.target === node.id).map(e => e.item))].map(key => spec.items.get(key)).filter(Boolean)
-    return { out, items, tank: spec.items.get("storage-tank") || items[0] || null, sub: out ? "To storage or another build" : "Nothing here uses it" }
+    return { out: node.id !== LEFT_OVER, items, tank: spec.items.get("storage-tank") || items[0] || null, sub: SINK_CARDS.get(node.id).sub }
 }
 
 // Every chip a line could show when focused (either end), so the column gap can fit the widest before layout.
