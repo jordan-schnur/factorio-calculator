@@ -81,6 +81,12 @@
   ],
   "nodes": [
     {
+      "node": "__asked",
+      "name": "What you asked for",
+      "sub": "Your target rate",
+      "rate": ""
+    },
+    {
       "node": "copper-cable",
       "name": "Copper cable",
       "sub": "1 × Assembling machine 1",

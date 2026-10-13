@@ -168,6 +168,12 @@
   ],
   "nodes": [
     {
+      "node": "__asked",
+      "name": "What you asked for",
+      "sub": "Your target rate",
+      "rate": ""
+    },
+    {
       "node": "coal",
       "name": "Coal",
       "sub": "5 × Electric mining drill",

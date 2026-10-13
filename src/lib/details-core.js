@@ -9,6 +9,8 @@ import { buildRows, powerRepr } from "./table.js"
 
 const HUNDRED = Rational.from_float(100)
 
+export const ASKED_FOR = "What you asked for"
+
 // The "Goes to" share as a rounded percentage, "<1%" so a real-but-tiny consumer never reads 0%.
 export function percentText(share) {
 	let percent = share.mul(HUNDRED)
@@ -20,6 +22,23 @@ export function percentText(share) {
 
 export function isTargetItem(spec, item) {
 	return spec.buildTargets.some(t => t.item === item)
+}
+
+// The solver's pseudo-recipe that consumes every target at its rate.
+export function isOutputSink(recipe) {
+	return !recipe.isReal() && recipe.name === "output"
+}
+
+// The rate of `item` the plan delivers as a target, read off the solver's output sink; zero when it is no target.
+export function askedRate(totals, item) {
+	let sink = [...(totals.consumers.get(item) || new Map())].find(([recipe]) => isOutputSink(recipe))
+	return sink ? sink[1] : zero
+}
+
+// The Goes to / Makes line for the `rate` of `item` that leaves as a target, its share taken of `base`.
+function askedLine(spec, totals, rows, item, rate, base) {
+	let text = rateText(spec.format, rate)
+	return { icon: item, name: ASKED_FOR, share: percentText(base.isZero() ? zero : rate.div(base)), text, card: flowCard(spec, totals, rows, item, null, rate, text), ratio: null }
 }
 
 // Item rate one machine running `recipe` moves, of its total `itemRate`; null when the recipe has no machine.
@@ -112,7 +131,7 @@ export function flowCardLines(spec, totals, rows, item, consumer, rate) {
 		beltFormat: spec.format.beltFormat,
 		fluid: item.phase === "fluid",
 		suppliers: suppliersOf(spec, totals, rows, item, rate),
-		consumer: machinesOn(spec, totals, consumer, one),
+		consumer: consumer && machinesOn(spec, totals, consumer, one),
 	})
 }
 
@@ -133,9 +152,9 @@ export function itemCard(spec, totals, rows, item) {
 	})
 	let flows = realConsumers(totals, item)
 		.map(([recipe, rate]) => ({ name: recipe.name, rate, consumer: machinesOn(spec, totals, recipe, one) }))
-	let left = flows.reduce((sum, f) => sum.sub(f.rate), total)
-	if (isTargetItem(spec, item) && zero.less(left)) {
-		flows.push({ name: "What you asked for", rate: left, consumer: null })
+	let asked = askedRate(totals, item)
+	if (zero.less(asked)) {
+		flows.push({ name: ASKED_FOR, rate: asked, consumer: null })
 	}
 	let destinations = flows.map(f => destinationLines({
 		name: f.name,
@@ -229,6 +248,10 @@ function goesToModel(spec, totals, rows, item, isTarget) {
 			ratio: ratio ? goesToRatio(ratio.supplier, ratio.consumer, ratio.p, ratio.q) : null,
 		}
 	})
+	let asked = askedRate(totals, item)
+	if (lines.length > 0 && zero.less(asked)) {
+		lines.push(askedLine(spec, totals, rows, item, asked, totalRate))
+	}
 	let empty = isTarget ? "This is what you asked for." : "Nothing consumes it."
 	return { empty: lines.length === 0 ? empty : null, lines }
 }
@@ -246,19 +269,24 @@ function makesNote(spec, item, links, leftover) {
 function makesModel(spec, totals, rows, row) {
 	return outputsOf(totals, row.recipe).map(({ item, rate, leftover }) => {
 		let links = outputLinks(totals, row.recipe, item)
+		let lines = links.map(link => {
+			let text = rateText(spec.format, link.rate)
+			return {
+				icon: link.to.products[0].item,
+				name: link.to.name,
+				share: percentText(rate.isZero() ? zero : link.rate.div(rate)),
+				text,
+				card: flowCard(spec, totals, rows, item, link.to, link.rate, text),
+			}
+		})
+		let asked = totals.proportionate.find(l => l.from === row.recipe && l.item === item && isOutputSink(l.to))
+		if (lines.length > 0 && asked && zero.less(asked.rate)) {
+			lines.push(askedLine(spec, totals, rows, item, asked.rate, rate))
+		}
 		return {
 			item,
 			text: rateText(spec.format, rate),
-			links: links.map(link => {
-				let text = rateText(spec.format, link.rate)
-				return {
-					icon: link.to.products[0].item,
-					name: link.to.name,
-					share: percentText(rate.isZero() ? zero : link.rate.div(rate)),
-					text,
-					card: flowCard(spec, totals, rows, item, link.to, link.rate, text),
-				}
-			}),
+			links: lines,
 			note: makesNote(spec, item, links, leftover),
 		}
 	})
