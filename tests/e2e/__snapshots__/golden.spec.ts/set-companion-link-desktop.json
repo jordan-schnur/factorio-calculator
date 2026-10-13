@@ -107,6 +107,12 @@
   ],
   "nodes": [
     {
+      "node": "__asked",
+      "name": "What you asked for",
+      "sub": "Your target rate",
+      "rate": ""
+    },
+    {
       "node": "casting-copper-cable",
       "name": "Copper cable",
       "sub": "1 × Foundry",
